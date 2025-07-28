@@ -19,10 +19,4 @@ jobs:
         with:
           token: ${{ secrets.BUF_TOKEN }}
           input: proto
-          push:
-            paths:
-              - '**.proto'
-              - '**/buf.yaml'
-              - '**/buf.lock'
-              - 'proto/README.md'
 
