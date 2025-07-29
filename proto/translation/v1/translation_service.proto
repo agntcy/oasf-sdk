@@ -8,22 +8,32 @@ package translation.v1;
 import "google/protobuf/struct.proto";
 import "objects/v3/record.proto";
 
+// TtranslationService provides methods to generate artifacts from objects based on specified translation types.
 service TranslationService {
+  // Generates an artifact from a Record based on the specified translation type.
   rpc GenerateArtifactFromRecord(GenerateArtifactFromRecordRequest) returns (GenerateArtifactFromRecordResponse);
 }
 
+// TranslationType defines the type of translation to be applied when generating artifacts.
 enum TranslationType {
+  // TRANSLATION_TYPE_UNSPECIFIED is used when no specific translation type is defined.protobuf
   TRANSLATION_TYPE_UNSPECIFIED = 0;
 
+  // TRANSLATION_TYPE_VSCODE_COPILOT is used for generating artifacts compatible with VSCode Copilot.
   TRANSLATION_TYPE_VSCODE_COPILOT = 1;
 }
 
+// GenerateArtifactFromRecordRequest is the request message for generating an artifact from a Record.
 message GenerateArtifactFromRecordRequest {
+  // The type of translation to be applied when generating the artifact.
   TranslationType translation_type = 1;
 
+  // The Record object from which the artifact will be generated.
   objects.v3.Record record = 2;
 }
 
+// GenerateArtifactFromRecordResponse is the response message containing the generated artifact data.
 message GenerateArtifactFromRecordResponse {
+  // The generated artifact data in a structured format.
   google.protobuf.Struct data = 1;
 }
