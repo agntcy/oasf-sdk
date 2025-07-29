@@ -6,8 +6,6 @@ syntax = "proto3";
 package translation.v1;
 
 import "google/protobuf/struct.proto";
-import "objects/v1/agent.proto";
-import "objects/v2/agent_record.proto";
 import "objects/v3/record.proto";
 
 service TranslationService {
@@ -20,18 +18,10 @@ enum TranslationType {
   TRANSLATION_TYPE_VSCODE_COPILOT = 1;
 }
 
-message Record {
-  oneof data {
-    objects.v1.Agent v1 = 1;
-    objects.v2.AgentRecord v2 = 2;
-    objects.v3.Record v3 = 3;
-  }
-}
-
 message GenerateArtifactFromRecordRequest {
   TranslationType translation_type = 1;
 
-  Record record = 2;
+  objects.v3.Record record = 2;
 }
 
 message GenerateArtifactFromRecordResponse {
