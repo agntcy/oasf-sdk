@@ -8,7 +8,7 @@ package translation.v1;
 import "google/protobuf/struct.proto";
 import "objects/v3/record.proto";
 
-// TtranslationService provides methods to generate artifacts from objects based on specified translation types.
+// TranslationService provides methods to generate artifacts from objects based on specified translation types.
 service TranslationService {
   // Generates an artifact from a Record based on the specified translation type.
   rpc GenerateArtifactFromRecord(GenerateArtifactFromRecordRequest) returns (GenerateArtifactFromRecordResponse);

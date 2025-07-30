@@ -13,7 +13,7 @@ import (
 
 const (
 	DefaultEnvPrefix     = "TRANSLATION_SERVER"
-	DefaultListenAddress = "0.0.0.0:8888"
+	DefaultListenAddress = "0.0.0.0:31234"
 )
 
 type Config struct {
