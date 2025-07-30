@@ -19,8 +19,8 @@ enum TranslationType {
   // TRANSLATION_TYPE_UNSPECIFIED is used when no specific translation type is defined.protobuf
   TRANSLATION_TYPE_UNSPECIFIED = 0;
 
-  // TRANSLATION_TYPE_VSCODE_COPILOT is used for generating artifacts compatible with VSCode Copilot.
-  TRANSLATION_TYPE_VSCODE_COPILOT = 1;
+  // TRANSLATION_TYPE_VSCODE is used for generating artifacts compatible with VSCode.
+  TRANSLATION_TYPE_VSCODE = 1;
 }
 
 // GenerateArtifactFromRecordRequest is the request message for generating an artifact from a Record.
