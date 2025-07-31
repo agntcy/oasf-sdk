@@ -92,7 +92,10 @@ func buildVSCodeMCPConfig(record *objectsv3.Record) (*VSCodeMCPConfig, error) {
 			continue
 		}
 
-		command := serverMap.Fields["command"].GetStringValue()
+		command, ok := serverMap.Fields["command"]
+		if !ok {
+			return nil, fmt.Errorf("missing 'command' for server '%s'", serverName)
+		}
 
 		args := []string{}
 		if argsVal, ok := serverMap.Fields["args"]; ok {
@@ -122,7 +125,7 @@ func buildVSCodeMCPConfig(record *objectsv3.Record) (*VSCodeMCPConfig, error) {
 		}
 
 		servers[serverName] = Server{
-			Command: command,
+			Command: command.GetStringValue(),
 			Args:    args,
 			Env:     env,
 		}
