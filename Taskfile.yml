@@ -1,0 +1,14 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+version: '3'
+
+vars:
+  BIN_DIR: '{{ .ROOT_DIR }}/bin'
+
+includes:
+  translation:
+    taskfile: ./translation/Taskfile.yml
+    dir: ./translation
+    vars:
+      BIN_DIR: '{{ .BIN_DIR }}'
