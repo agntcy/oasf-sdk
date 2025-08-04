@@ -5,9 +5,10 @@ name: Release pipeline
 
 on:
   push:
+    branches:
+      - ci/release-pipeline
     tags:
       - "v*.*.*"
-      - ci/release-pipeline
 
 jobs:
   translation:
