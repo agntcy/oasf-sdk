@@ -7,7 +7,7 @@ on:
   push:
     tags:
       - "v*.*.*"
-      - fix/release-pipeline
+      - ci/release-pipeline
 
 jobs:
   translation:
