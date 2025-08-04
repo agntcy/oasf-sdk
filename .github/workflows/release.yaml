@@ -58,11 +58,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  success:
-    name: Success
-    needs:
-      - release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Echo Success
-        run: echo "::notice Success!"
