@@ -53,7 +53,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: bin/**
-          tag_name: v0.0.0
+          tag_name: v0.0.1
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
