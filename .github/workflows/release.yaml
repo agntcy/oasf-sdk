@@ -5,8 +5,8 @@ name: CI Pipeline
 
 on:
   push:
-    branches:
-      - ci/add-binary-distribution
+    tags:
+      - "v*.*.*"
 
 jobs:
   translation:
