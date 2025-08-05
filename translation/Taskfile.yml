@@ -12,7 +12,7 @@ tasks:
       BINARY_NAME: '{{ .BINARY_NAME | default "oasft" }}'
       OUT_BINARY: '{{ .OUT_BINARY | default (printf "%s/%s" .BIN_DIR .BINARY_NAME) }}'
     cmds:
-      - CGO_ENABLED=0 GOOS={{.GOOS}} GOARCH={{.GOARCH}} BINARY_NAME={{.BINARY_NAME}} go build -ldflags="-s -w -extldflags -static" -o "{{.OUT_BINARY}}" cmd/main.go
+      - CGO_ENABLED=0 GOOS={{ .GOOS }} GOARCH={{ .GOARCH }} BINARY_NAME={{ .BINARY_NAME }} go build -ldflags="-s -w -extldflags -static" -o "{{ .OUT_BINARY }}" cmd/main.go
 
   compile:all:
     desc: Compile Translation SDK binaries for multiple platforms
@@ -22,4 +22,17 @@ tasks:
             OS: ['linux', 'darwin']
             ARCH: ['amd64', 'arm64']
         cmd: |
-          GOOS={{.ITEM.OS}} GOARCH={{.ITEM.ARCH}} BINARY_NAME=oasft-{{.ITEM.OS}}-{{.ITEM.ARCH}} BIN_DIR={{.BIN_DIR}} task compile
+          GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasft-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile
+
+  build:
+    desc: Build Translation SDK image
+    dir: '{{ .ROOT_DIR }}'
+    cmds:
+      - docker buildx bake --set *.platform=linux/{{ ARCH }} translation
+
+  build:all:
+    desc: Build Translation SDK image for all platforms
+    dir: '{{ .ROOT_DIR }}'
+    cmds:
+      - docker buildx bake translation
+

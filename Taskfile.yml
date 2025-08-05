@@ -12,3 +12,15 @@ includes:
     dir: ./translation
     vars:
       BIN_DIR: '{{ .BIN_DIR }}'
+
+tasks:
+  build:
+    desc: Build images for all components
+    cmds:
+      - task translation:build
+
+  build:all:
+    desc: Build images for all components for all platforms
+    cmds:
+      - task translation:build:all
+
