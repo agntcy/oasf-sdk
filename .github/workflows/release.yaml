@@ -34,7 +34,7 @@ jobs:
           if-no-files-found: error
 
   docker-image:
-    name: Build & Push Docker Image
+    name: Build & Push Docker Images
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -53,7 +53,7 @@ jobs:
         uses: docker/bake-action@v6
         with:
           files: docker-bake.hcl
-          targets: translation
+          provenance: false
           push: true
           set: |
             *.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk:${{ github.ref_name }}
