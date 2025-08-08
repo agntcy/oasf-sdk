@@ -16,7 +16,7 @@ import (
 
 type TranslationService struct{}
 
-type VSCodeMCPConfig struct {
+type VSCodeCopilotMCPConfig struct {
 	Servers map[string]Server `json:"servers"`
 	Inputs  []Input           `json:"inputs"`
 }
@@ -34,33 +34,49 @@ type Input struct {
 	Description string `json:"description"`
 }
 
+type Skill struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type A2ACard struct {
+	Name               string          `json:"name"`
+	Description        string          `json:"description"`
+	URL                string          `json:"url"`
+	Capabilities       map[string]bool `json:"capabilities"`
+	DefaultInputModes  []string        `json:"defaultInputModes"`
+	DefaultOutputModes []string        `json:"defaultOutputModes"`
+	Skills             []Skill         `json:"skills"`
+}
+
 func NewTranslationService() *TranslationService {
 	return &TranslationService{}
 }
 
-func (t TranslationService) GenerateArtifactFromRecord(req *translationv1.GenerateArtifactFromRecordRequest) (*structpb.Struct, error) {
-	switch req.TranslationType {
-	case translationv1.TranslationType_TRANSLATION_TYPE_UNSPECIFIED:
-		return nil, errors.New("translation type is unspecified")
-	case translationv1.TranslationType_TRANSLATION_TYPE_VSCODE:
-		return generateVSCodeArtifactFromRecord(req.Record)
-	default:
-		return nil, errors.New("unsupported translation type")
-	}
-}
-
-func generateVSCodeArtifactFromRecord(record *objectsv3.Record) (*structpb.Struct, error) {
-	vscodeMCPConfig, err := buildVSCodeMCPConfig(record)
+func (t TranslationService) RecordToVSCodeCopilot(req *translationv1.RecordToVSCodeCopilotRequest) (*structpb.Struct, error) {
+	vsCodeCopilotMCPConfig, err := buildVSCodeCopilotMCPConfig(req.Record)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build VSCode MCP config: %w", err)
 	}
 
 	return toStruct(map[string]any{
-		"mcpConfig": *vscodeMCPConfig,
+		"mcpConfig": *vsCodeCopilotMCPConfig,
 	})
 }
 
-func buildVSCodeMCPConfig(record *objectsv3.Record) (*VSCodeMCPConfig, error) {
+func (t TranslationService) RecordToA2A(req *translationv1.RecordToA2ARequest) (*structpb.Struct, error) {
+	a2aCard, err := buildA2ACard(req.Record)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build A2A card: %w", err)
+	}
+
+	return toStruct(map[string]any{
+		"a2aCard": *a2aCard,
+	})
+}
+
+func buildVSCodeCopilotMCPConfig(record *objectsv3.Record) (*VSCodeCopilotMCPConfig, error) {
 	var mcpExt *objectsv3.Extension
 	for _, ext := range record.Extensions {
 		if ext.Name == "schema.oasf.agntcy.org/features/runtime/mcp" {
@@ -131,10 +147,36 @@ func buildVSCodeMCPConfig(record *objectsv3.Record) (*VSCodeMCPConfig, error) {
 		}
 	}
 
-	return &VSCodeMCPConfig{
+	return &VSCodeCopilotMCPConfig{
 		Servers: servers,
 		Inputs:  inputs,
 	}, nil
+}
+
+func buildA2ACard(record *objectsv3.Record) (*A2ACard, error) {
+	var a2aExt *objectsv3.Extension
+	for _, ext := range record.Extensions {
+		if ext.Name == "schema.oasf.agntcy.org/features/runtime/a2a" {
+			a2aExt = ext
+			break
+		}
+	}
+
+	if a2aExt == nil {
+		return nil, errors.New("A2A extension not found in record")
+	}
+
+	jsonBytes, err := json.Marshal(a2aExt.Data.AsMap())
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal A2A data to JSON: %w", err)
+	}
+
+	var card A2ACard
+	if err := json.Unmarshal(jsonBytes, &card); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal A2A data into A2ACard: %w", err)
+	}
+
+	return &card, nil
 }
 
 func toStruct(v any) (*structpb.Struct, error) {
