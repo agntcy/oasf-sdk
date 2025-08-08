@@ -25,13 +25,24 @@ func NewRoutingController() translationv1grpc.TranslationServiceServer {
 	}
 }
 
-func (t translationCtrl) GenerateArtifactFromRecord(ctx context.Context, req *translationv1.GenerateArtifactFromRecordRequest) (*translationv1.GenerateArtifactFromRecordResponse, error) {
+func (t translationCtrl) RecordToVSCodeCopilot(_ context.Context, req *translationv1.RecordToVSCodeCopilotRequest) (*translationv1.RecordToVSCodeCopilotResponse, error) {
 	slog.Info("Received Publish request", "request", req)
 
-	data, err := t.translationService.GenerateArtifactFromRecord(req)
+	data, err := t.translationService.RecordToVSCodeCopilot(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate artifact from record: %w", err)
+		return nil, fmt.Errorf("failed to generate VSCodeCopilot config from record: %w", err)
 	}
 
-	return &translationv1.GenerateArtifactFromRecordResponse{Data: data}, nil
+	return &translationv1.RecordToVSCodeCopilotResponse{Data: data}, nil
+}
+
+func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
+	slog.Info("Received RecordToA2A request", "request", req)
+
+	data, err := t.translationService.RecordToA2A(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
+	}
+
+	return &translationv1.RecordToA2AResponse{Data: data}, nil
 }

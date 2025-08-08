@@ -3,9 +3,9 @@ module github.com/agntcy/oasf-sdk/translation
 go 1.24.4
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250729081737-69affdde97f0.2
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.6-20250730200615-f5a29d011e96.1
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.6-20250725153712-3ff5f39f98ba.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250807084011-45c036036b0f.2
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.6-20250807084011-45c036036b0f.1
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.6-20250730151615-132f40d05b24.1
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
