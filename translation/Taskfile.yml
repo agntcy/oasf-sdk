@@ -35,4 +35,3 @@ tasks:
     dir: '{{ .ROOT_DIR }}'
     cmds:
       - docker buildx bake translation
-
