@@ -11,6 +11,9 @@ import "objects/v3/record.proto";
 service ValidationService {
   // ValidateRecord checks the validity of a Record object.
   rpc ValidateRecord(ValidateRecordRequest) returns (ValidateRecordResponse);
+
+  // ValidateRecords checks the validity of multiple Record objects.
+  rpc ValidateRecords(ValidateRecordsRequest) returns (ValidateRecordsResponse);
 }
 
 message ValidateRecordRequest {
@@ -19,9 +22,22 @@ message ValidateRecordRequest {
 }
 
 message ValidateRecordResponse {
+  // Version of the Record being validated.
+  string record_version = 1;
+
   // Whether the Record is valid.
-  bool is_valid = 1;
+  bool is_valid = 2;
 
   // A list of validation errors, if any.
-  repeated string errors = 2;
+  repeated string errors = 3;
+}
+
+message ValidateRecordsRequest {
+  // A list of Record objects to be validated.
+  repeated objects.v3.Record records = 1;
+}
+
+message ValidateRecordsResponse {
+  // A list of validation results for each Record.
+  repeated ValidateRecordResponse results = 1;
 }
