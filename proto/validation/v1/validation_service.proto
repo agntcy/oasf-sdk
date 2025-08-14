@@ -19,7 +19,7 @@ service ValidationService {
 message ValidateRecordRequest {
   // The Record object to be validated.
   objects.v3.Record record = 1;
-  
+
   // Whether to validate against the schema_url from the record instead of embedded schemas.
   // If true, the validation service will fetch and validate against the schema at the URL.
   // If false (default), validation uses the embedded JSON schemas in the binary.
