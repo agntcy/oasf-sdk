@@ -5,7 +5,6 @@ syntax = "proto3";
 
 package validation.v1;
 
-import "google/protobuf/struct.proto";
 import "objects/v3/record.proto";
 
 // ValidationService provides methods to validate OASF objects.
