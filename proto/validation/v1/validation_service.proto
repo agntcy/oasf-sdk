@@ -1,0 +1,28 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package validation.v1;
+
+import "google/protobuf/struct.proto";
+import "objects/v3/record.proto";
+
+// ValidationService provides methods to validate OASF objects.
+service ValidationService {
+  // ValidateRecord checks the validity of a Record object.
+  rpc ValidateRecord(ValidateRecordRequest) returns (ValidateRecordResponse);
+}
+
+message ValidateRecordRequest {
+  // The Record object to be validated.
+  objects.v3.Record record = 1;
+}
+
+message ValidateRecordResponse {
+  // Whether the Record is valid.
+  bool is_valid = 1;
+
+  // A list of validation errors, if any.
+  repeated string errors = 2;
+}
