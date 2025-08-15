@@ -12,8 +12,9 @@ service ValidationService {
   // ValidateRecord checks the validity of a Record object.
   rpc ValidateRecord(ValidateRecordRequest) returns (ValidateRecordResponse);
 
-  // ValidateRecords checks the validity of multiple Record objects.
-  rpc ValidateRecords(ValidateRecordsRequest) returns (ValidateRecordsResponse);
+  // ValidateRecordStream checks the validity of multiple Record objects using stream.
+  // All items are validated sequentially, ie. the response on the stream is tied to the given object passed from the stream.
+  rpc ValidateRecordStream(stream ValidateRecordRequest) returns (stream ValidateRecordResponse);
 }
 
 message ValidateRecordRequest {
@@ -32,14 +33,4 @@ message ValidateRecordResponse {
 
   // A list of validation errors, if any.
   repeated string errors = 2;
-}
-
-message ValidateRecordsRequest {
-  // A list of validation requests, each with its own validation mode.
-  repeated ValidateRecordRequest requests = 1;
-}
-
-message ValidateRecordsResponse {
-  // A list of validation results for each Record.
-  repeated ValidateRecordResponse results = 1;
 }
