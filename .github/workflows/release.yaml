@@ -9,8 +9,8 @@ on:
       - "v*.*.*"
 
 jobs:
-  translation-binary:
-    name: Build Translation SDK binaries
+  sdk-binaries:
+    name: Build SDK binaries
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -24,7 +24,7 @@ jobs:
 
       - name: Build
         run: |
-          task translation:compile:all
+          task compile:all
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.4.3
@@ -49,20 +49,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker images
         uses: docker/bake-action@v6
         with:
           files: docker-bake.hcl
           provenance: false
           push: true
           set: |
-            *.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk:${{ github.ref_name }}
-            *.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk:latest
+            translation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-translation:${{ github.ref_name }}
+            translation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-translation:latest
+            validation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-validation:${{ github.ref_name }}
+            validation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-validation:latest
 
   release:
     name: Release
     needs:
-      - translation-binary
+      - sdk-binaries
       - docker-image
     runs-on: ubuntu-latest
     permissions:

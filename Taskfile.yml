@@ -12,15 +12,33 @@ includes:
     dir: ./translation
     vars:
       BIN_DIR: '{{ .BIN_DIR }}'
+  validation:
+    taskfile: ./validation/Taskfile.yml
+    dir: ./validation
+    vars:
+      BIN_DIR: '{{ .BIN_DIR }}'
 
 tasks:
+  compile:
+    desc: Compile binaries for all components
+    cmds:
+      - task translation:compile
+      - task validation:compile
+
+  compile:all:
+    desc: Compile binaries for all components for all platforms
+    cmds:
+      - task translation:compile:all
+      - task validation:compile:all
+
   build:
     desc: Build images for all components
     cmds:
       - task translation:build
+      - task validation:build
 
   build:all:
     desc: Build images for all components for all platforms
     cmds:
       - task translation:build:all
-
+      - task validation:build:all

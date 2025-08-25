@@ -1,0 +1,4645 @@
+{
+    "$defs": {
+        "features": {
+            "a2a": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/a2a",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "A2A Card",
+                "type": "object"
+            },
+            "evaluation": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/evaluation_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/evaluation",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "Evaluation",
+                "type": "object"
+            },
+            "manifest": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/manifest_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/manifest",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "Manifest",
+                "type": "object"
+            },
+            "mcp": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/mcp_server_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/mcp",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "MCP",
+                "type": "object"
+            },
+            "model": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/llm_model_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/model",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "LLM Model",
+                "type": "object"
+            },
+            "observability": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/observability_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/observability",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "Observability",
+                "type": "object"
+            },
+            "prompt": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "data": {
+                        "$ref": "#/$defs/objects/llm_prompt_data",
+                        "title": "Data"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/features/prompt",
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data",
+                    "name"
+                ],
+                "title": "LLM Prompt",
+                "type": "object"
+            }
+        },
+        "objects": {
+            "docker_deployment": {
+                "additionalProperties": false,
+                "properties": {
+                    "image": {
+                        "title": "Agent Docker Image",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Deployment Option Name",
+                        "type": "string"
+                    },
+                    "type": {
+                        "const": "docker",
+                        "title": "Type",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "image",
+                    "type"
+                ],
+                "title": "Docker Deployment",
+                "type": "object"
+            },
+            "llm_model_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "models": {
+                        "items": {
+                            "$ref": "#/$defs/objects/llm_model"
+                        },
+                        "title": "LLM Model Data",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "models"
+                ],
+                "title": "LLM Model Data",
+                "type": "object"
+            },
+            "env_var": {
+                "additionalProperties": false,
+                "properties": {
+                    "default_value": {
+                        "title": "Default Value",
+                        "type": "string"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "required": {
+                        "title": "Required",
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "description",
+                    "name"
+                ],
+                "title": "Environment Variable",
+                "type": "object"
+            },
+            "llm_model": {
+                "additionalProperties": false,
+                "properties": {
+                    "api_base": {
+                        "title": "API Base URL",
+                        "type": "string"
+                    },
+                    "api_key": {
+                        "title": "API Key",
+                        "type": "string"
+                    },
+                    "model": {
+                        "title": "Model Name",
+                        "type": "string"
+                    },
+                    "provider": {
+                        "title": "Provider",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "api_base",
+                    "api_key",
+                    "model",
+                    "provider"
+                ],
+                "title": "LLM Model Configuration",
+                "type": "object"
+            },
+            "locator": {
+                "additionalProperties": false,
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "digest": {
+                        "title": "Digest",
+                        "type": "string"
+                    },
+                    "size": {
+                        "title": "Size",
+                        "type": "integer"
+                    },
+                    "type": {
+                        "enum": [
+                            "binary",
+                            "unspecified",
+                            "helm_chart",
+                            "docker_image",
+                            "python_package",
+                            "source_code"
+                        ],
+                        "title": "Type",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "URL",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type",
+                    "url"
+                ],
+                "title": "Record Locator",
+                "type": "object"
+            },
+            "acp_endpoint": {
+                "additionalProperties": false,
+                "properties": {
+                    "agent_id": {
+                        "title": "Agent Identifier",
+                        "type": "string"
+                    },
+                    "authentication": {
+                        "$ref": "#/$defs/objects/security_scheme",
+                        "title": "Security Scheme"
+                    },
+                    "type": {
+                        "const": "ACP",
+                        "title": "Type",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "ACP URL",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type",
+                    "url"
+                ],
+                "title": "ACP Details",
+                "type": "object"
+            },
+            "llm_prompt_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "prompts": {
+                        "items": {
+                            "$ref": "#/$defs/objects/llm_prompt"
+                        },
+                        "title": "LLM Prompts",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "prompts"
+                ],
+                "title": "LLM Prompt Data",
+                "type": "object"
+            },
+            "observability_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "communication_protocols": {
+                        "items": {
+                            "enum": [
+                                "Otel_OTP_v1",
+                                "HTTP_1.1",
+                                "gRPC",
+                                "SLIM"
+                            ],
+                            "type": "string"
+                        },
+                        "title": "Communication Protocols",
+                        "type": "array"
+                    },
+                    "data_platform_integrations": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "title": "Data Platform Integrations",
+                        "type": "array"
+                    },
+                    "data_schema": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/objects/agntcy_observability_data_schema"
+                            }
+                        ],
+                        "title": "Supported Data Schema"
+                    },
+                    "export_format": {
+                        "enum": [
+                            "json",
+                            "xml",
+                            "csv"
+                        ],
+                        "title": "Export Format",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "communication_protocols",
+                    "data_platform_integrations",
+                    "data_schema",
+                    "export_format"
+                ],
+                "title": "Observability Data",
+                "type": "object"
+            },
+            "agntcy_observability_data_schema": {
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "URL",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "url",
+                    "version"
+                ],
+                "title": "Agntcy Observability Data Schema",
+                "type": "object"
+            },
+            "langgraph_config": {
+                "additionalProperties": false,
+                "properties": {
+                    "framework_type": {
+                        "const": "langgraph",
+                        "title": "Framework Type",
+                        "type": "string"
+                    },
+                    "graph": {
+                        "title": "Graph",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "framework_type",
+                    "graph"
+                ],
+                "title": "LangGraph Config",
+                "type": "object"
+            },
+            "security_scheme": {
+                "additionalProperties": false,
+                "properties": {
+                    "in": {
+                        "title": "In",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "in",
+                    "name",
+                    "type"
+                ],
+                "title": "Security Scheme",
+                "type": "object"
+            },
+            "llm_prompt": {
+                "additionalProperties": false,
+                "properties": {
+                    "description": {
+                        "title": "Description",
+                        "type": "string"
+                    },
+                    "name": {
+                        "title": "Prompt Name",
+                        "type": "string"
+                    },
+                    "prompt": {
+                        "title": "Prompt Text",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "description",
+                    "name",
+                    "prompt"
+                ],
+                "title": "Prompt",
+                "type": "object"
+            },
+            "evaluation_dataset": {
+                "additionalProperties": false,
+                "properties": {
+                    "metadata": {
+                        "items": {
+                            "$ref": "#/$defs/objects/key_value_object"
+                        },
+                        "title": "Metadata",
+                        "type": "array"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "URL",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "url",
+                    "version"
+                ],
+                "title": "Dataset",
+                "type": "object"
+            },
+            "env_var_values": {
+                "additionalProperties": false,
+                "properties": {
+                    "env_deps": {
+                        "items": {
+                            "$ref": "#/$defs/objects/env_var_values"
+                        },
+                        "title": "Values for Dependencies",
+                        "type": "array"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "values": {
+                        "items": {
+                            "$ref": "#/$defs/objects/key_value_object"
+                        },
+                        "title": "Environment Variable Values",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "values"
+                ],
+                "title": "Environment Variable Values",
+                "type": "object"
+            },
+            "streaming_modes": {
+                "additionalProperties": false,
+                "properties": {
+                    "custom_objects_streaming": {
+                        "title": "Custom Objects Streaming",
+                        "type": "boolean"
+                    },
+                    "result_streaming": {
+                        "title": "Result Streaming",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Streaming Modes",
+                "type": "object"
+            },
+            "capabilities": {
+                "additionalProperties": false,
+                "properties": {
+                    "callbacks": {
+                        "title": "Callback Support",
+                        "type": "boolean"
+                    },
+                    "interrupt_support": {
+                        "title": "Interrupt Support",
+                        "type": "boolean"
+                    },
+                    "streaming": {
+                        "$ref": "#/$defs/objects/streaming_modes",
+                        "title": "Streaming Modes"
+                    },
+                    "threads": {
+                        "title": "Threads",
+                        "type": "boolean"
+                    }
+                },
+                "title": "Agent Capabilities",
+                "type": "object"
+            },
+            "manifest_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "acp": {
+                        "$ref": "#/$defs/objects/agent_connect_protocol",
+                        "title": "Agent Connect Protocol Specs"
+                    },
+                    "deployment": {
+                        "$ref": "#/$defs/objects/deployment",
+                        "title": "Agent Workflow Server Deployment Manifest"
+                    }
+                },
+                "required": [
+                    "acp",
+                    "deployment"
+                ],
+                "title": "Manifest Data",
+                "type": "object"
+            },
+            "metric": {
+                "additionalProperties": false,
+                "properties": {
+                    "data_points": {
+                        "items": {
+                            "$ref": "#/$defs/objects/key_value_object"
+                        },
+                        "title": "Data Points",
+                        "type": "array"
+                    },
+                    "name": {
+                        "title": "Metric Name",
+                        "type": "string"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "type": "string"
+                    },
+                    "unit_of_measurement": {
+                        "title": "Unit of Measurement",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "Reference",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "data_points",
+                    "name",
+                    "type",
+                    "unit_of_measurement"
+                ],
+                "title": "Metric",
+                "type": "object"
+            },
+            "overall_scores": {
+                "additionalProperties": false,
+                "properties": {
+                    "cost_score": {
+                        "title": "Cost Score",
+                        "type": "number"
+                    },
+                    "quality_score": {
+                        "title": "Quality Score",
+                        "type": "number"
+                    },
+                    "security_score": {
+                        "title": "Security Score",
+                        "type": "number"
+                    }
+                },
+                "title": "Overall Scores",
+                "type": "object"
+            },
+            "mcp_server_configuration": {
+                "additionalProperties": false,
+                "properties": {
+                    "args": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "title": "Arguments",
+                        "type": "array"
+                    },
+                    "command": {
+                        "title": "Command",
+                        "type": "string"
+                    },
+                    "env": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Environment Variables",
+                        "type": "object"
+                    },
+                    "env_file": {
+                        "title": "Environment Variables File",
+                        "type": "string"
+                    },
+                    "headers": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Headers",
+                        "type": "object"
+                    },
+                    "name": {
+                        "title": "Server Name",
+                        "type": "string"
+                    },
+                    "scope": {
+                        "title": "Scope",
+                        "type": "string"
+                    },
+                    "tool_configuration": {
+                        "title": "Tool Configuration"
+                    },
+                    "type": {
+                        "title": "Server Type",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "Server URL",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "type"
+                ],
+                "title": "MCP Server Configuration",
+                "type": "object"
+            },
+            "interrupts": {
+                "additionalProperties": false,
+                "properties": {
+                    "interrupt_payload": {
+                        "title": "Interrupt Payload"
+                    },
+                    "interrupt_type": {
+                        "title": "Interrupt Type",
+                        "type": "string"
+                    },
+                    "resume_payload": {
+                        "title": "Resume Payload"
+                    }
+                },
+                "required": [
+                    "interrupt_payload",
+                    "interrupt_type",
+                    "resume_payload"
+                ],
+                "title": "Interrupts",
+                "type": "object"
+            },
+            "publisher": {
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "URL",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "version"
+                ],
+                "title": "Publisher",
+                "type": "object"
+            },
+            "mcp_server_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "servers": {
+                        "items": {
+                            "$ref": "#/$defs/objects/mcp_server_configuration"
+                        },
+                        "title": "MCP Server Configurations",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "servers"
+                ],
+                "title": "MCP Server Configuration",
+                "type": "object"
+            },
+            "remote_service_deployment": {
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "title": "Deployment Option Name",
+                        "type": "string"
+                    },
+                    "protocol": {
+                        "$ref": "#/$defs/objects/acp_endpoint",
+                        "title": "ACP Endpoint"
+                    },
+                    "type": {
+                        "const": "remote_service",
+                        "title": "Type",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "protocol",
+                    "type"
+                ],
+                "title": "Remote Service Deployment",
+                "type": "object"
+            },
+            "agent_connect_protocol": {
+                "additionalProperties": false,
+                "properties": {
+                    "capabilities": {
+                        "$ref": "#/$defs/objects/capabilities",
+                        "title": "Capabilities"
+                    },
+                    "config": {
+                        "title": "Configuration"
+                    },
+                    "custom_streaming_update": {
+                        "title": "Custom Streaming Update"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "interrupts": {
+                        "items": {
+                            "$ref": "#/$defs/objects/interrupts"
+                        },
+                        "title": "Interrupts",
+                        "type": "array"
+                    },
+                    "output": {
+                        "title": "Output"
+                    },
+                    "thread_state": {
+                        "title": "Thread State"
+                    }
+                },
+                "required": [
+                    "capabilities",
+                    "config",
+                    "input",
+                    "output"
+                ],
+                "title": "Agent Connect Protocol Specs",
+                "type": "object"
+            },
+            "deployment": {
+                "additionalProperties": false,
+                "properties": {
+                    "agent_deps": {
+                        "items": {
+                            "$ref": "#/$defs/objects/agent_dependency"
+                        },
+                        "title": "Agent Dependencies",
+                        "type": "array"
+                    },
+                    "deployment_options": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/$defs/objects/docker_deployment"
+                                },
+                                {
+                                    "$ref": "#/$defs/objects/source_code_deployment"
+                                },
+                                {
+                                    "$ref": "#/$defs/objects/remote_service_deployment"
+                                }
+                            ]
+                        },
+                        "title": "Deployment Options",
+                        "type": "array"
+                    },
+                    "env_vars": {
+                        "items": {
+                            "$ref": "#/$defs/objects/env_var"
+                        },
+                        "title": "Environment Variables",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "deployment_options"
+                ],
+                "title": "Agent Workflow Server Deployment Manifest",
+                "type": "object"
+            },
+            "record_signature": {
+                "additionalProperties": false,
+                "properties": {
+                    "algorithm": {
+                        "title": "Algorithm",
+                        "type": "string"
+                    },
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "certificate": {
+                        "title": "Certificate",
+                        "type": "string"
+                    },
+                    "content_bundle": {
+                        "title": "Content Bundle",
+                        "type": "string"
+                    },
+                    "content_type": {
+                        "title": "Content Type",
+                        "type": "string"
+                    },
+                    "signature": {
+                        "title": "Signature",
+                        "type": "string"
+                    },
+                    "signed_at": {
+                        "title": "Signed At",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "algorithm",
+                    "certificate",
+                    "content_bundle",
+                    "content_type",
+                    "signature",
+                    "signed_at"
+                ],
+                "title": "Record Signature",
+                "type": "object"
+            },
+            "evaluation_report": {
+                "additionalProperties": false,
+                "properties": {
+                    "metrics": {
+                        "items": {
+                            "$ref": "#/$defs/objects/metric"
+                        },
+                        "title": "Metrics",
+                        "type": "array"
+                    },
+                    "overall_scores": {
+                        "$ref": "#/$defs/objects/overall_scores",
+                        "title": "Scores"
+                    }
+                },
+                "required": [
+                    "metrics",
+                    "overall_scores"
+                ],
+                "title": "Evaluation report",
+                "type": "object"
+            },
+            "agent_manifest_ref": {
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "Manifest URL",
+                        "type": "string"
+                    },
+                    "version": {
+                        "title": "Version",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "version"
+                ],
+                "title": "Agent Manifest Reference",
+                "type": "object"
+            },
+            "agent_dependency": {
+                "additionalProperties": false,
+                "properties": {
+                    "deployment_option": {
+                        "title": "Deployment Option Name",
+                        "type": "string"
+                    },
+                    "env_var_values": {
+                        "items": {
+                            "$ref": "#/$defs/objects/env_var_values"
+                        },
+                        "title": "Environment Variable Values",
+                        "type": "array"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "ref": {
+                        "$ref": "#/$defs/objects/agent_manifest_ref",
+                        "title": "Reference"
+                    }
+                },
+                "required": [
+                    "name",
+                    "ref"
+                ],
+                "title": "Agent Dependency",
+                "type": "object"
+            },
+            "source_code_deployment": {
+                "additionalProperties": false,
+                "properties": {
+                    "framework_config": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/objects/llamaindex_config"
+                            },
+                            {
+                                "$ref": "#/$defs/objects/langgraph_config"
+                            }
+                        ],
+                        "title": "Agentic Framework Config"
+                    },
+                    "name": {
+                        "title": "Deployment Option Name",
+                        "type": "string"
+                    },
+                    "type": {
+                        "const": "source_code",
+                        "title": "Type",
+                        "type": "string"
+                    },
+                    "url": {
+                        "title": "Source Code Locator",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "framework_config",
+                    "type",
+                    "url"
+                ],
+                "title": "Source Code Deployment",
+                "type": "object"
+            },
+            "referred_evaluation": {
+                "additionalProperties": false,
+                "properties": {
+                    "created_at": {
+                        "title": "Creation Date",
+                        "type": "string"
+                    },
+                    "datasets": {
+                        "items": {
+                            "$ref": "#/$defs/objects/evaluation_dataset"
+                        },
+                        "title": "Datasets",
+                        "type": "array"
+                    },
+                    "evaluation_report": {
+                        "$ref": "#/$defs/objects/evaluation_report",
+                        "title": "Evaluation Report"
+                    },
+                    "publisher": {
+                        "$ref": "#/$defs/objects/publisher",
+                        "title": "Evaluation Publisher"
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "datasets",
+                    "evaluation_report",
+                    "publisher"
+                ],
+                "title": "Referred Evaluation",
+                "type": "object"
+            },
+            "key_value_object": {
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "title": "Name",
+                        "type": "string"
+                    },
+                    "value": {
+                        "title": "Value",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "value"
+                ],
+                "title": "Key Value Object",
+                "type": "object"
+            },
+            "evaluation_data": {
+                "additionalProperties": false,
+                "properties": {
+                    "overall_rating": {
+                        "title": "Overall Rating",
+                        "type": "number"
+                    },
+                    "overall_scores": {
+                        "$ref": "#/$defs/objects/overall_scores",
+                        "title": "Overall Scores"
+                    },
+                    "referred_evaluations": {
+                        "items": {
+                            "$ref": "#/$defs/objects/referred_evaluation"
+                        },
+                        "title": "Referred Evaluations",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "overall_rating",
+                    "overall_scores",
+                    "referred_evaluations"
+                ],
+                "title": "Evaluation Data",
+                "type": "object"
+            },
+            "llamaindex_config": {
+                "additionalProperties": false,
+                "properties": {
+                    "framework_type": {
+                        "const": "llamaindex",
+                        "title": "Framework Type",
+                        "type": "string"
+                    },
+                    "path": {
+                        "title": "Path",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "framework_type",
+                    "path"
+                ],
+                "title": "Llamaindex Config",
+                "type": "object"
+            }
+        },
+        "skills": {
+            "storytelling": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10401,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/storytelling",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Storytelling",
+                "type": "object"
+            },
+            "fact_verification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10703,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/fact_verification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Fact and Claim Verification",
+                "type": "object"
+            },
+            "contextual_comprehension": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/contextual_comprehension",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Contextual Comprehension",
+                "type": "object"
+            },
+            "image_to_3d": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 211,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_to_3d",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image-to-3D",
+                "type": "object"
+            },
+            "depth_estimation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 207,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/depth_estimation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Depth Estimation",
+                "type": "object"
+            },
+            "keypoint_detection": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 205,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/keypoint_detection",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Keypoint Detection",
+                "type": "object"
+            },
+            "style_transfer": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10206,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/style_transfer",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text Style Transfer",
+                "type": "object"
+            },
+            "text_to_speech": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70201,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_to_speech",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text to Speech",
+                "type": "object"
+            },
+            "math_word_problems": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/math_word_problems",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Math Word Problems",
+                "type": "object"
+            },
+            "story_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10207,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/story_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Story Generation",
+                "type": "object"
+            },
+            "personalization": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 106,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/personalization",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Personalisation and Adaptation",
+                "type": "object"
+            },
+            "code_templates": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50203,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/code_templates",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Code Template Filling",
+                "type": "object"
+            },
+            "entity_recognition": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10103,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/entity_recognition",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Entity Recognition",
+                "type": "object"
+            },
+            "information_retrieval_synthesis": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 103,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/information_retrieval_synthesis",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Information Retrieval and Synthesis",
+                "type": "object"
+            },
+            "language_translation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 105,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/language_translation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Language Translation and Multilingual Support",
+                "type": "object"
+            },
+            "generation_of_any": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 603,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/generation_of_any",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Generation of Any",
+                "type": "object"
+            },
+            "text_to_image": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_to_image",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text to Image",
+                "type": "object"
+            },
+            "audio_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 301,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/audio_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Audio Classification",
+                "type": "object"
+            },
+            "text_to_video": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70103,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_to_video",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text to Video",
+                "type": "object"
+            },
+            "tabular_regression": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 402,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/tabular_regression",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Tabular Regression",
+                "type": "object"
+            },
+            "translation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10501,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/translation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Translation",
+                "type": "object"
+            },
+            "speech_recognition": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70202,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/speech_recognition",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Automatic Speech Recognition",
+                "type": "object"
+            },
+            "document_retrieval": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 60103,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/document_retrieval",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Document Retrieval",
+                "type": "object"
+            },
+            "code_to_docstrings": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50202,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/code_to_docstrings",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Code to Docstrings",
+                "type": "object"
+            },
+            "tabular_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 401,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/tabular_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Tabular Classification",
+                "type": "object"
+            },
+            "geometry": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50103,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/geometry",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Geometry",
+                "type": "object"
+            },
+            "bias_mitigation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10801,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/bias_mitigation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Bias Mitigation",
+                "type": "object"
+            },
+            "feature_extraction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 110,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/feature_extraction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Feature Extraction",
+                "type": "object"
+            },
+            "named_entity_recognition": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 11101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/named_entity_recognition",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Named Entity Recognition",
+                "type": "object"
+            },
+            "object_detection": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 204,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/object_detection",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Object Detection",
+                "type": "object"
+            },
+            "image_feature_extraction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 208,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_feature_extraction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image Feature Extraction",
+                "type": "object"
+            },
+            "retrieval_of_information_search": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 60102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/retrieval_of_information_search",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Search",
+                "type": "object"
+            },
+            "text_completion": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10201,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_completion",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text Completion",
+                "type": "object"
+            },
+            "style_adjustment": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10602,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/style_adjustment",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Tone and Style Adjustment",
+                "type": "object"
+            },
+            "information_retrieval_synthesis_search": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10306,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/information_retrieval_synthesis_search",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Search",
+                "type": "object"
+            },
+            "fact_extraction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10301,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/fact_extraction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Fact Extraction",
+                "type": "object"
+            },
+            "multilingual_understanding": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10502,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/multilingual_understanding",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Multilingual Understanding",
+                "type": "object"
+            },
+            "image_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 203,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image Classification",
+                "type": "object"
+            },
+            "knowledge_synthesis": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10303,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/knowledge_synthesis",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Knowledge Synthesis",
+                "type": "object"
+            },
+            "semantic_understanding": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/semantic_understanding",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Semantic Understanding",
+                "type": "object"
+            },
+            "pure_math_operations": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/pure_math_operations",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Pure Mathematical Operations",
+                "type": "object"
+            },
+            "visual_qa": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70105,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/visual_qa",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Visual Question Answering",
+                "type": "object"
+            },
+            "ethical_interaction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 108,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/ethical_interaction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Ethical and Safe Interaction",
+                "type": "object"
+            },
+            "audio_to_audio": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 302,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/audio_to_audio",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Audio to Audio",
+                "type": "object"
+            },
+            "paraphrasing": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10203,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/paraphrasing",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text Paraphrasing",
+                "type": "object"
+            },
+            "token_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 111,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/token_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Token Classification",
+                "type": "object"
+            },
+            "theorem_proving": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50104,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/theorem_proving",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Automated Theorem Proving",
+                "type": "object"
+            },
+            "image_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 206,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image Generation",
+                "type": "object"
+            },
+            "question_answering": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10302,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/question_answering",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Question Answering",
+                "type": "object"
+            },
+            "audio_processing": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 702,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/audio_processing",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Audio Processing",
+                "type": "object"
+            },
+            "natural_language_inference": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10903,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/natural_language_inference",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Natural Language Inference",
+                "type": "object"
+            },
+            "model_feature_extraction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 11001,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/model_feature_extraction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Model Feature Extraction",
+                "type": "object"
+            },
+            "image_segmentation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 201,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_segmentation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image Segmentation",
+                "type": "object"
+            },
+            "dialogue_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10204,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/dialogue_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Dialogue Generation",
+                "type": "object"
+            },
+            "any_to_any": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 703,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/any_to_any",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Any to Any Transformation",
+                "type": "object"
+            },
+            "video_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 202,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/video_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Video Classification",
+                "type": "object"
+            },
+            "analytical_reasoning": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 107,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/analytical_reasoning",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Analytical and Logical Reasoning",
+                "type": "object"
+            },
+            "coding_skills": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 502,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/coding_skills",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Coding Skills",
+                "type": "object"
+            },
+            "content_moderation_skill": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10802,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/content_moderation_skill",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Content Moderation",
+                "type": "object"
+            },
+            "text_to_3d": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70104,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_to_3d",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text to 3D",
+                "type": "object"
+            },
+            "natural_language_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/natural_language_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Natural Language Generation",
+                "type": "object"
+            },
+            "image_processing": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 701,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_processing",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image Processing",
+                "type": "object"
+            },
+            "mathematical_reasoning": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 501,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/mathematical_reasoning",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Mathematical Reasoning",
+                "type": "object"
+            },
+            "summarization": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10202,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/summarization",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text Summarization",
+                "type": "object"
+            },
+            "mask_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 209,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/mask_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Mask Generation",
+                "type": "object"
+            },
+            "image_to_text": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 70101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_to_text",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image to Text",
+                "type": "object"
+            },
+            "inference_deduction": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10701,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/inference_deduction",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Inference and Deduction",
+                "type": "object"
+            },
+            "pos_tagging": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 11102,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/pos_tagging",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Part-of-Speech Tagging",
+                "type": "object"
+            },
+            "sentence_similarity": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10304,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/sentence_similarity",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Sentence Similarity",
+                "type": "object"
+            },
+            "creative_content": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 104,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/creative_content",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Creative Content Generation",
+                "type": "object"
+            },
+            "document_or_database_question_answering": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 602,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/document_or_database_question_answering",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Document or Database Question Answering",
+                "type": "object"
+            },
+            "retrieval_of_information": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 601,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/retrieval_of_information",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Retrieval of information",
+                "type": "object"
+            },
+            "problem_solving": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10702,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/problem_solving",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Problem Solving",
+                "type": "object"
+            },
+            "code_optimization": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50204,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/code_optimization",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Code Refactoring and Optimization",
+                "type": "object"
+            },
+            "natural_language_understanding": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/natural_language_understanding",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Natural Language Understanding",
+                "type": "object"
+            },
+            "sentiment_analysis": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10902,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/sentiment_analysis",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Sentiment Analysis",
+                "type": "object"
+            },
+            "text_classification": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 109,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_classification",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text Classification",
+                "type": "object"
+            },
+            "topic_labeling": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10901,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/topic_labeling",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Topic Labelling and Tagging",
+                "type": "object"
+            },
+            "poetry_writing": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10402,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/poetry_writing",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Poetry and Creative Writing",
+                "type": "object"
+            },
+            "indexing": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 60101,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/indexing",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Indexing",
+                "type": "object"
+            },
+            "image_to_image": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 210,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/image_to_image",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Image-to-Image",
+                "type": "object"
+            },
+            "text_to_code": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 50201,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/text_to_code",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Text to Code",
+                "type": "object"
+            },
+            "document_passage_retrieval": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10305,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/document_passage_retrieval",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Document and Passage Retrieval",
+                "type": "object"
+            },
+            "question_generation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10205,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/question_generation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "Question Generation",
+                "type": "object"
+            },
+            "user_adaptation": {
+                "additionalProperties": false,
+                "anyOf": [
+                    {
+                        "required": [
+                            "name"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "id"
+                        ]
+                    }
+                ],
+                "properties": {
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "title": "Annotations",
+                        "type": "object"
+                    },
+                    "id": {
+                        "const": 10601,
+                        "title": "ID",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "const": "schema.oasf.agntcy.org/skills/user_adaptation",
+                        "title": "Name",
+                        "type": "string"
+                    }
+                },
+                "title": "User Adaptation",
+                "type": "object"
+            }
+        }
+    },
+    "$id": "https://schema.oasf.outshift.com/schema/objects/record",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+        "annotations": {
+            "additionalProperties": {
+                "type": "string"
+            },
+            "title": "Annotations",
+            "type": "object"
+        },
+        "authors": {
+            "items": {
+                "type": "string"
+            },
+            "title": "Authors",
+            "type": "array"
+        },
+        "created_at": {
+            "title": "Creation Time",
+            "type": "string"
+        },
+        "description": {
+            "title": "Description",
+            "type": "string"
+        },
+        "extensions": {
+            "items": {
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/features/prompt"
+                    },
+                    {
+                        "$ref": "#/$defs/features/model"
+                    },
+                    {
+                        "$ref": "#/$defs/features/a2a"
+                    },
+                    {
+                        "$ref": "#/$defs/features/manifest"
+                    },
+                    {
+                        "$ref": "#/$defs/features/mcp"
+                    },
+                    {
+                        "$ref": "#/$defs/features/observability"
+                    },
+                    {
+                        "$ref": "#/$defs/features/evaluation"
+                    },
+                    {
+                        "not": {
+                            "properties": {
+                                "name": {
+                                    "enum": [
+                                        "schema.oasf.agntcy.org/features/prompt",
+                                        "schema.oasf.agntcy.org/features/model",
+                                        "schema.oasf.agntcy.org/features/a2a",
+                                        "schema.oasf.agntcy.org/features/manifest",
+                                        "schema.oasf.agntcy.org/features/mcp",
+                                        "schema.oasf.agntcy.org/features/observability",
+                                        "schema.oasf.agntcy.org/features/evaluation"
+                                    ]
+                                }
+                            }
+                        },
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "title": "Extensions",
+            "type": "array"
+        },
+        "locators": {
+            "items": {
+                "$ref": "#/$defs/objects/locator"
+            },
+            "title": "Locators",
+            "type": "array"
+        },
+        "name": {
+            "title": "Name",
+            "type": "string"
+        },
+        "previous_record_cid": {
+            "title": "Previous Record CID",
+            "type": "string"
+        },
+        "schema_version": {
+            "title": "Schema Version",
+            "type": "string"
+        },
+        "signature": {
+            "$ref": "#/$defs/objects/record_signature",
+            "title": "Signature"
+        },
+        "skills": {
+            "items": {
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/skills/mask_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/keypoint_detection"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_to_3d"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_feature_extraction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_classification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_segmentation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/video_classification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/object_detection"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/depth_estimation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_to_image"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/mathematical_reasoning"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/theorem_proving"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/geometry"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/pure_math_operations"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/math_word_problems"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/coding_skills"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/code_to_docstrings"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_to_code"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/code_optimization"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/code_templates"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/generation_of_any"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/retrieval_of_information"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/indexing"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/retrieval_of_information_search"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/document_retrieval"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/document_or_database_question_answering"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/ethical_interaction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/bias_mitigation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/content_moderation_skill"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/analytical_reasoning"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/problem_solving"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/fact_verification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/inference_deduction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/natural_language_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/style_transfer"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/dialogue_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/paraphrasing"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_completion"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/story_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/summarization"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/question_generation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/creative_content"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/poetry_writing"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/storytelling"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/personalization"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/style_adjustment"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/user_adaptation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/natural_language_understanding"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/entity_recognition"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/semantic_understanding"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/contextual_comprehension"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/token_classification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/named_entity_recognition"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/pos_tagging"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/feature_extraction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/model_feature_extraction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_classification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/sentiment_analysis"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/topic_labeling"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/natural_language_inference"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/language_translation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/translation"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/multilingual_understanding"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/information_retrieval_synthesis"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/document_passage_retrieval"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/knowledge_synthesis"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/question_answering"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/sentence_similarity"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/information_retrieval_synthesis_search"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/fact_extraction"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/audio_classification"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/audio_to_audio"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/any_to_any"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_processing"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_to_video"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_to_3d"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_to_image"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/image_to_text"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/visual_qa"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/audio_processing"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/speech_recognition"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/text_to_speech"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/tabular_regression"
+                    },
+                    {
+                        "$ref": "#/$defs/skills/tabular_classification"
+                    }
+                ]
+            },
+            "title": "Skills",
+            "type": "array"
+        },
+        "version": {
+            "title": "Version",
+            "type": "string"
+        }
+    },
+    "required": [
+        "authors",
+        "created_at",
+        "description",
+        "locators",
+        "name",
+        "schema_version",
+        "signature",
+        "skills",
+        "version"
+    ],
+    "title": "Record",
+    "type": "object"
+}
