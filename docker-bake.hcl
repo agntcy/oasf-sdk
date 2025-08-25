@@ -4,6 +4,7 @@
 group "default" {
   targets = [
     "translation",
+    "validation",
   ]
 }
 
@@ -23,6 +24,14 @@ target "translation" {
   inherits = [
     "_common",
   ]
-  tags = ["${target.translation.name}"]
+  tags = ["oasf-sdk-translation"]
 }
 
+target "validation" {
+  context = "."
+  dockerfile = "./validation/Dockerfile"
+  inherits = [
+    "_common",
+  ]
+  tags = ["oasf-sdk-validation"]
+}

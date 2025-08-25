@@ -1,10 +1,6 @@
-# Usage
+# Translation SDK
 
-This document defines a basic overview of main OASF SDK usage scenarios.
-
-## Translation SDK
-
-### Prerequisites
+## Prerequisites
 
 - Translation SDK binary, distributed via [GitHub Releases](https://github.com/agntcy/oasf-sdk/releases)
 - Translation SDK docker images, distributed via
@@ -99,7 +95,7 @@ Now let's start the translation SDK server as a docker container, which will lis
 docker run -p 31234:31234 ghcr.io/agntcy/oasf-sdk:latest
 ```
 
-### VSCode MCP Config
+## VSCode MCP Config
 
 Create a VSCode MCP Config from the OASF data model using the `RecordToVSCodeCopilot` RPC method.
 You can pipe the output to a file wherever you want to save the MCP config.
@@ -147,7 +143,7 @@ Output:
 }
 ```
 
-### A2A Card extraction
+## A2A Card extraction
 
 To extract A2A card from the OASF data model, use the `RecordToA2ACard` RPC method.
 

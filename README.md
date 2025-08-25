@@ -4,7 +4,9 @@ The OASF SDK contains SDKs related to the [OASF](https://github.com/agntcy/oasf)
 
 ## Usage
 
-Check the [USAGE](USAGE.md) file for a full walkthrough of all the OASF SDK features.
+Check out the usage documentation for each SDK:
+- [Translation SDK](translation/USAGE.md)
+- [Validation SDK](validation/USAGE.md)
 
 ## Copyright Notice
 
