@@ -29,8 +29,14 @@ jobs:
 
       - name: Build Docker Images with commit tag
         run: |
-          docker buildx bake --set "validation.tags=oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}" validation --load
-          docker buildx bake --set "translation.tags=oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}" translation --load
+          docker buildx bake \
+            --set "validation.tags=oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}" \
+            --set "validation.platforms=linux/amd64" \
+            validation --load
+          docker buildx bake \
+            --set "translation.tags=oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}" \
+            --set "translation.platforms=linux/amd64" \
+            translation --load
 
       - name: Start test containers
         run: |
@@ -62,11 +68,6 @@ jobs:
           go-version: '1.24'
 
       - name: Run E2E Tests
-        env:
-          VALIDATION_SERVICE_HOST: localhost
-          VALIDATION_SERVICE_PORT: 8081
-          TRANSLATION_SERVICE_HOST: localhost  
-          TRANSLATION_SERVICE_PORT: 8082
         run: |
           task test:e2e
 
