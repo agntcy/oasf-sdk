@@ -30,13 +30,11 @@ jobs:
       - name: Build Docker Images with commit tag
         run: |
           docker buildx bake \
-            --set "validation.tags=oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}" \
-            --set "validation.platforms=linux/amd64" \
-            validation --load
+            --set "validation-e2e.tags=oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}" \
+            validation-e2e --load
           docker buildx bake \
-            --set "translation.tags=oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}" \
-            --set "translation.platforms=linux/amd64" \
-            translation --load
+            --set "translation-e2e.tags=oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}" \
+            translation-e2e --load
 
       - name: Start test containers
         run: |

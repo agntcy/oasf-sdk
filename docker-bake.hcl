@@ -18,6 +18,15 @@ target "_common" {
   ]
 }
 
+target "_e2e" {
+  output = [
+    "type=image",
+  ]
+  platforms = [
+    "linux/amd64",
+  ]
+}
+
 target "translation" {
   context = "."
   dockerfile = "./translation/Dockerfile"
@@ -34,4 +43,22 @@ target "validation" {
     "_common",
   ]
   tags = ["oasf-sdk-validation"]
+}
+
+target "validation-e2e" {
+  context = "."
+  dockerfile = "./validation/Dockerfile"
+  inherits = [
+    "_e2e",
+  ]
+  tags = ["oasf-sdk-validation"]
+}
+
+target "translation-e2e" {
+  context = "."
+  dockerfile = "./translation/Dockerfile"
+  inherits = [
+    "_e2e",
+  ]
+  tags = ["oasf-sdk-translation"]
 }
