@@ -69,12 +69,6 @@ jobs:
         run: |
           task test:e2e
 
-      - name: Stop test containers
-        if: always()
-        run: |
-          docker stop validation-e2e translation-e2e || true
-          docker rm validation-e2e translation-e2e || true
-
       - name: Show container logs on failure
         if: failure()
         run: |
