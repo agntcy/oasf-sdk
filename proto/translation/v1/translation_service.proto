@@ -13,8 +13,14 @@ service TranslationService {
   // RecordToVSCodeCopilot generates a VSCodeCopilot config from a Record.
   rpc RecordToVSCodeCopilot(RecordToVSCodeCopilotRequest) returns (RecordToVSCodeCopilotResponse);
 
+  // VSCodeCopilotToRecord generates a Record from a VSCodeCopilot config.
+  rpc VSCodeCopilotToRecord(VSCodeCopilotToRecordRequest) returns (VSCodeCopilotToRecordResponse);
+
   // RecordToA2A generates an A2A card from a Record.
   rpc RecordToA2A(RecordToA2ARequest) returns (RecordToA2AResponse);
+
+  // A2AToRecord generates a Record from an A2A card.
+  rpc A2AToRecord(A2AToRecordRequest) returns (A2AToRecordResponse);
 }
 
 message RecordToVSCodeCopilotRequest {
@@ -27,6 +33,16 @@ message RecordToVSCodeCopilotResponse {
   google.protobuf.Struct data = 1;
 }
 
+message VSCodeCopilotToRecordRequest {
+  // The VSCodeCopilot config to be converted to Record object.
+  google.protobuf.Struct data = 1;
+}
+
+message VSCodeCopilotToRecordResponse {
+  // The generated Record object in a structured format.
+  objects.v3.Record record = 1;
+}
+
 message RecordToA2ARequest {
   // The Record object to be converted into an A2A card.
   objects.v3.Record record = 1;
@@ -35,4 +51,14 @@ message RecordToA2ARequest {
 message RecordToA2AResponse {
   // The generated A2A card data in a structured format.
   google.protobuf.Struct data = 1;
+}
+
+message A2AToRecordRequest {
+  // The A2A config to be converted to Record object.
+  google.protobuf.Struct data = 1;
+}
+
+message A2AToRecordResponse {
+  // The generated Record object in a structured format.
+  objects.v3.Record record = 1;
 }
