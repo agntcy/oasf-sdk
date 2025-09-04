@@ -119,9 +119,24 @@ func (v ValidationService) validateWithJSONSchema(record *objectsv3.Record, sche
 		return nil, fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
 
-	var recordData interface{}
+	var recordData map[string]interface{}
 	if err := json.Unmarshal(jsonBytes, &recordData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	// Convert size fields from strings to integers for validation
+	if locators, ok := recordData["locators"].([]any); ok {
+		for _, locatorIntf := range locators {
+			if locator, ok := locatorIntf.(map[string]any); ok {
+				if sizeStr, ok := locator["size"].(string); ok {
+					// Try to convert string to integer
+					var size int64
+					if _, err := fmt.Sscanf(sizeStr, "%d", &size); err == nil {
+						locator["size"] = size
+					}
+				}
+			}
+		}
 	}
 
 	documentLoader := gojsonschema.NewGoLoader(recordData)
