@@ -9,7 +9,14 @@ import "core/v1/models.proto";
 
 // EncodingService provides methods for encoding and decoding records.
 // Used for data serialization and deserialization across the app-layer.
+//
+// buf:lint:ignore RPC_REQUEST_STANDARD_NAME
+// buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+// buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 service EncodingService {
+    // EncodeRecord encodes a DecodedRecord into an EncodedRecord.
     rpc EncodeRecord(DecodedRecord) returns (EncodedRecord);
+
+    // DecodeRecord decodes an EncodedRecord into a DecodedRecord.
     rpc DecodeRecord(EncodedRecord) returns (DecodedRecord);
 }
