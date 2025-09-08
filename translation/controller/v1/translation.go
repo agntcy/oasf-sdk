@@ -38,7 +38,7 @@ func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1
 		return nil, fmt.Errorf("failed to generate GHCopilot config from record: %w", err)
 	}
 
-	data, err := utils.ObjectToProto(result)
+	data, err := utils.ObjectToProto(map[string]any{"mcpConfig": result})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
 	}
@@ -59,7 +59,7 @@ func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.Recor
 		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
 	}
 
-	data, err := utils.ObjectToProto(result)
+	data, err := utils.ObjectToProto(map[string]any{"a2aCard": result})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
 	}

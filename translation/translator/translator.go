@@ -24,24 +24,14 @@ func New() *Translator {
 	return &Translator{}
 }
 
-// Validate checks if the provided record adheres to expected structure and content.
-func (_ *Translator) Validate(req *corev1.DecodedRecord) error {
-	// We can only support v1alpha1 records for now.
-	if req.GetV1Alpha1() == nil {
-		return errors.New("record is not of version v1alpha1")
-	}
-
-	return nil
-}
-
 // RecordToGHCopilot translates a DecodedRecord into a GHCopilotMCPConfig structure.
 func (t *Translator) RecordToGHCopilot(req *corev1.DecodedRecord) (*GHCopilotMCPConfig, error) {
 	// Validate
-	if err := t.Validate(req); err != nil {
-		return nil, fmt.Errorf("record validation failed: %w", err)
+	if req.GetV1Alpha1() == nil {
+		return nil, fmt.Errorf("record version v1alpha1 is nil")
 	}
 
-	// Extract versioned record
+	// Extract record
 	record := req.GetV1Alpha1()
 
 	// Find MCP module
@@ -125,8 +115,8 @@ func (t *Translator) RecordToGHCopilot(req *corev1.DecodedRecord) (*GHCopilotMCP
 // RecordToA2A translates a DecodedRecord into an A2ACard structure.
 func (t *Translator) RecordToA2A(req *corev1.DecodedRecord) (*A2ACard, error) {
 	// Validate
-	if err := t.Validate(req); err != nil {
-		return nil, fmt.Errorf("record validation failed: %w", err)
+	if req.GetV1Alpha1() == nil {
+		return nil, fmt.Errorf("record version v1alpha1 is nil")
 	}
 
 	// Extract versioned record

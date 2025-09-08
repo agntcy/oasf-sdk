@@ -10,9 +10,9 @@ import (
 	"time"
 
 	corev1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/core/v1"
+	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
+	"github.com/agntcy/oasf-sdk/core/converter"
 	"github.com/xeipuuv/gojsonschema"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 type Validator struct {
@@ -34,13 +34,10 @@ func New() (*Validator, error) {
 	}, nil
 }
 
-func (v *Validator) ValidateRecord(req *corev1.DecodedRecord, schemaURL string) (bool, []string, error) {
-	if req.GetRecord() == nil {
-		return false, nil, fmt.Errorf("record is nil")
-	}
-
-	if schemaURL != "" {
-		schemaErrors, err := v.validateWithSchemaURL(req, schemaURL)
+func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (bool, []string, error) {
+	// Validate against schema URL if provided
+	if req.GetSchemaUrl() != "" {
+		schemaErrors, err := v.validateWithSchemaURL(req.GetRecord(), req.GetSchemaUrl())
 		if err != nil {
 			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 		}
@@ -48,7 +45,13 @@ func (v *Validator) ValidateRecord(req *corev1.DecodedRecord, schemaURL string) 
 		return len(schemaErrors) == 0, schemaErrors, nil
 	}
 
-	schemaVersion := getSchemaVersion(req)
+	// Get schema version
+	schemaVersion, err := converter.GetSchemaVersion(req.GetRecord())
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to get schema version: %w", err)
+	}
+
+	// Find schema for given version
 	schema, schemaExists := v.schemas[schemaVersion]
 	if !schemaExists {
 		var availableVersions []string
@@ -59,7 +62,8 @@ func (v *Validator) ValidateRecord(req *corev1.DecodedRecord, schemaURL string) 
 		return false, nil, fmt.Errorf("no schema found for version %s. Available versions: %v", schemaVersion, availableVersions)
 	}
 
-	schemaErrors, err := v.validateWithJSONSchema(req, schema)
+	// Validate against embedded schema
+	schemaErrors, err := v.validateWithJSONSchema(req.GetRecord(), schema)
 	if err != nil {
 		return false, nil, fmt.Errorf("JSON schema validation failed: %w", err)
 	}
@@ -67,41 +71,15 @@ func (v *Validator) ValidateRecord(req *corev1.DecodedRecord, schemaURL string) 
 	return len(schemaErrors) == 0, schemaErrors, nil
 }
 
-func (v *Validator) validateWithJSONSchema(req *corev1.DecodedRecord, schema *gojsonschema.Schema) ([]string, error) {
-	marshaler := &protojson.MarshalOptions{
-		UseProtoNames: true,
-	}
-	jsonBytes, err := marshaler.Marshal(getRecordObject(req))
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal record to JSON: %w", err)
-	}
-
-	var recordData map[string]interface{}
-	if err := json.Unmarshal(jsonBytes, &recordData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
-	}
-
-	// Convert size fields from strings to integers for validation
-	if locators, ok := recordData["locators"].([]any); ok {
-		for _, locatorIntf := range locators {
-			if locator, ok := locatorIntf.(map[string]any); ok {
-				if sizeStr, ok := locator["size"].(string); ok {
-					// Try to convert string to integer
-					var size int64
-					if _, err := fmt.Sscanf(sizeStr, "%d", &size); err == nil {
-						locator["size"] = size
-					}
-				}
-			}
-		}
-	}
-
-	documentLoader := gojsonschema.NewGoLoader(recordData)
+func (v *Validator) validateWithJSONSchema(encoded *corev1.EncodedRecord, schema *gojsonschema.Schema) ([]string, error) {
+	// Validate JSON against schema
+	documentLoader := gojsonschema.NewGoLoader(encoded.GetRecord())
 	result, err := schema.Validate(documentLoader)
 	if err != nil {
 		return nil, fmt.Errorf("schema validation error: %w", err)
 	}
 
+	// Collect validation errors
 	var errors []string
 	if !result.Valid() {
 		for _, desc := range result.Errors() {
@@ -112,7 +90,7 @@ func (v *Validator) validateWithJSONSchema(req *corev1.DecodedRecord, schema *go
 	return errors, nil
 }
 
-func (v *Validator) validateWithSchemaURL(req *corev1.DecodedRecord, schemaURL string) ([]string, error) {
+func (v *Validator) validateWithSchemaURL(encoded *corev1.EncodedRecord, schemaURL string) ([]string, error) {
 	resp, err := v.httpClient.Get(schemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: %w", schemaURL, err)
@@ -124,7 +102,7 @@ func (v *Validator) validateWithSchemaURL(req *corev1.DecodedRecord, schemaURL s
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	var schemaData interface{}
+	var schemaData any
 	if err := decoder.Decode(&schemaData); err != nil {
 		return nil, fmt.Errorf("failed to decode schema JSON from URL %s: %w", schemaURL, err)
 	}
@@ -140,23 +118,5 @@ func (v *Validator) validateWithSchemaURL(req *corev1.DecodedRecord, schemaURL s
 		return nil, fmt.Errorf("failed to compile schema from URL %s: %w", schemaURL, err)
 	}
 
-	return v.validateWithJSONSchema(req, schema)
-}
-
-func getSchemaVersion(req *corev1.DecodedRecord) string {
-	switch req.GetRecord().(type) {
-	case *corev1.DecodedRecord_V1Alpha1:
-		return req.GetV1Alpha1().SchemaVersion
-	default:
-		return ""
-	}
-}
-
-func getRecordObject(req *corev1.DecodedRecord) proto.Message {
-	switch req.GetRecord().(type) {
-	case *corev1.DecodedRecord_V1Alpha1:
-		return req.GetV1Alpha1()
-	default:
-		return nil
-	}
+	return v.validateWithJSONSchema(encoded, schema)
 }

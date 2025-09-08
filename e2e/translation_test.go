@@ -44,13 +44,16 @@ var _ = Describe("Translation Service E2E", func() {
 
 			mcpData := resp.Data.AsMap()
 			Expect(mcpData).NotTo(BeEmpty(), "MCP config data should not be empty")
-			Expect(mcpData).To(HaveKey("servers"), "Should contain servers config")
-			Expect(mcpData).To(HaveKey("inputs"), "Should contain inputs config")
+			mcpConfig := mcpData["mcpConfig"].(map[string]any)
+			Expect(mcpConfig).NotTo(BeNil(), "MCP config should be present")
 
-			servers, ok := mcpData["servers"].(map[string]interface{})
+			Expect(mcpConfig).To(HaveKey("servers"), "Should contain servers config")
+			Expect(mcpConfig).To(HaveKey("inputs"), "Should contain inputs config")
+
+			servers, ok := mcpConfig["servers"].(map[string]any)
 			Expect(ok).To(BeTrue(), "servers should be a map")
 
-			github, ok := servers["github"].(map[string]interface{})
+			github, ok := servers["github"].(map[string]any)
 			Expect(ok).To(BeTrue(), "github should be a map")
 			Expect(github).To(HaveKey("command"), "github should have command")
 			Expect(github["command"]).To(Equal("docker"), "command should be docker")
@@ -75,8 +78,12 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail")
 			Expect(resp.Data).NotTo(BeNil(), "Expected A2A card data in response")
 
-			a2aCard := resp.Data.AsMap()
-			Expect(a2aCard).NotTo(BeEmpty(), "A2A card data should not be empty")
+			a2aData := resp.Data.AsMap()
+			Expect(a2aData).NotTo(BeEmpty(), "A2A card data should not be empty")
+
+			a2aCard, ok := a2aData["a2aCard"].(map[string]interface{})
+			Expect(ok).To(BeTrue(), "a2aCard should be a map")
+			Expect(a2aCard).NotTo(BeNil(), "A2A card should be present")
 
 			Expect(a2aCard).To(HaveKey("capabilities"), "A2A card should have capabilities")
 			capabilities, ok := a2aCard["capabilities"].(map[string]interface{})
