@@ -1,5 +1,2 @@
 # Ignore binary folder
 bin/
-
-# Ignore buf cache
-proto/*.lock
