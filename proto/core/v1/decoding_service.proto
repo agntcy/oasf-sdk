@@ -14,9 +14,9 @@ import "core/v1/models.proto";
 // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
 // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
 service DecodingService {
-    // EncodeRecord encodes a DecodedRecord into an EncodedRecord.
-    rpc EncodeRecord(DecodedRecord) returns (EncodedRecord);
+  // EncodeRecord encodes a DecodedRecord into an EncodedRecord.
+  rpc EncodeRecord(DecodedRecord) returns (EncodedRecord);
 
-    // DecodeRecord decodes an EncodedRecord into a DecodedRecord.
-    rpc DecodeRecord(EncodedRecord) returns (DecodedRecord);
+  // DecodeRecord decodes an EncodedRecord into a DecodedRecord.
+  rpc DecodeRecord(EncodedRecord) returns (DecodedRecord);
 }

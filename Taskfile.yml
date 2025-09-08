@@ -31,6 +31,7 @@ tasks:
     dir: ./proto
     cmds:
       - '{{.BUFBUILD_BIN}} dep update'
+      - '{{.BUFBUILD_BIN}} format --diff --exit-code'
       - '{{.BUFBUILD_BIN}} lint'
 
   test:e2e:

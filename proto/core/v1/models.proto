@@ -14,21 +14,21 @@ import "types/v1alpha1/record.proto";
 // The record is represented as a `google.protobuf.Struct` to allow
 // for flexible and dynamic schemas.
 message EncodedRecord {
-    // Encoded representation of the record.
-    //
-    // This field is populated by converting a given
-    // record protobuf schema to a `google.protobuf.Struct`.
-    google.protobuf.Struct record = 1;
+  // Encoded representation of the record.
+  //
+  // This field is populated by converting a given
+  // record protobuf schema to a `google.protobuf.Struct`.
+  google.protobuf.Struct record = 1;
 }
 
-// DecdodedRecord represents a record in its decoded form.
+// DecodedRecord represents a record in its decoded form.
 // This is typically used for in-memory operations.
 //
 // The record is represented using a oneof field to support
 // multiple versions or types of record schemas.
 message DecodedRecord {
-    // Decoded representation of the record.
-    oneof record {
-        types.v1alpha1.Record v1alpha1 = 1;
-    }
+  // Decoded representation of the record.
+  oneof record {
+    types.v1alpha1.Record v1alpha1 = 1;
+  }
 }
