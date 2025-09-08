@@ -48,8 +48,6 @@ tasks:
     desc: Run end-to-end tests
     dir: e2e
     cmds:
-      - task: test:e2e:setup
-      - defer: { task: test:e2e:destroy }
       - go mod tidy
       - go test ./... -v
 
