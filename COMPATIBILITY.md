@@ -8,6 +8,6 @@ It answeres the question: *what OASF versions are supported in a given OASF-SDK 
 
 | OASF-SDK | OASF v1alpha1 |
 | --- | --- |
-| DecodingService | ✅ |
+| ConversionService | ✅ |
 | TranslationService | ✅ |
 | ValidationService | ✅ |
