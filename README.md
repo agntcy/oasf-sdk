@@ -8,6 +8,10 @@ Check out the usage documentation for each SDK:
 - [Translation SDK](translation/USAGE.md)
 - [Validation SDK](validation/USAGE.md)
 
+## Proto Bindings
+
+Check out the proto bindings available under [buf.build/agntcy/oasf-sdk](https://buf.build/agntcy/oasf-sdk).
+
 ## Copyright Notice
 
 [Copyright Notice and License](./LICENSE.md)

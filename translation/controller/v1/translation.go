@@ -10,39 +10,69 @@ import (
 
 	translationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
-	"github.com/agntcy/oasf-sdk/translation/service"
+	"github.com/agntcy/oasf-sdk/core/converter"
+	"github.com/agntcy/oasf-sdk/core/utils"
+	"github.com/agntcy/oasf-sdk/translation/translator"
 )
 
 type translationCtrl struct {
-	translationv1grpc.UnimplementedTranslationServiceServer
-	translationService *service.TranslationService
+	translator *translator.Translator
 }
 
 func NewRoutingController() translationv1grpc.TranslationServiceServer {
 	return &translationCtrl{
-		UnimplementedTranslationServiceServer: translationv1grpc.UnimplementedTranslationServiceServer{},
-		translationService:                    service.NewTranslationService(),
+		translator: translator.New(),
 	}
 }
 
-func (t translationCtrl) RecordToVSCodeCopilot(_ context.Context, req *translationv1.RecordToVSCodeCopilotRequest) (*translationv1.RecordToVSCodeCopilotResponse, error) {
+func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1.RecordToGHCopilotRequest) (*translationv1.RecordToGHCopilotResponse, error) {
 	slog.Info("Received Publish request", "request", req)
 
-	data, err := t.translationService.RecordToVSCodeCopilot(req)
+	record, err := converter.Decode(req.Record)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate VSCodeCopilot config from record: %w", err)
+		return nil, fmt.Errorf("failed to decode record: %w", err)
 	}
 
-	return &translationv1.RecordToVSCodeCopilotResponse{Data: data}, nil
+	result, err := t.translator.RecordToGHCopilot(record)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate GHCopilot config from record: %w", err)
+	}
+
+	data, err := utils.ObjectToProto(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
+	}
+
+	return &translationv1.RecordToGHCopilotResponse{Data: data}, nil
 }
 
 func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
 	slog.Info("Received RecordToA2A request", "request", req)
 
-	data, err := t.translationService.RecordToA2A(req)
+	record, err := converter.Decode(req.Record)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode record: %w", err)
+	}
+
+	result, err := t.translator.RecordToA2A(record)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
 	}
 
+	data, err := utils.ObjectToProto(result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
+	}
+
 	return &translationv1.RecordToA2AResponse{Data: data}, nil
+}
+
+// GHCopilotToRecord implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) GHCopilotToRecord(context.Context, *translationv1.GHCopilotToRecordRequest) (*translationv1.GHCopilotToRecordResponse, error) {
+	panic("unimplemented")
+}
+
+// A2AToRecord implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) A2AToRecord(context.Context, *translationv1.A2AToRecordRequest) (*translationv1.A2AToRecordResponse, error) {
+	panic("unimplemented")
 }

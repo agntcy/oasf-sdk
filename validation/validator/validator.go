@@ -1,38 +1,32 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package service
+package validator
 
 import (
-	"embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"time"
 
-	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-	objectsv3 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/objects/v3"
+	corev1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/core/v1"
 	"github.com/xeipuuv/gojsonschema"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
-//go:embed schemas/*.json
-var embeddedSchemas embed.FS
-
-type ValidationService struct {
+type Validator struct {
 	schemas    map[string]*gojsonschema.Schema
 	httpClient *http.Client
 }
 
-func NewValidationService() (*ValidationService, error) {
+func New() (*Validator, error) {
 	schemas, err := loadEmbeddedSchemas()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load embedded schemas: %w", err)
 	}
 
-	return &ValidationService{
+	return &Validator{
 		schemas: schemas,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
@@ -40,13 +34,13 @@ func NewValidationService() (*ValidationService, error) {
 	}, nil
 }
 
-func (v ValidationService) ValidateRecord(req *validationv1.ValidateRecordRequest) (bool, []string, error) {
-	if req.Record == nil {
-		return false, []string{"record cannot be nil"}, nil
+func (v *Validator) ValidateRecord(req *corev1.DecodedRecord, schemaURL string) (bool, []string, error) {
+	if req.GetRecord() == nil {
+		return false, nil, fmt.Errorf("record is nil")
 	}
 
-	if req.SchemaUrl != "" {
-		schemaErrors, err := v.validateWithSchemaURL(req.Record, req.SchemaUrl)
+	if schemaURL != "" {
+		schemaErrors, err := v.validateWithSchemaURL(req, schemaURL)
 		if err != nil {
 			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 		}
@@ -54,17 +48,18 @@ func (v ValidationService) ValidateRecord(req *validationv1.ValidateRecordReques
 		return len(schemaErrors) == 0, schemaErrors, nil
 	}
 
-	schema, schemaExists := v.schemas[req.Record.SchemaVersion]
+	schemaVersion := getSchemaVersion(req)
+	schema, schemaExists := v.schemas[schemaVersion]
 	if !schemaExists {
 		var availableVersions []string
 		for version := range v.schemas {
 			availableVersions = append(availableVersions, version)
 		}
 
-		return false, nil, fmt.Errorf("no schema found for version %s. Available versions: %v", req.Record.SchemaVersion, availableVersions)
+		return false, nil, fmt.Errorf("no schema found for version %s. Available versions: %v", schemaVersion, availableVersions)
 	}
 
-	schemaErrors, err := v.validateWithJSONSchema(req.Record, schema)
+	schemaErrors, err := v.validateWithJSONSchema(req, schema)
 	if err != nil {
 		return false, nil, fmt.Errorf("JSON schema validation failed: %w", err)
 	}
@@ -72,49 +67,11 @@ func (v ValidationService) ValidateRecord(req *validationv1.ValidateRecordReques
 	return len(schemaErrors) == 0, schemaErrors, nil
 }
 
-func loadEmbeddedSchemas() (map[string]*gojsonschema.Schema, error) {
-	schemas := make(map[string]*gojsonschema.Schema)
-
-	entries, err := embeddedSchemas.ReadDir("schemas")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read embedded schemas directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
-		}
-
-		filename := entry.Name()
-		version := strings.TrimSuffix(filename, ".json")
-
-		schemaPath := filepath.Join("schemas", filename)
-		schemaData, err := embeddedSchemas.ReadFile(schemaPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read embedded schema file %s: %w", filename, err)
-		}
-
-		schemaLoader := gojsonschema.NewStringLoader(string(schemaData))
-		schema, err := gojsonschema.NewSchema(schemaLoader)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile embedded schema %s: %w", filename, err)
-		}
-
-		schemas[version] = schema
-	}
-
-	if len(schemas) == 0 {
-		return nil, fmt.Errorf("no valid JSON schema files found in embedded schemas")
-	}
-
-	return schemas, nil
-}
-
-func (v ValidationService) validateWithJSONSchema(record *objectsv3.Record, schema *gojsonschema.Schema) ([]string, error) {
+func (v *Validator) validateWithJSONSchema(req *corev1.DecodedRecord, schema *gojsonschema.Schema) ([]string, error) {
 	marshaler := &protojson.MarshalOptions{
 		UseProtoNames: true,
 	}
-	jsonBytes, err := marshaler.Marshal(record)
+	jsonBytes, err := marshaler.Marshal(getRecordObject(req))
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
@@ -155,7 +112,7 @@ func (v ValidationService) validateWithJSONSchema(record *objectsv3.Record, sche
 	return errors, nil
 }
 
-func (v ValidationService) validateWithSchemaURL(record *objectsv3.Record, schemaURL string) ([]string, error) {
+func (v *Validator) validateWithSchemaURL(req *corev1.DecodedRecord, schemaURL string) ([]string, error) {
 	resp, err := v.httpClient.Get(schemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: %w", schemaURL, err)
@@ -183,5 +140,23 @@ func (v ValidationService) validateWithSchemaURL(record *objectsv3.Record, schem
 		return nil, fmt.Errorf("failed to compile schema from URL %s: %w", schemaURL, err)
 	}
 
-	return v.validateWithJSONSchema(record, schema)
+	return v.validateWithJSONSchema(req, schema)
+}
+
+func getSchemaVersion(req *corev1.DecodedRecord) string {
+	switch req.GetRecord().(type) {
+	case *corev1.DecodedRecord_V1Alpha1:
+		return req.GetV1Alpha1().SchemaVersion
+	default:
+		return ""
+	}
+}
+
+func getRecordObject(req *corev1.DecodedRecord) proto.Message {
+	switch req.GetRecord().(type) {
+	case *corev1.DecodedRecord_V1Alpha1:
+		return req.GetV1Alpha1()
+	default:
+		return nil
+	}
 }

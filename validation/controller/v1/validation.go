@@ -11,30 +11,34 @@ import (
 
 	validationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
 	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-	"github.com/agntcy/oasf-sdk/validation/service"
+	"github.com/agntcy/oasf-sdk/core/converter"
+	"github.com/agntcy/oasf-sdk/validation/validator"
 )
 
 type validationCtrl struct {
-	validationv1grpc.UnimplementedValidationServiceServer
-	validationService *service.ValidationService
+	validator *validator.Validator
 }
 
 func NewValidationController() (validationv1grpc.ValidationServiceServer, error) {
-	validationService, err := service.NewValidationService()
+	validator, err := validator.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create validation service: %w", err)
 	}
 
 	return &validationCtrl{
-		UnimplementedValidationServiceServer: validationv1grpc.UnimplementedValidationServiceServer{},
-		validationService:                    validationService,
+		validator: validator,
 	}, nil
 }
 
 func (v validationCtrl) ValidateRecord(_ context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
 	slog.Info("Received ValidateRecord request", "request", req)
 
-	isValid, errors, err := v.validationService.ValidateRecord(req)
+	record, err := converter.Decode(req.Record)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode record: %w", err)
+	}
+
+	isValid, errors, err := v.validator.ValidateRecord(record, req.SchemaUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
@@ -57,12 +61,12 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 			return fmt.Errorf("failed to receive record: %w", err)
 		}
 
-		validateReq := &validationv1.ValidateRecordRequest{
-			Record:    req.Record,
-			SchemaUrl: req.SchemaUrl,
+		record, err := converter.Decode(req.Record)
+		if err != nil {
+			return fmt.Errorf("failed to decode record: %w", err)
 		}
 
-		isValid, errors, validationErr := v.validationService.ValidateRecord(validateReq)
+		isValid, errors, validationErr := v.validator.ValidateRecord(record, req.SchemaUrl)
 		if validationErr != nil {
 			return fmt.Errorf("failed to validate record: %w", validationErr)
 		}

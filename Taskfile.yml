@@ -75,6 +75,15 @@ tasks:
       - task translation:build:all
       - task validation:build:all
 
+  deps:tidy:
+    desc: Ensure dependencies are up-to-date
+    vars:
+      GO_MOD_DIR:
+        sh: find . -name go.mod -exec dirname {} \;
+    cmds:
+      - for: { var: GO_MOD_DIR }
+        cmd: go -C {{.ITEM}} mod tidy -go={{.GO_VERSION}}
+
   deps:bin-dir:
     desc: Create bin directory
     internal: true
