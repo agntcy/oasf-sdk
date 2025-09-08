@@ -24,7 +24,7 @@ func New() *Translator {
 	return &Translator{}
 }
 
-// RecordToGHCopilot translates a DecodedRecord into a GHCopilotMCPConfig structure.
+// RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
 func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCPConfig, error) {
 	// Get MCP module
 	found, mcpModule := getModuleFromRecord(req, MCPModuleName)
@@ -97,7 +97,7 @@ func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCP
 	}, nil
 }
 
-// RecordToA2A translates a DecodedRecord into an A2ACard structure.
+// RecordToA2A translates a record into an A2ACard structure.
 func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
 	// Get A2A module
 	found, a2aModule := getModuleFromRecord(req, A2AModuleName)
