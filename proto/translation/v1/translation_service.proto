@@ -6,7 +6,6 @@ syntax = "proto3";
 package translation.v1;
 
 import "google/protobuf/struct.proto";
-import "objects/v3/record.proto";
 import "core/v1/models.proto";
 
 // TranslationService provides methods to generate artifacts from OASF objects.
