@@ -10,7 +10,6 @@ import (
 
 	translationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
-	"github.com/agntcy/oasf-sdk/core/converter"
 	"github.com/agntcy/oasf-sdk/core/utils"
 	"github.com/agntcy/oasf-sdk/translation/translator"
 )
@@ -28,12 +27,7 @@ func NewRoutingController() translationv1grpc.TranslationServiceServer {
 func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1.RecordToGHCopilotRequest) (*translationv1.RecordToGHCopilotResponse, error) {
 	slog.Info("Received Publish request", "request", req)
 
-	record, err := converter.Decode(req.Record)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode record: %w", err)
-	}
-
-	result, err := t.translator.RecordToGHCopilot(record)
+	result, err := t.translator.RecordToGHCopilot(req.GetRecord())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GHCopilot config from record: %w", err)
 	}
@@ -49,12 +43,7 @@ func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1
 func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
 	slog.Info("Received RecordToA2A request", "request", req)
 
-	record, err := converter.Decode(req.Record)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode record: %w", err)
-	}
-
-	result, err := t.translator.RecordToA2A(record)
+	result, err := t.translator.RecordToA2A(req.GetRecord())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
 	}

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	corev1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/core/v1"
-	typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/types/v1alpha1"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -25,30 +25,15 @@ func New() *Translator {
 }
 
 // RecordToGHCopilot translates a DecodedRecord into a GHCopilotMCPConfig structure.
-func (t *Translator) RecordToGHCopilot(req *corev1.DecodedRecord) (*GHCopilotMCPConfig, error) {
-	// Validate
-	if req.GetV1Alpha1() == nil {
-		return nil, fmt.Errorf("record version v1alpha1 is nil")
-	}
-
-	// Extract record
-	record := req.GetV1Alpha1()
-
-	// Find MCP module
-	var mcpModule *typesv1alpha1.Module
-	for _, module := range record.Modules {
-		if strings.HasSuffix(module.Name, MCPModuleName) {
-			mcpModule = module
-			break
-		}
-	}
-
-	if mcpModule == nil {
+func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCPConfig, error) {
+	// Get MCP module
+	found, mcpModule := getModuleFromRecord(req, MCPModuleName)
+	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
 
 	// Process MCP module
-	serversVal, ok := mcpModule.Data.Fields["servers"]
+	serversVal, ok := mcpModule.GetFields()["servers"]
 	if !ok {
 		return nil, errors.New("invalid or missing 'servers' in MCP module data")
 	}
@@ -113,30 +98,15 @@ func (t *Translator) RecordToGHCopilot(req *corev1.DecodedRecord) (*GHCopilotMCP
 }
 
 // RecordToA2A translates a DecodedRecord into an A2ACard structure.
-func (t *Translator) RecordToA2A(req *corev1.DecodedRecord) (*A2ACard, error) {
-	// Validate
-	if req.GetV1Alpha1() == nil {
-		return nil, fmt.Errorf("record version v1alpha1 is nil")
-	}
-
-	// Extract versioned record
-	record := req.GetV1Alpha1()
-
-	// Find A2A module
-	var a2aModule *typesv1alpha1.Module
-	for _, module := range record.Modules {
-		if strings.HasSuffix(module.Name, A2AModuleName) {
-			a2aModule = module
-			break
-		}
-	}
-
-	if a2aModule == nil {
+func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
+	// Get A2A module
+	found, a2aModule := getModuleFromRecord(req, A2AModuleName)
+	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
 
 	// Process A2A module
-	jsonBytes, err := json.Marshal(a2aModule.Data.AsMap())
+	jsonBytes, err := json.Marshal(a2aModule.AsMap())
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal A2A data to JSON: %w", err)
 	}
@@ -147,4 +117,14 @@ func (t *Translator) RecordToA2A(req *corev1.DecodedRecord) (*A2ACard, error) {
 	}
 
 	return &card, nil
+}
+
+func getModuleFromRecord(record *corev1.EncodedRecord, moduleName string) (bool, *structpb.Struct) {
+	// Find module by name
+	for _, module := range record.GetRecord().GetFields()["modules"].GetListValue().Values {
+		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
+			return true, module.GetStructValue()
+		}
+	}
+	return false, nil
 }
