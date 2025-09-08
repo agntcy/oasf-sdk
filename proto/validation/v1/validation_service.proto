@@ -19,7 +19,7 @@ service ValidationService {
 
 message ValidateRecordRequest {
   // The Record object to be validated.
-  core.v1.DecodedRecord record = 1;
+  core.v1.EncodedRecord record = 1;
 
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
@@ -37,7 +37,7 @@ message ValidateRecordResponse {
 
 message ValidateRecordStreamRequest {
   // The Record object to be validated.
-  core.v1.DecodedRecord record = 1;
+  core.v1.EncodedRecord record = 1;
 
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
