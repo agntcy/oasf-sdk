@@ -15,7 +15,7 @@
         }
     ],
     "name": "example.org/valid-agent",
-    "schema_version": "v0.6.0",
+    "schema_version": "v0.7.0",
     "signature": {
         "algorithm": "ES256",
         "certificate": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t",

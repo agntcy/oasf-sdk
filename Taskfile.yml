@@ -48,8 +48,38 @@ tasks:
     desc: Run end-to-end tests
     dir: e2e
     cmds:
+      - task: test:e2e:setup
+      - defer: { task: test:e2e:destroy }
       - go mod tidy
       - go test ./... -v
+
+  test:e2e:setup:
+    desc: Ensure dependencies for e2e tests are up-to-date
+    dir: e2e
+    cmds:
+      - |
+        docker run -d \
+          --name translation-e2e \
+          -p 31234:31234 \
+          -e TRANSLATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31234 \
+          oasf-sdk-translation
+
+        # Start validation service
+        docker run -d \
+          --name validation-e2e \
+          -p 31235:31235 \
+          -e VALIDATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31235 \
+          oasf-sdk-validation
+
+  test:e2e:destroy:
+    desc: Ensure dependencies for e2e tests are up-to-date
+    dir: e2e
+    cmds:
+      - |
+        docker stop translation-e2e
+        docker stop validation-e2e
+        docker rm translation-e2e
+        docker rm validation-e2e
 
   compile:
     desc: Compile binaries for all components

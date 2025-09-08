@@ -1,5 +1,6 @@
 {
     "name": "poc/integrations-agent-example",
+    "schema_version": "v0.7.0",
     "version": "v1.0.0",
     "description": "An example agent with IDE integrations support",
     "authors": [
@@ -18,9 +19,9 @@
         "url": "https://ghcr.io/agntcy/dir/integrations-agent-example"
       }
     ],
-    "extensions": [
+    "modules": [
       {
-        "name": "schema.oasf.agntcy.org/features/runtime/mcp",
+        "name": "runtime/mcp",
         "version": "v1.0.0",
         "data": {
           "servers": {
@@ -42,7 +43,7 @@
         }
       },
       {
-        "name": "schema.oasf.agntcy.org/features/runtime/a2a",
+        "name": "runtime/a2a",
         "version": "v1.0.0",
         "data": {
           "name": "example-agent",
