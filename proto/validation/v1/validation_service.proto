@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package validation.v1;
 
-import "objects/v3/record.proto";
+import "core/v1/models.proto";
 
 // ValidationService provides methods to validate OASF objects.
 service ValidationService {
@@ -19,12 +19,12 @@ service ValidationService {
 
 message ValidateRecordRequest {
   // The Record object to be validated.
-  objects.v3.Record record = 1;
+  core.v1.DecodedRecord record = 1;
 
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
   // If empty, validation uses the embedded JSON schemas in the binary.
-  string schema_url = 2;
+  optional string schema_url = 2;
 }
 
 message ValidateRecordResponse {
@@ -37,12 +37,12 @@ message ValidateRecordResponse {
 
 message ValidateRecordStreamRequest {
   // The Record object to be validated.
-  objects.v3.Record record = 1;
+  core.v1.DecodedRecord record = 1;
 
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
   // If empty, validation uses the embedded JSON schemas in the binary.
-  string schema_url = 2;
+  optional string schema_url = 2;
 }
 
 message ValidateRecordStreamResponse {

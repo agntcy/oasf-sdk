@@ -1,0 +1,15 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package core.v1;
+
+import "core/v1/models.proto";
+
+// EncodingService provides methods for encoding and decoding records.
+// Used for data serialization and deserialization across the app-layer.
+service EncodingService {
+    rpc EncodeRecord(DecodedRecord) returns (EncodedRecord);
+    rpc DecodeRecord(EncodedRecord) returns (DecodedRecord);
+}

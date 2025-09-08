@@ -1,0 +1,21 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/struct.proto";
+import "types/v1alpha1/record.proto";
+
+message EncodedRecord {
+    // Encoded representation of the record.
+    google.protobuf.Struct record = 1;
+}
+
+message DecodedRecord {
+    // Decoded representation of the record.
+    oneof record {
+        types.v1alpha1.Record v1alpha1 = 1;
+    }
+}
