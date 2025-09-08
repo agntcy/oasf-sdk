@@ -27,7 +27,7 @@ func New() *Translator {
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
 func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCPConfig, error) {
 	// Get MCP module
-	found, mcpModule := getModuleFromRecord(req, MCPModuleName)
+	found, mcpModule := getModuleDataFromRecord(req, MCPModuleName)
 	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
@@ -100,13 +100,13 @@ func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCP
 // RecordToA2A translates a record into an A2ACard structure.
 func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
 	// Get A2A module
-	found, a2aModule := getModuleFromRecord(req, A2AModuleName)
+	found, a2aModule := getModuleDataFromRecord(req, A2AModuleName)
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
 
 	// Process A2A module
-	jsonBytes, err := json.Marshal(a2aModule.AsMap())
+	jsonBytes, err := json.Marshal(a2aModule)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal A2A data to JSON: %w", err)
 	}
@@ -119,11 +119,11 @@ func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
 	return &card, nil
 }
 
-func getModuleFromRecord(record *corev1.EncodedRecord, moduleName string) (bool, *structpb.Struct) {
+func getModuleDataFromRecord(record *corev1.EncodedRecord, moduleName string) (bool, *structpb.Struct) {
 	// Find module by name
 	for _, module := range record.GetRecord().GetFields()["modules"].GetListValue().Values {
 		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
-			return true, module.GetStructValue()
+			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
 		}
 	}
 	return false, nil
