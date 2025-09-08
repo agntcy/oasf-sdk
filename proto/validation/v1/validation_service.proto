@@ -24,7 +24,7 @@ message ValidateRecordRequest {
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
   // If empty, validation uses the embedded JSON schemas in the binary.
-  optional string schema_url = 2;
+  string schema_url = 2;
 }
 
 message ValidateRecordResponse {
@@ -42,7 +42,7 @@ message ValidateRecordStreamRequest {
   // Optional schema URL to validate against instead of embedded schemas.
   // If provided, the validation service will fetch and validate against this schema URL.
   // If empty, validation uses the embedded JSON schemas in the binary.
-  optional string schema_url = 2;
+  string schema_url = 2;
 }
 
 message ValidateRecordStreamResponse {
