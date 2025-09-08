@@ -23,6 +23,16 @@ includes:
       BIN_DIR: '{{ .BIN_DIR }}'
 
 tasks:
+  fmt:
+    desc: Run formatters
+    deps:
+      - task: deps:protoc
+      - task: deps:bufbuild
+    dir: ./proto
+    cmds:
+      - '{{.BUFBUILD_BIN}} dep update'
+      - '{{.BUFBUILD_BIN}} format --output ./'
+
   lint:
     desc: Run linters
     deps:
