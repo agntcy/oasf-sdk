@@ -6,7 +6,7 @@ breaking:
   use:
     - WIRE_JSON
 deps:
-  - buf.build/agntcy/oasf
+  - buf.build/agntcy/oasf:v0.7.0
 modules:
   - path: .
     name: buf.build/agntcy/oasf-sdk

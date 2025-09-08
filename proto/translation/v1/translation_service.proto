@@ -5,13 +5,13 @@ syntax = "proto3";
 
 package translation.v1;
 
+import "core/v1/models.proto";
 import "google/protobuf/struct.proto";
-import "objects/v3/record.proto";
 
 // TranslationService provides methods to generate artifacts from OASF objects.
 service TranslationService {
-  // RecordToVSCodeCopilot generates a VSCodeCopilot config from a Record.
-  rpc RecordToVSCodeCopilot(RecordToVSCodeCopilotRequest) returns (RecordToVSCodeCopilotResponse);
+  // RecordToGHCopilot generates a GHCopilot config from a Record.
+  rpc RecordToGHCopilot(RecordToGHCopilotRequest) returns (RecordToGHCopilotResponse);
 
   // GHCopilotToRecord generates a Record from a GHCopilot config.
   rpc GHCopilotToRecord(GHCopilotToRecordRequest) returns (GHCopilotToRecordResponse);
@@ -23,13 +23,13 @@ service TranslationService {
   rpc A2AToRecord(A2AToRecordRequest) returns (A2AToRecordResponse);
 }
 
-message RecordToVSCodeCopilotRequest {
-  // The Record object to be converted into a VSCodeCopilot config.
-  objects.v3.Record record = 2;
+message RecordToGHCopilotRequest {
+  // The Record object to be converted into a GHCopilot config.
+  core.v1.EncodedRecord record = 1;
 }
 
-message RecordToVSCodeCopilotResponse {
-  // The generated VSCodeCopilot config in a structured format.
+message RecordToGHCopilotResponse {
+  // The generated GHCopilot config in a structured format.
   google.protobuf.Struct data = 1;
 }
 
@@ -40,12 +40,12 @@ message GHCopilotToRecordRequest {
 
 message GHCopilotToRecordResponse {
   // The generated Record object in a structured format.
-  objects.v3.Record record = 1;
+  core.v1.EncodedRecord record = 1;
 }
 
 message RecordToA2ARequest {
   // The Record object to be converted into an A2A card.
-  objects.v3.Record record = 1;
+  core.v1.EncodedRecord record = 1;
 }
 
 message RecordToA2AResponse {
@@ -60,5 +60,5 @@ message A2AToRecordRequest {
 
 message A2AToRecordResponse {
   // The generated Record object in a structured format.
-  objects.v3.Record record = 1;
+  core.v1.EncodedRecord record = 1;
 }

@@ -1,0 +1,34 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package core.v1;
+
+import "google/protobuf/struct.proto";
+import "types/v1alpha1/record.proto";
+
+// EncodedRecord represents a record in its encoded form.
+// This is typically used for storage or transmission.
+//
+// The record is represented as a `google.protobuf.Struct` to allow
+// for flexible and dynamic schemas.
+message EncodedRecord {
+  // Encoded representation of the record.
+  //
+  // This field is populated by converting a given
+  // record protobuf schema to a `google.protobuf.Struct`.
+  google.protobuf.Struct record = 1;
+}
+
+// DecodedRecord represents a record in its decoded form.
+// This is typically used for in-memory operations.
+//
+// The record is represented using a oneof field to support
+// multiple versions or types of record schemas.
+message DecodedRecord {
+  // Decoded representation of the record.
+  oneof record {
+    types.v1alpha1.Record v1alpha1 = 1;
+  }
+}

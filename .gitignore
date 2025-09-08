@@ -1,1 +1,2 @@
-.idea
+# Ignore binary folder
+bin/
