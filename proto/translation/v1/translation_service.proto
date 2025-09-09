@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package translation.v1;
 
-import "core/v1/models.proto";
+import "core/v1/object.proto";
 import "google/protobuf/struct.proto";
 
 // TranslationService provides methods to generate artifacts from OASF objects.
@@ -25,7 +25,7 @@ service TranslationService {
 
 message RecordToGHCopilotRequest {
   // The Record object to be converted into a GHCopilot config.
-  core.v1.EncodedRecord record = 1;
+  core.v1.Object record = 1;
 }
 
 message RecordToGHCopilotResponse {
@@ -40,12 +40,12 @@ message GHCopilotToRecordRequest {
 
 message GHCopilotToRecordResponse {
   // The generated Record object in a structured format.
-  core.v1.EncodedRecord record = 1;
+  core.v1.Object record = 1;
 }
 
 message RecordToA2ARequest {
   // The Record object to be converted into an A2A card.
-  core.v1.EncodedRecord record = 1;
+  core.v1.Object record = 1;
 }
 
 message RecordToA2AResponse {
@@ -60,5 +60,5 @@ message A2AToRecordRequest {
 
 message A2AToRecordResponse {
   // The generated Record object in a structured format.
-  core.v1.EncodedRecord record = 1;
+  core.v1.Object record = 1;
 }
