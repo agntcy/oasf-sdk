@@ -1,0 +1,30 @@
+approved = [
+  "mit",
+  "apache-2.0",
+  "bsd-3-clause",
+  "bsd-2-clause",
+  "mpl-2.0",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "MIT",
+  "OpenSSL",
+  "CC0-1.0",
+]
+
+ignored = [
+  "buf.build/gen/go/agntcy/oasf/protocolbuffers/go",
+  "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go",
+  "buf.build/gen/go/agntcy/oasf-sdk/grpc/go",
+  
+  "google.golang.org/protobuf", # BSD-3-Clause https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE
+  "github.com/xeipuuv/gojsonpointer", # Apache License 2.0 https://github.com/xeipuuv/gojsonpointer/blob/master/LICENSE-APACHE-2.0.txt
+  "github.com/xeipuuv/gojsonreference", # https://github.com/xeipuuv/gojsonreference/blob/master/LICENSE-APACHE-2.0.txt
+  "github.com/xeipuuv/gojsonschema", # https://github.com/xeipuuv/gojsonschema/blob/master/LICENSE-APACHE-2.0.txt
+]
+
+[header]
+template = """// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0"""
