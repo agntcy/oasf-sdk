@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-00000000000000-bda8dba52bd5.1 // indirect
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909110939-6bf82c001122.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

@@ -5,15 +5,16 @@ go 1.24.4
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250908111150-ac220391cdfd.2
 	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.8-20250908111150-ac220391cdfd.1
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-00000000000000-bda8dba52bd5.1
 	github.com/agntcy/oasf-sdk/core v0.0.0
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	google.golang.org/grpc v1.74.2
+	google.golang.org/protobuf v1.36.8
 )
 
 require (
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909110939-6bf82c001122.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -32,7 +33,6 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

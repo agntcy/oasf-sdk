@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-00000000000000-bda8dba52bd5.1 // indirect
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909110939-6bf82c001122.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect

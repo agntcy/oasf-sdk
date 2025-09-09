@@ -1,0 +1,34 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package decoding.v1;
+
+import "core/v1/object.proto";
+import "types/v1alpha0/record.proto";
+import "types/v1alpha1/record.proto";
+
+// DecodingService provides methods for decoding records.
+// Used for data handling across infrastructure and application layers.
+service DecodingService {
+  // DecodeRecord decodes a protobuf-encoded record into a DecodedRecord.
+  rpc DecodeRecord(DecodeRecordRequest) returns (DecodeRecordResponse);
+}
+
+// DecodeRecordRequest represents a request to decode a Record object.
+message DecodeRecordRequest {
+  core.v1.Object record = 1;
+}
+
+// DecodeRecordResponse represents a response containing a Record object
+// in its decoded form. This is typically used for in-memory operations.
+//
+// The record is represented using a oneof field to support
+// multiple versions or types of record schemas.
+message DecodeRecordResponse {
+  oneof record {
+    types.v1alpha0.Record v1alpha0 = 1;
+    types.v1alpha1.Record v1alpha1 = 2;
+  }
+}
