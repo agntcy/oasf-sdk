@@ -1,0 +1,101 @@
+{
+  "name": "modelling sent instructor",
+  "version": "v3.2",
+  "description": "hudson ic parish",
+  "signature": {
+    "signature": "reno",
+    "signed_at": "2025-09-09T13:36:34.864312Z",
+    "content_type": "teeth indoor prisoner",
+    "certificate": "forge",
+    "algorithm": "reducing fold guam",
+    "annotations": {
+      "apt": "waiver"
+    },
+    "content_bundle": "harvey"
+  },
+  "extensions": [
+    {
+      "data": {
+        "agent_deployment": {
+          "deployment_options": [
+            {
+              "type": "docker",
+              "image": "asthma cycles bits"
+            },
+            {
+              "type": "source_code",
+              "url": "https://www.lindsay.jobs",
+              "framework_config": {
+                "path": "tier plaza oak",
+                "framework_type": "llamaindex"
+              }
+            }
+          ]
+        },
+        "acp_spec": {
+          "input": "blessed",
+          "output": "elderly",
+          "config": "corporation",
+          "capabilities": {
+            "callbacks": true
+          }
+        }
+      },
+      "name": "schema.oasf.agntcy.org/features/runtime/manifest",
+      "version": "v0.0"
+    },
+    {
+      "data": {
+        "communication_protocols": [
+          "gRPC"
+        ],
+        "data_platform_integrations": [
+          "engaging thoroughly checking",
+          "importantly yemen christopher"
+        ],
+        "data_schema": {
+          "name": "views usa tf",
+          "version": "v0",
+          "url": "https://www.corner.cat"
+        },
+        "export_format": "json"
+      },
+      "name": "schema.oasf.agntcy.org/features/observability/observability"
+    }
+  ],
+  "skills": [
+    {
+      "class_uid": 50203,
+      "category_uid": 5,
+      "category_name": "Analytical skills",
+      "class_name": "Code Template Filling"
+    },
+    {
+      "class_uid": 10601,
+      "category_uid": 1,
+      "category_name": "Natural Language Processing",
+      "class_name": "User Adaptation"
+    }
+  ],
+  "authors": [
+    "Teodoro Carla",
+    "Glennie Cyndy"
+  ],
+  "schema_version": "v0.3.1",
+  "annotations": {
+    "decorating": "bathrooms"
+  },
+  "created_at": "2025-09-09T13:36:34.966784Z",
+  "locators": [
+    {
+      "size": 1162240471,
+      "type": "python-package",
+      "url": "https://www.totals.mobi"
+    },
+    {
+      "size": 3075359380,
+      "type": "docker-image",
+      "url": "https://www.paperbacks.travel"
+    }
+  ]
+}

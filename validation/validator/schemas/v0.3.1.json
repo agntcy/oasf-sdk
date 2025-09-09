@@ -1,0 +1,230 @@
+{
+  "$defs": {
+    "agent_signature": {
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "annotations": {
+          "title": "Annotations",
+          "type": "string_map_t"
+        },
+        "certificate": {
+          "title": "Certificate",
+          "type": "string"
+        },
+        "content_bundle": {
+          "title": "Content Bundle",
+          "type": "string"
+        },
+        "content_type": {
+          "title": "Content Type",
+          "type": "string"
+        },
+        "signature": {
+          "title": "Signature",
+          "type": "string"
+        },
+        "signed_at": {
+          "title": "Signed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "algorithm",
+        "certificate",
+        "content_bundle",
+        "content_type",
+        "signature",
+        "signed_at"
+      ],
+      "title": "Agent Signature",
+      "type": "object"
+    },
+    "base_feature": {
+      "$id": "https://schema.oasf.agntcy.org/schema/features/base_feature",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "title": "Annotations",
+          "type": "string_map_t"
+        },
+        "data": {
+          "$ref": "#/$defs/object",
+          "title": "Data"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "data",
+        "name"
+      ],
+      "title": "Base Feature",
+      "type": "object"
+    },
+    "base_skill": {
+      "$id": "https://schema.oasf.agntcy.org/schema/skills/base_skill",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "title": "Annotations",
+          "type": "string_map_t"
+        },
+        "category_name": {
+          "title": "Category",
+          "type": "string"
+        },
+        "category_uid": {
+          "const": 0,
+          "title": "Category ID",
+          "type": "integer"
+        },
+        "class_name": {
+          "title": "Class",
+          "type": "string"
+        },
+        "class_uid": {
+          "const": 0,
+          "title": "Class ID",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "category_uid",
+        "class_uid"
+      ],
+      "title": "Base Skill",
+      "type": "object"
+    },
+    "locator": {
+      "additionalProperties": false,
+      "properties": {
+        "annotations": {
+          "title": "Annotations",
+          "type": "string_map_t"
+        },
+        "digest": {
+          "title": "Digest",
+          "type": "string"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        },
+        "type": {
+          "enum": [
+            "binary",
+            "unspecified",
+            "helm-chart",
+            "docker-image",
+            "python-package",
+            "source-code"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "url": {
+          "title": "URL",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "url"
+      ],
+      "title": "Agent Locator",
+      "type": "object"
+    },
+    "object": {
+      "additionalProperties": true,
+      "properties": {
+
+      },
+      "title": "Object",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "annotations": {
+      "title": "Annotations",
+      "type": "string_map_t"
+    },
+    "authors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Authors",
+      "type": "array"
+    },
+    "created_at": {
+      "title": "Creation Time",
+      "type": "string"
+    },
+    "description": {
+      "title": "Agent Description",
+      "type": "string"
+    },
+    "extensions": {
+      "items": {
+        "$ref": "#/$defs/base_feature"
+      },
+      "title": "Extensions",
+      "type": "array"
+    },
+    "locators": {
+      "items": {
+        "$ref": "#/$defs/locator"
+      },
+      "title": "Locators",
+      "type": "array"
+    },
+    "name": {
+      "title": "Agent Name",
+      "type": "string"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "signature": {
+      "$ref": "#/$defs/agent_signature",
+      "title": "Signature"
+    },
+    "skills": {
+      "items": {
+        "$ref": "#/$defs/base_skill"
+      },
+      "title": "Skills",
+      "type": "array"
+    },
+    "version": {
+      "title": "Agent Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "authors",
+    "created_at",
+    "description",
+    "locators",
+    "name",
+    "schema_version",
+    "signature",
+    "skills",
+    "version"
+  ],
+  "title": "Agent",
+  "type": "object"
+}
