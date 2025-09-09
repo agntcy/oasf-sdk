@@ -9,6 +9,8 @@ vars:
   PROTOC_BIN: '{{ .BIN_DIR }}/protoc-{{.PROTOC_VERSION}}'
   BUFBUILD_VERSION: '1.50.1'
   BUFBUILD_BIN: '{{ .BIN_DIR }}/bufbuild-{{.BUFBUILD_VERSION}}'
+  LICENSEI_VERSION: '0.9.0'
+  LICENSEI_BIN: '{{ .BIN_DIR }}/licensei-{{.LICENSEI_VERSION}}'
 
 includes:
   translation:
@@ -23,6 +25,10 @@ includes:
       BIN_DIR: '{{ .BIN_DIR }}'
 
 tasks:
+  default:
+    cmds:
+      - task -l
+
   fmt:
     desc: Run formatters
     deps:
@@ -44,6 +50,33 @@ tasks:
       - '{{.BUFBUILD_BIN}} format --diff --exit-code'
       - '{{.BUFBUILD_BIN}} lint'
 
+  compile:
+    desc: Compile binaries for all components
+    cmds:
+      - task translation:compile
+      - task validation:compile
+
+  compile:all:
+    desc: Compile binaries for all components for all platforms
+    cmds:
+      - task translation:compile:all
+      - task validation:compile:all
+
+  build:
+    desc: Build images for all components
+    cmds:
+      - task translation:build
+      - task validation:build
+
+  build:all:
+    desc: Build images for all components for all platforms
+    cmds:
+      - task translation:build:all
+      - task validation:build:all
+
+  ##
+  ## Test
+  ##
   test:e2e:
     desc: Run end-to-end tests
     dir: e2e
@@ -79,30 +112,9 @@ tasks:
         docker rm translation-e2e
         docker rm validation-e2e
 
-  compile:
-    desc: Compile binaries for all components
-    cmds:
-      - task translation:compile
-      - task validation:compile
-
-  compile:all:
-    desc: Compile binaries for all components for all platforms
-    cmds:
-      - task translation:compile:all
-      - task validation:compile:all
-
-  build:
-    desc: Build images for all components
-    cmds:
-      - task translation:build
-      - task validation:build
-
-  build:all:
-    desc: Build images for all components for all platforms
-    cmds:
-      - task translation:build:all
-      - task validation:build:all
-
+  ##
+  ## Dependencies
+  ##
   deps:tidy:
     desc: Ensure dependencies are up-to-date
     vars:
@@ -163,3 +175,40 @@ tasks:
       - cmd: chmod +x {{.BUFBUILD_BIN}}
     status:
       - test -x {{.BUFBUILD_BIN}}
+
+  deps:licensei:
+    desc: Install licensei
+    internal: true
+    deps:
+      - deps:bin-dir
+    cmds:
+      - curl -sfL https://raw.githubusercontent.com/goph/licensei/master/install.sh | bash -s v{{.LICENSEI_VERSION}}
+      - mv {{.BIN_DIR}}/licensei {{.LICENSEI_BIN}}
+      - chmod +x {{.LICENSEI_BIN}}
+    status:
+      - test -x {{.LICENSEI_BIN}}
+
+  ##
+  ## License
+  ##
+  license:
+    desc: Check licenses
+    deps:
+      - task: deps:licensei
+    vars:
+      GO_MOD_DIR:
+        sh: find . -name go.mod -exec dirname {} \;
+    cmds:
+      - for: { var: GO_MOD_DIR }
+        cmd: echo "Running licensei in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} check --config {{.ROOT_DIR}}/.licensei.toml
+
+  license:cache:
+    desc: Check licenses
+    deps:
+      - task: deps:licensei
+    vars:
+      GO_MOD_DIR:
+        sh: find . -name go.mod -exec dirname {} \;
+    cmds:
+      - for: { var: GO_MOD_DIR }
+        cmd: echo "Running licensei in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} cache --config {{.ROOT_DIR}}/.licensei.toml
