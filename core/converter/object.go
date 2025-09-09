@@ -1,4 +1,4 @@
-package utils
+package converter
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// JsonToProto converts a generic JSON object to a protobuf Struct.
+// JsonToProto converts a JSON object to a proto object.
 func JsonToProto(data []byte) (*structpb.Struct, error) {
 	var result *structpb.Struct
 	if err := json.Unmarshal(data, &result); err != nil {
@@ -16,9 +16,9 @@ func JsonToProto(data []byte) (*structpb.Struct, error) {
 	return result, nil
 }
 
-// ObjectToProto converts a generic Go object to a protobuf Struct.
-func ObjectToProto(obj any) (*structpb.Struct, error) {
-	jsonBytes, err := json.Marshal(obj)
+// StructToProto converts a Go struct to a proto object.
+func StructToProto(goObj any) (*structpb.Struct, error) {
+	jsonBytes, err := json.Marshal(goObj)
 	if err != nil {
 		return nil, err
 	}
@@ -26,8 +26,8 @@ func ObjectToProto(obj any) (*structpb.Struct, error) {
 	return JsonToProto(jsonBytes)
 }
 
-// ProtoToObject converts a protobuf Struct to a generic Go object.
-func ProtoToObject[T any](obj *structpb.Struct) (*T, error) {
+// ProtoToStruct converts a proto object to a Go struct.
+func ProtoToStruct[T any](obj *structpb.Struct) (*T, error) {
 	// Convert protobuf Struct to JSON
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
