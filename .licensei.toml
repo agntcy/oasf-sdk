@@ -24,3 +24,9 @@ ignored = [
   "github.com/xeipuuv/gojsonreference", # https://github.com/xeipuuv/gojsonreference/blob/master/LICENSE-APACHE-2.0.txt
   "github.com/xeipuuv/gojsonschema", # https://github.com/xeipuuv/gojsonschema/blob/master/LICENSE-APACHE-2.0.txt
 ]
+
+[header]
+ignorePaths = []
+ignoreFiles = []
+template = """// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0"""
