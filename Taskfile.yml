@@ -192,18 +192,29 @@ tasks:
   ## License
   ##
   license:
-    desc: Check licenses
+    desc: Check all license compliance (headers and dependencies)
     deps:
       - task: deps:licensei
-    vars:
-      GO_MOD_DIR:
-        sh: find . -name go.mod -exec dirname {} \;
     cmds:
-      - for: { var: GO_MOD_DIR }
-        cmd: echo "Running licensei in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} check --config {{.ROOT_DIR}}/.licensei.toml
+      - task: license:header
+      - task: license:check
+
+  license:header:
+    desc: Check license headers in source files
+    deps:
+      - task: deps:licensei
+    cmds:
+      - cmd: echo "Checking license headers in source files" && {{ .LICENSEI_BIN }} header --config .licensei.toml
+
+  license:check:
+    desc: Check licenses of dependencies
+    deps:
+      - task: deps:licensei
+    cmds:
+      - cmd: echo "Checking dependency licenses" && {{ .LICENSEI_BIN }} check --config .licensei.toml
 
   license:cache:
-    desc: Check licenses
+    desc: Cache licenses of dependencies
     deps:
       - task: deps:licensei
     vars:
@@ -211,4 +222,4 @@ tasks:
         sh: find . -name go.mod -exec dirname {} \;
     cmds:
       - for: { var: GO_MOD_DIR }
-        cmd: echo "Running licensei in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} cache --config {{.ROOT_DIR}}/.licensei.toml
+        cmd: echo "Caching licenses in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} cache --config {{.ROOT_DIR}}/.licensei.toml
