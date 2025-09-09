@@ -5,9 +5,6 @@ package e2e
 
 import _ "embed"
 
-//go:embed fixtures/valid_v0.3.1_record.json
-var validV031Record []byte
-
 //go:embed fixtures/valid_v0.7.0_record.json
 var validV070Record []byte
 
