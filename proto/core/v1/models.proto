@@ -13,6 +13,21 @@ import "types/v1alpha1/record.proto";
 //
 // The record is represented as a `google.protobuf.Struct` to allow
 // for flexible and dynamic schemas.
+//
+// Golang example:
+//
+//   import "google.golang.org/protobuf/types/known/structpb"
+//   typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/types/v1alpha1"
+//
+//   myRecord := typesv1alpha1.Record{}
+//   recordStruct, err := structpb.NewStruct(myRecord)
+//   if err != nil {
+//       // handle error
+//   }
+//
+//   encodedRecord := &corev1.EncodedRecord{
+//       Record: recordStruct,
+//   }
 message EncodedRecord {
   // Encoded representation of the record.
   //
