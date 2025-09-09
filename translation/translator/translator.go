@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/core/v1"
+	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -25,7 +25,7 @@ func New() *Translator {
 }
 
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
-func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCPConfig, error) {
+func (t *Translator) RecordToGHCopilot(req *corev1.Object) (*GHCopilotMCPConfig, error) {
 	// Get MCP module
 	found, mcpModule := getModuleDataFromRecord(req, MCPModuleName)
 	if !found {
@@ -98,7 +98,7 @@ func (t *Translator) RecordToGHCopilot(req *corev1.EncodedRecord) (*GHCopilotMCP
 }
 
 // RecordToA2A translates a record into an A2ACard structure.
-func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
+func (t *Translator) RecordToA2A(req *corev1.Object) (*A2ACard, error) {
 	// Get A2A module
 	found, a2aModule := getModuleDataFromRecord(req, A2AModuleName)
 	if !found {
@@ -119,9 +119,9 @@ func (t *Translator) RecordToA2A(req *corev1.EncodedRecord) (*A2ACard, error) {
 	return &card, nil
 }
 
-func getModuleDataFromRecord(record *corev1.EncodedRecord, moduleName string) (bool, *structpb.Struct) {
+func getModuleDataFromRecord(record *corev1.Object, moduleName string) (bool, *structpb.Struct) {
 	// Find module by name
-	for _, module := range record.GetRecord().GetFields()["modules"].GetListValue().Values {
+	for _, module := range record.GetData().GetFields()["modules"].GetListValue().Values {
 		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
 			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
 		}

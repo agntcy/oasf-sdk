@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	corev1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/core/v1"
 	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
+	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
 	"github.com/agntcy/oasf-sdk/core/converter"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -46,7 +46,7 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	}
 
 	// Get schema version
-	schemaVersion, err := converter.GetSchemaVersion(req.GetRecord())
+	schemaVersion, err := converter.GetRecordSchemaVersion(req.GetRecord())
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to get schema version: %w", err)
 	}
@@ -71,9 +71,9 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	return len(schemaErrors) == 0, schemaErrors, nil
 }
 
-func (v *Validator) validateWithJSONSchema(encoded *corev1.EncodedRecord, schema *gojsonschema.Schema) ([]string, error) {
+func (v *Validator) validateWithJSONSchema(record *corev1.Object, schema *gojsonschema.Schema) ([]string, error) {
 	// Validate JSON against schema
-	documentLoader := gojsonschema.NewGoLoader(encoded.GetRecord())
+	documentLoader := gojsonschema.NewGoLoader(record.GetData())
 	result, err := schema.Validate(documentLoader)
 	if err != nil {
 		return nil, fmt.Errorf("schema validation error: %w", err)
@@ -90,7 +90,7 @@ func (v *Validator) validateWithJSONSchema(encoded *corev1.EncodedRecord, schema
 	return errors, nil
 }
 
-func (v *Validator) validateWithSchemaURL(encoded *corev1.EncodedRecord, schemaURL string) ([]string, error) {
+func (v *Validator) validateWithSchemaURL(record *corev1.Object, schemaURL string) ([]string, error) {
 	resp, err := v.httpClient.Get(schemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: %w", schemaURL, err)
@@ -118,5 +118,5 @@ func (v *Validator) validateWithSchemaURL(encoded *corev1.EncodedRecord, schemaU
 		return nil, fmt.Errorf("failed to compile schema from URL %s: %w", schemaURL, err)
 	}
 
-	return v.validateWithJSONSchema(encoded, schema)
+	return v.validateWithJSONSchema(record, schema)
 }

@@ -3,8 +3,9 @@ module github.com/agntcy/oasf-sdk/e2e
 go 1.24.4
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250908111150-ac220391cdfd.2
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.8-20250908111150-ac220391cdfd.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250909112931-52543f366c53.2
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.8-20250909112931-52543f366c53.1
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909115813-c8b395e06aba.1
 	github.com/agntcy/oasf-sdk/core v0.0.0-00010101000000-000000000000
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909110939-6bf82c001122.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

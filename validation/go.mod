@@ -3,8 +3,9 @@ module github.com/agntcy/oasf-sdk/validation
 go 1.24.4
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250908111150-ac220391cdfd.2
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.8-20250908111150-ac220391cdfd.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250909112931-52543f366c53.2
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.8-20250909112931-52543f366c53.1
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909115813-c8b395e06aba.1
 	github.com/agntcy/oasf-sdk/core v0.0.0-00010101000000-000000000000
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.9.1
@@ -14,7 +15,6 @@ require (
 )
 
 require (
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.8-20250909110939-6bf82c001122.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
