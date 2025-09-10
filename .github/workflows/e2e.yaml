@@ -8,7 +8,7 @@ on:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
 
-jobs:
+jobs:g
   e2e-tests:
     name: End-to-End Tests
     runs-on: ubuntu-latest
@@ -29,11 +29,24 @@ jobs:
 
       - name: Build Docker Images with commit tag
         run: |
-          task build:all
+          docker buildx bake \
+            --set "oasf-sdk-e2e.tags=oasf-sdk:${{ steps.tag.outputs.IMAGE_TAG }}" \
+            oasf-sdk-e2e --load
 
-      - name: Tag images for e2e tests
+      - name: Start test containers
         run: |
-          docker tag oasf-sdk oasf-sdk:${{ steps.tag.outputs.IMAGE_TAG }}
+          # Start translation service  
+          docker run -d \
+            --name oasf-sdk \
+            -p 31234:31234 \
+            oasf-sdk:${{ steps.tag.outputs.IMAGE_TAG }}
+
+          # Wait for services to be ready
+          echo "Waiting for services to start..."
+          sleep 10
+          
+          # Check if services are running
+          docker logs oasf-sdk
 
       - name: Run E2E Tests
         run: |
@@ -42,5 +55,5 @@ jobs:
       - name: Show container logs on failure
         if: failure()
         run: |
-          echo "=== Container Logs ==="
+          echo "=== OASF SDK Logs ==="
           docker logs oasf-sdk || true
