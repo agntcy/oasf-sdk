@@ -3,12 +3,13 @@
 
 group "default" {
   targets = [
-    "translation",
-    "validation",
+    "oasf-sdk",
   ]
 }
 
-target "_common" {
+target "oasf-sdk" {
+  context = "."
+  dockerfile = "Dockerfile"
   output = [
     "type=image",
   ]
@@ -16,49 +17,17 @@ target "_common" {
     "linux/arm64",
     "linux/amd64",
   ]
+  tags = ["oasf-sdk"]
 }
 
-target "_e2e" {
+target "oasf-sdk-e2e" {
+  context = "."
+  dockerfile = "Dockerfile"
   output = [
     "type=image",
   ]
   platforms = [
     "linux/amd64",
   ]
-}
-
-target "translation" {
-  context = "."
-  dockerfile = "./translation/Dockerfile"
-  inherits = [
-    "_common",
-  ]
-  tags = ["oasf-sdk-translation"]
-}
-
-target "validation" {
-  context = "."
-  dockerfile = "./validation/Dockerfile"
-  inherits = [
-    "_common",
-  ]
-  tags = ["oasf-sdk-validation"]
-}
-
-target "validation-e2e" {
-  context = "."
-  dockerfile = "./validation/Dockerfile"
-  inherits = [
-    "_e2e",
-  ]
-  tags = ["oasf-sdk-validation"]
-}
-
-target "translation-e2e" {
-  context = "."
-  dockerfile = "./translation/Dockerfile"
-  inherits = [
-    "_e2e",
-  ]
-  tags = ["oasf-sdk-translation"]
+  tags = ["oasf-sdk"]
 }

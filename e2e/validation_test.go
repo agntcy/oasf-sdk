@@ -11,7 +11,7 @@ import (
 	validationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
 	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
 	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
-	"github.com/agntcy/oasf-sdk/core/converter"
+	"github.com/agntcy/oasf-sdk/pkg/decoding"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
@@ -19,7 +19,7 @@ import (
 )
 
 var _ = Describe("Validation Service E2E", func() {
-	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", "0.0.0.0", "31235"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", "0.0.0.0", "31234"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	Expect(err).NotTo(HaveOccurred())
 
 	client := validationv1grpc.NewValidationServiceClient(conn)
@@ -53,7 +53,7 @@ var _ = Describe("Validation Service E2E", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
-				encodedRecord, err := converter.JsonToProto(tc.jsonData)
+				encodedRecord, err := decoding.JsonToProto(tc.jsonData)
 				Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 				req := &validationv1.ValidateRecordRequest{

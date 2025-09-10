@@ -11,7 +11,7 @@ import (
 	translationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
 	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
-	"github.com/agntcy/oasf-sdk/core/converter"
+	"github.com/agntcy/oasf-sdk/pkg/decoding"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
@@ -29,7 +29,7 @@ var _ = Describe("Translation Service E2E", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := converter.JsonToProto(translationRecord)
+			encodedRecord, err := decoding.JsonToProto(translationRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToGHCopilotRequest{
@@ -65,7 +65,7 @@ var _ = Describe("Translation Service E2E", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := converter.JsonToProto(translationRecord)
+			encodedRecord, err := decoding.JsonToProto(translationRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToA2ARequest{

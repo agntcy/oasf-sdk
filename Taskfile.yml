@@ -12,18 +12,6 @@ vars:
   LICENSEI_VERSION: '0.9.0'
   LICENSEI_BIN: '{{ .BIN_DIR }}/licensei-{{.LICENSEI_VERSION}}'
 
-includes:
-  translation:
-    taskfile: ./translation/Taskfile.yml
-    dir: ./translation
-    vars:
-      BIN_DIR: '{{ .BIN_DIR }}'
-  validation:
-    taskfile: ./validation/Taskfile.yml
-    dir: ./validation
-    vars:
-      BIN_DIR: '{{ .BIN_DIR }}'
-
 tasks:
   default:
     cmds:
@@ -51,28 +39,34 @@ tasks:
       - '{{.BUFBUILD_BIN}} lint'
 
   compile:
-    desc: Compile binaries for all components
+    desc: Compile binary for host platform
+    vars:
+      GOOS: '{{ .GOOS | default OS }}'
+      GOARCH: '{{ .GOARCH | default ARCH }}'
+      BINARY_NAME: '{{ .BINARY_NAME | default "oasf-sdk" }}'
+      OUT_BINARY: '{{ .OUT_BINARY | default (printf "%s/%s" .BIN_DIR .BINARY_NAME) }}'
     cmds:
-      - task translation:compile
-      - task validation:compile
+      - CGO_ENABLED=0 GOOS={{ .GOOS }} GOARCH={{ .GOARCH }} BINARY_NAME={{ .BINARY_NAME }} go build -ldflags="-s -w -extldflags -static" -o "{{ .OUT_BINARY }}" server/cmd/main.go
 
   compile:all:
-    desc: Compile binaries for all components for all platforms
+    desc: Compile binary for multiple platforms
     cmds:
-      - task translation:compile:all
-      - task validation:compile:all
-
+      - for:
+          matrix:
+            OS: ['linux', 'darwin']
+            ARCH: ['amd64', 'arm64']
+        cmd: |
+          GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasf-sdk-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile
+  
   build:
-    desc: Build images for all components
+    desc: Build image for host platform
     cmds:
-      - task translation:build
-      - task validation:build
+      - docker buildx bake --set *.platform=linux/{{ ARCH }}
 
   build:all:
-    desc: Build images for all components for all platforms
+    desc: Build image for multiple platforms
     cmds:
-      - task translation:build:all
-      - task validation:build:all
+      - docker buildx bake
 
   ##
   ## Test
@@ -80,37 +74,28 @@ tasks:
   test:e2e:
     desc: Run end-to-end tests
     dir: e2e
+    deps:
+      - task: test:e2e:setup
     cmds:
+      - defer: { task: test:e2e:destroy }
       - go mod tidy
       - go test ./... -v
 
   test:e2e:setup:
-    desc: Ensure dependencies for e2e tests are up-to-date
-    dir: e2e
+    desc: Setup dependencies for e2e tests
     cmds:
       - |
         docker run -d \
-          --name translation-e2e \
+          --name oasf-sdk \
           -p 31234:31234 \
-          -e TRANSLATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31234 \
-          oasf-sdk-translation
-
-        # Start validation service
-        docker run -d \
-          --name validation-e2e \
-          -p 31235:31235 \
-          -e VALIDATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31235 \
-          oasf-sdk-validation
+          oasf-sdk
 
   test:e2e:destroy:
-    desc: Ensure dependencies for e2e tests are up-to-date
-    dir: e2e
+    desc: Destroy dependencies for e2e tests
     cmds:
       - |
-        docker stop translation-e2e
-        docker stop validation-e2e
-        docker rm translation-e2e
-        docker rm validation-e2e
+        docker stop oasf-sdk
+        docker rm oasf-sdk
 
   ##
   ## Dependencies

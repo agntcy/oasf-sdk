@@ -29,41 +29,11 @@ jobs:
 
       - name: Build Docker Images with commit tag
         run: |
-          docker buildx bake \
-            --set "validation-e2e.tags=oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}" \
-            validation-e2e --load
-          docker buildx bake \
-            --set "translation-e2e.tags=oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}" \
-            translation-e2e --load
+          task build:all
 
-      - name: Start test containers
+      - name: Tag images for e2e tests
         run: |
-          # Start translation service  
-          docker run -d \
-            --name translation-e2e \
-            -p 31234:31234 \
-            -e TRANSLATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31234 \
-            oasf-sdk-translation:${{ steps.tag.outputs.IMAGE_TAG }}
-
-          # Start validation service
-          docker run -d \
-            --name validation-e2e \
-            -p 31235:31235 \
-            -e VALIDATION_SERVER_LISTEN_ADDRESS=0.0.0.0:31235 \
-            oasf-sdk-validation:${{ steps.tag.outputs.IMAGE_TAG }}
-
-          # Wait for services to be ready
-          echo "Waiting for services to start..."
-          sleep 10
-          
-          # Check if services are running
-          docker logs validation-e2e
-          docker logs translation-e2e
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24'
+          docker tag oasf-sdk oasf-sdk:${{ steps.tag.outputs.IMAGE_TAG }}
 
       - name: Run E2E Tests
         run: |
@@ -72,7 +42,5 @@ jobs:
       - name: Show container logs on failure
         if: failure()
         run: |
-          echo "=== Validation Service Logs ==="
-          docker logs validation-e2e || true
-          echo "=== Translation Service Logs ==="
-          docker logs translation-e2e || true
+          echo "=== Container Logs ==="
+          docker logs oasf-sdk || true
