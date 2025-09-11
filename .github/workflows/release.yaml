@@ -56,10 +56,8 @@ jobs:
           provenance: false
           push: true
           set: |
-            translation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-translation:${{ github.ref_name }}
-            translation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-translation:latest
-            validation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-validation:${{ github.ref_name }}
-            validation.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk-validation:latest
+            oasf-sdk.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk:${{ github.ref_name }}
+            oasf-sdk.tags=ghcr.io/${{ github.repository_owner }}/oasf-sdk:latest
 
   release:
     name: Release
