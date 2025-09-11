@@ -1,7 +1,7 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package translation
+package translator
 
 type MCPServer struct {
 	Command string            `json:"command"`

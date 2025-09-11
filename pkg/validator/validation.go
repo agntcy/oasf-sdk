@@ -1,7 +1,7 @@
 // Copyright AGNTCY Contributors (https://github.com/agntcy)
 // SPDX-License-Identifier: Apache-2.0
 
-package validation
+package validator
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 
 	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
 	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
-	"github.com/agntcy/oasf-sdk/pkg/decoding"
+	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -46,7 +46,7 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	}
 
 	// Get schema version
-	schemaVersion, err := decoding.GetRecordSchemaVersion(req.GetRecord())
+	schemaVersion, err := decoder.GetRecordSchemaVersion(req.GetRecord())
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to get schema version: %w", err)
 	}

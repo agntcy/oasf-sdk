@@ -40,20 +40,21 @@ tasks:
 
   compile:
     desc: Compile binary for host platform
+    dir: ./server
     vars:
       GOOS: '{{ .GOOS | default OS }}'
       GOARCH: '{{ .GOARCH | default ARCH }}'
       BINARY_NAME: '{{ .BINARY_NAME | default "oasf-sdk" }}'
       OUT_BINARY: '{{ .OUT_BINARY | default (printf "%s/%s" .BIN_DIR .BINARY_NAME) }}'
     cmds:
-      - CGO_ENABLED=0 GOOS={{ .GOOS }} GOARCH={{ .GOARCH }} BINARY_NAME={{ .BINARY_NAME }} go build -ldflags="-s -w -extldflags -static" -o "{{ .OUT_BINARY }}" server/cmd/main.go
+      - CGO_ENABLED=0 GOOS={{ .GOOS }} GOARCH={{ .GOARCH }} BINARY_NAME={{ .BINARY_NAME }} go build -ldflags="-s -w -extldflags -static" -o "{{ .OUT_BINARY }}" cmd/main.go
 
   compile:all:
     desc: Compile binary for multiple platforms
     cmds:
       - for:
           matrix:
-            OS: ['linux', 'darwin']
+            OS: ['linux', 'darwin', 'windows']
             ARCH: ['amd64', 'arm64']
         cmd: |
           GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasf-sdk-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile

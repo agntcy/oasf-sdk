@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	translationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
-	"github.com/agntcy/oasf-sdk/pkg/decoding"
-	"github.com/agntcy/oasf-sdk/pkg/translation"
+	"github.com/agntcy/oasf-sdk/pkg/decoder"
+	"github.com/agntcy/oasf-sdk/pkg/translator"
 )
 
 type translationCtrl struct{}
@@ -23,12 +23,12 @@ func New() translationv1grpc.TranslationServiceServer {
 func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1.RecordToGHCopilotRequest) (*translationv1.RecordToGHCopilotResponse, error) {
 	slog.Info("Received Publish request", "request", req)
 
-	result, err := translation.RecordToGHCopilot(req.GetRecord())
+	result, err := translator.RecordToGHCopilot(req.GetRecord())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GHCopilot config from record: %w", err)
 	}
 
-	data, err := decoding.StructToProto(map[string]any{"mcpConfig": result})
+	data, err := decoder.StructToProto(map[string]any{"mcpConfig": result})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
 	}
@@ -39,12 +39,12 @@ func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1
 func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
 	slog.Info("Received RecordToA2A request", "request", req)
 
-	result, err := translation.RecordToA2A(req.GetRecord())
+	result, err := translator.RecordToA2A(req.GetRecord())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
 	}
 
-	data, err := decoding.StructToProto(map[string]any{"a2aCard": result})
+	data, err := decoder.StructToProto(map[string]any{"a2aCard": result})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
 	}

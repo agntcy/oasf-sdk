@@ -9,17 +9,17 @@ import (
 	"io"
 	"log/slog"
 
-	validationv1grpc "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
 	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-	"github.com/agntcy/oasf-sdk/pkg/validation"
+	"github.com/agntcy/oasf-sdk/pkg/validator"
 )
 
 type validationCtrl struct {
-	validator *validation.Validator
+	validator *validator.Validator
 }
 
 func New() (validationv1grpc.ValidationServiceServer, error) {
-	validator, err := validation.New()
+	validator, err := validator.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create validation service: %w", err)
 	}
