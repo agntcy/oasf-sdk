@@ -3,11 +3,10 @@
 
 syntax = "proto3";
 
-package decoding.v1;
+package agntcy.oasfsdk.decoding.v1;
 
-import "core/v1/object.proto";
-import "types/v1alpha0/record.proto";
-import "types/v1alpha1/record.proto";
+import "agntcy/oasf/types/v1alpha0/record.proto";
+import "agntcy/oasf/types/v1alpha1/record.proto";
 
 // DecodingService provides methods for decoding records.
 // Used for data handling across infrastructure and application layers.
@@ -18,7 +17,7 @@ service DecodingService {
 
 // DecodeRecordRequest represents a request to decode a Record object.
 message DecodeRecordRequest {
-  core.v1.Object record = 1;
+  google.protobuf.Struct record = 1;
 }
 
 // DecodeRecordResponse represents a response containing a Record object
