@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -19,9 +18,9 @@ const (
 )
 
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
-func RecordToGHCopilot(req *corev1.Object) (*GHCopilotMCPConfig, error) {
+func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 	// Get MCP module
-	found, mcpModule := getModuleDataFromRecord(req, MCPModuleName)
+	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName)
 	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
@@ -92,9 +91,9 @@ func RecordToGHCopilot(req *corev1.Object) (*GHCopilotMCPConfig, error) {
 }
 
 // RecordToA2A translates a record into an A2ACard structure.
-func RecordToA2A(req *corev1.Object) (*A2ACard, error) {
+func RecordToA2A(record *structpb.Struct) (*A2ACard, error) {
 	// Get A2A module
-	found, a2aModule := getModuleDataFromRecord(req, A2AModuleName)
+	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName)
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
@@ -113,9 +112,9 @@ func RecordToA2A(req *corev1.Object) (*A2ACard, error) {
 	return &card, nil
 }
 
-func getModuleDataFromRecord(record *corev1.Object, moduleName string) (bool, *structpb.Struct) {
+func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
 	// Find module by name
-	for _, module := range record.GetData().GetFields()["modules"].GetListValue().Values {
+	for _, module := range record.GetFields()["modules"].GetListValue().Values {
 		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
 			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
 		}

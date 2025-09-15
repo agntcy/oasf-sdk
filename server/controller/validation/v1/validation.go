@@ -9,8 +9,8 @@ import (
 	"io"
 	"log/slog"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
-	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/validation/v1/validationv1grpc"
+	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/validation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/validator"
 )
 
@@ -32,7 +32,7 @@ func New() (validationv1grpc.ValidationServiceServer, error) {
 func (v validationCtrl) ValidateRecord(_ context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
 	slog.Info("Received ValidateRecord request", "request", req)
 
-	isValid, errors, err := v.validator.ValidateRecord(req)
+	isValid, errors, err := v.validator.ValidateRecord(req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
@@ -55,10 +55,7 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 			return fmt.Errorf("failed to receive record: %w", err)
 		}
 
-		isValid, errors, err := v.validator.ValidateRecord(&validationv1.ValidateRecordRequest{
-			Record:    req.GetRecord(),
-			SchemaUrl: req.GetSchemaUrl(),
-		})
+		isValid, errors, err := v.validator.ValidateRecord(req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
 		if err != nil {
 			return fmt.Errorf("failed to validate record: %w", err)
 		}

@@ -12,9 +12,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/decoding/v1/decodingv1grpc"
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/decoding/v1/decodingv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/validation/v1/validationv1grpc"
 	"github.com/agntcy/oasf-sdk/server/config"
 	decodingcontrollerv1 "github.com/agntcy/oasf-sdk/server/controller/decoding/v1"
 	translationcontrollerv1 "github.com/agntcy/oasf-sdk/server/controller/translation/v1"

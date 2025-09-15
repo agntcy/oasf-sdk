@@ -9,9 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
-	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
-	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
+	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/translation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,9 +33,7 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToGHCopilotRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.RecordToGHCopilot(ctx, req)
@@ -71,9 +68,7 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToA2ARequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.RecordToA2A(ctx, req)

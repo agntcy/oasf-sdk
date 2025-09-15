@@ -9,10 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	"github.com/xeipuuv/gojsonschema"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type Validator struct {
@@ -34,10 +33,17 @@ func New() (*Validator, error) {
 	}, nil
 }
 
-func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (bool, []string, error) {
+// ValidateRecord validates a record against a specified schema URL or its embedded schema version.
+func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (bool, []string, error) {
+	// Apply options
+	opts := &option{}
+	for _, o := range options {
+		o(opts)
+	}
+
 	// Validate against schema URL if provided
-	if req.GetSchemaUrl() != "" {
-		schemaErrors, err := v.validateWithSchemaURL(req.GetRecord(), req.GetSchemaUrl())
+	if opts.schemaURL != "" {
+		schemaErrors, err := v.validateWithSchemaURL(record, opts.schemaURL)
 		if err != nil {
 			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 		}
@@ -46,7 +52,7 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	}
 
 	// Get schema version
-	schemaVersion, err := decoder.GetRecordSchemaVersion(req.GetRecord())
+	schemaVersion, err := decoder.GetRecordSchemaVersion(record)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to get schema version: %w", err)
 	}
@@ -63,7 +69,7 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	}
 
 	// Validate against embedded schema
-	schemaErrors, err := v.validateWithJSONSchema(req.GetRecord(), schema)
+	schemaErrors, err := v.validateWithJSONSchema(record, schema)
 	if err != nil {
 		return false, nil, fmt.Errorf("JSON schema validation failed: %w", err)
 	}
@@ -71,9 +77,9 @@ func (v *Validator) ValidateRecord(req *validationv1.ValidateRecordRequest) (boo
 	return len(schemaErrors) == 0, schemaErrors, nil
 }
 
-func (v *Validator) validateWithJSONSchema(record *corev1.Object, schema *gojsonschema.Schema) ([]string, error) {
+func (v *Validator) validateWithJSONSchema(record *structpb.Struct, schema *gojsonschema.Schema) ([]string, error) {
 	// Validate JSON against schema
-	documentLoader := gojsonschema.NewGoLoader(record.GetData())
+	documentLoader := gojsonschema.NewGoLoader(record)
 	result, err := schema.Validate(documentLoader)
 	if err != nil {
 		return nil, fmt.Errorf("schema validation error: %w", err)
@@ -90,7 +96,7 @@ func (v *Validator) validateWithJSONSchema(record *corev1.Object, schema *gojson
 	return errors, nil
 }
 
-func (v *Validator) validateWithSchemaURL(record *corev1.Object, schemaURL string) ([]string, error) {
+func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL string) ([]string, error) {
 	resp, err := v.httpClient.Get(schemaURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: %w", schemaURL, err)

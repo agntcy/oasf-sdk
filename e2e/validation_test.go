@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
-	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/validation/v1/validationv1grpc"
+	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/validation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -66,9 +65,7 @@ var _ = Describe("Validation Service E2E", func() {
 				Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 				req := &validationv1.ValidateRecordRequest{
-					Record: &corev1.Object{
-						Data: encodedRecord,
-					},
+					Record:    encodedRecord,
 					SchemaUrl: tc.schemaURL,
 				}
 
