@@ -7,6 +7,7 @@ package agntcy.oasfsdk.decoding.v1;
 
 import "agntcy/oasf/types/v1alpha0/record.proto";
 import "agntcy/oasf/types/v1alpha1/record.proto";
+import "google/protobuf/struct.proto";
 
 // DecodingService provides methods for decoding records.
 // Used for data handling across infrastructure and application layers.
@@ -27,7 +28,7 @@ message DecodeRecordRequest {
 // multiple versions or types of record schemas.
 message DecodeRecordResponse {
   oneof record {
-    types.v1alpha0.Record v1alpha0 = 1;
-    types.v1alpha1.Record v1alpha1 = 2;
+    agntcy.oasf.types.v1alpha0.Record v1alpha0 = 1;
+    agntcy.oasf.types.v1alpha1.Record v1alpha1 = 2;
   }
 }
