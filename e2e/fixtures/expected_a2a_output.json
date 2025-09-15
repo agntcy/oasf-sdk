@@ -1,0 +1,24 @@
+{
+  "a2aCard": {
+    "name": "example-agent",
+    "skills": [
+      {
+        "description": "Performs web searches to retrieve information.",
+        "id": "browser",
+        "name": "browser automation"
+      }
+    ],
+    "url": "http://localhost:8000",
+    "capabilities": {
+      "pushNotifications": false,
+      "streaming": true
+    },
+    "defaultInputModes": [
+      "text"
+    ],
+    "defaultOutputModes": [
+      "text"
+    ],
+    "description": "An agent that performs web searches and extracts information."
+  }
+}
