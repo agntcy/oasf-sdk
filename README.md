@@ -4,9 +4,8 @@ The OASF SDK contains SDKs related to the [OASF](https://github.com/agntcy/oasf)
 
 ## Usage
 
-Check out the usage documentation for each SDK:
-- [Translation SDK](translation/USAGE.md)
-- [Validation SDK](validation/USAGE.md)
+See the [USAGE.md](https://github.com/agntcy/oasf-sdk/blob/main/USAGE.md) file for more information on how to use the
+SDKs.
 
 ## Proto Bindings
 
