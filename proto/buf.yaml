@@ -7,7 +7,7 @@ breaking:
     - WIRE_JSON
 deps:
   # https://buf.build/agntcy/oasf
-  - buf.build/agntcy/oasf:6bf82c001122
+  - buf.build/agntcy/oasf:a3d79079b9ac44d2914a82865ae62d74
 modules:
   - path: .
     name: buf.build/agntcy/oasf-sdk
