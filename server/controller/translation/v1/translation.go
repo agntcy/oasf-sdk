@@ -20,7 +20,7 @@ func New() translationv1grpc.TranslationServiceServer {
 	return &translationCtrl{}
 }
 
-func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1.RecordToGHCopilotRequest) (*translationv1.RecordToGHCopilotResponse, error) {
+func (t *translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1.RecordToGHCopilotRequest) (*translationv1.RecordToGHCopilotResponse, error) {
 	slog.Info("Received Publish request", "request", req)
 
 	result, err := translator.RecordToGHCopilot(req.GetRecord())
@@ -36,7 +36,7 @@ func (t translationCtrl) RecordToGHCopilot(_ context.Context, req *translationv1
 	return &translationv1.RecordToGHCopilotResponse{Data: data}, nil
 }
 
-func (t translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
+func (t *translationCtrl) RecordToA2A(_ context.Context, req *translationv1.RecordToA2ARequest) (*translationv1.RecordToA2AResponse, error) {
 	slog.Info("Received RecordToA2A request", "request", req)
 
 	result, err := translator.RecordToA2A(req.GetRecord())

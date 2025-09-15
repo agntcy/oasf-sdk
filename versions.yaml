@@ -1,0 +1,10 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+module-sets:
+  directory:
+    version: v0.0.3
+    modules:
+      - github.com/agntcy/oasf-sdk/e2e
+      - github.com/agntcy/oasf-sdk/pkg
+      - github.com/agntcy/oasf-sdk/server
