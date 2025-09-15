@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ var _ = Describe("Translation Service E2E", func() {
 	client := translationv1grpc.NewTranslationServiceClient(conn)
 
 	Context("MCP Config Generation", func() {
-		It("should generate github MCP config from translation record", func() {
+		It("should generate github MCP config matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
@@ -42,26 +43,27 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
 			Expect(resp.Data).NotTo(BeNil(), "Expected MCP config data in response")
 
-			mcpData := resp.Data.AsMap()
-			Expect(mcpData).NotTo(BeEmpty(), "MCP config data should not be empty")
-			mcpConfig := mcpData["mcpConfig"].(map[string]any)
-			Expect(mcpConfig).NotTo(BeNil(), "MCP config should be present")
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.Data.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal MCP config to JSON")
 
-			Expect(mcpConfig).To(HaveKey("servers"), "Should contain servers config")
-			Expect(mcpConfig).To(HaveKey("inputs"), "Should contain inputs config")
+			// Parse expected output
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected MCP output")
 
-			servers, ok := mcpConfig["servers"].(map[string]any)
-			Expect(ok).To(BeTrue(), "servers should be a map")
+			// Parse actual output for comparison
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual MCP output")
 
-			github, ok := servers["github"].(map[string]any)
-			Expect(ok).To(BeTrue(), "github should be a map")
-			Expect(github).To(HaveKey("command"), "github should have command")
-			Expect(github["command"]).To(Equal("docker"), "command should be docker")
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "MCP config should match expected output")
 		})
 	})
 
 	Context("A2A Card Extraction", func() {
-		It("should extract A2A card from translation record", func() {
+		It("should extract A2A card matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
@@ -78,31 +80,22 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail")
 			Expect(resp.Data).NotTo(BeNil(), "Expected A2A card data in response")
 
-			a2aData := resp.Data.AsMap()
-			Expect(a2aData).NotTo(BeEmpty(), "A2A card data should not be empty")
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.Data.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal A2A card to JSON")
 
-			a2aCard, ok := a2aData["a2aCard"].(map[string]interface{})
-			Expect(ok).To(BeTrue(), "a2aCard should be a map")
-			Expect(a2aCard).NotTo(BeNil(), "A2A card should be present")
+			// Parse expected output
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedA2AOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected A2A output")
 
-			Expect(a2aCard).To(HaveKey("capabilities"), "A2A card should have capabilities")
-			capabilities, ok := a2aCard["capabilities"].(map[string]interface{})
-			Expect(ok).To(BeTrue(), "capabilities should be a map")
-			Expect(capabilities["streaming"]).To(BeTrue(), "streaming capability should be true")
+			// Parse actual output for comparison
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual A2A output")
 
-			Expect(a2aCard).To(HaveKey("description"), "A2A card should have description")
-			Expect(a2aCard["description"]).To(ContainSubstring("web searches"), "Description should mention web searches")
-
-			Expect(a2aCard).To(HaveKey("skills"), "A2A card should have skills")
-			skills, ok := a2aCard["skills"].([]interface{})
-			Expect(ok).To(BeTrue(), "skills should be an array")
-			Expect(skills).To(HaveLen(1), "Should have one skill")
-			skill, ok := skills[0].(map[string]interface{})
-			Expect(ok).To(BeTrue(), "skill should be a map")
-			Expect(skill["id"]).To(Equal("browser"), "Skill ID should be browser")
-
-			Expect(a2aCard).To(HaveKey("url"), "A2A card should have url")
-			Expect(a2aCard["url"]).To(Equal("http://localhost:8000"), "URL should match extension data")
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
 		})
 	})
 })

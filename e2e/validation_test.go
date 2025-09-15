@@ -45,11 +45,20 @@ var _ = Describe("Validation Service E2E", func() {
 			name:     "invalid_record_v0.7.0.json",
 			jsonData: invalidV070Record,
 		},
+		{
+			name:       "valid_record_v0.3.1.json",
+			jsonData:   validV031Record,
+			shouldPass: true,
+		},
+		{
+			name:     "invalid_record_v0.3.1.json",
+			jsonData: invalidV031Record,
+		},
 	}
 
 	for _, tc := range testCases {
 		Context(tc.name, func() {
-			It("should return valid with no errors", func() {
+			It("should return with no errors", func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 

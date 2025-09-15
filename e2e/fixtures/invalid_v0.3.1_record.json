@@ -1,0 +1,52 @@
+{
+  "authors": ["Test Author"],
+  "created_at": "invalid-date-format",
+  "description": "An invalid test agent for testing schema validation failures",
+  "extensions": [
+    {
+      "name": "schema.oasf.agntcy.org/features//manifest",
+      "data": {
+        "acp_spec": {
+          "capabilities": {
+            "callbacks": "invalid-boolean-value",
+            "streaming": {
+              "result_streaming": true
+            }
+          },
+          "config": {},
+          "input": {},
+          "output": {}
+        },
+        "agent_deployment": {
+          "deployment_options": [
+            {
+              "type": "invalid_deployment_type",
+              "name": "invalid_deployment"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "locators": [
+    {
+      "type": "invalid-locator-type",
+      "url": "not-a-valid-url"
+    }
+  ],
+  "name": "example.org/invalid-agent",
+  "schema_version": "v0.3.1",
+  "signature": {
+    "algorithm": "ES256",
+    "content_type": "application/json",
+    "signed_at": "2025-09-11T10:00:00Z"
+  },
+  "skills": [
+    {
+      "category_uid": "invalid-number",
+      "class_uid": 101
+    }
+  ],
+  "version": "v0.3.1"
+}
+
