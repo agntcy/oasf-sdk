@@ -9,9 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/decoding/v1/decodingv1grpc"
-	decodingv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/decoding/v1"
-	corev1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/core/v1"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/decoding/v1/decodingv1grpc"
+	decodingv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/decoding/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,9 +34,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to encode v0.3.1 record to protobuf")
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.DecodeRecord(ctx, req)
@@ -88,9 +85,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to encode v0.7.0 record to protobuf")
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.DecodeRecord(ctx, req)
@@ -147,9 +142,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to encode record without schema")
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			_, err = client.DecodeRecord(ctx, req)
@@ -174,9 +167,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to encode record with unsupported schema")
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			_, err = client.DecodeRecord(ctx, req)
@@ -202,9 +193,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			defer cancel()
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: nil,
-				},
+				Record: nil,
 			}
 
 			_, err := client.DecodeRecord(ctx, req)
@@ -222,9 +211,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.DecodeRecord(ctx, req)
@@ -243,9 +230,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			req := &decodingv1.DecodeRecordRequest{
-				Record: &corev1.Object{
-					Data: encodedRecord,
-				},
+				Record: encodedRecord,
 			}
 
 			resp, err := client.DecodeRecord(ctx, req)

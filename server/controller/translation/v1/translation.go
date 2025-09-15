@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/translation/v1/translationv1grpc"
-	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/translation/v1"
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
+	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/translation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	"github.com/agntcy/oasf-sdk/pkg/translator"
 )
