@@ -82,8 +82,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  prepare:
-    name: Prepare
+  find-modules:
+    name: Find modules
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.modules.outputs.modules }}
@@ -99,7 +99,7 @@ jobs:
 
   create-module-tags:
     name: Create module tags
-    needs: prepare
+    needs: find-modules
     runs-on: ubuntu-latest
     strategy:
       matrix:
