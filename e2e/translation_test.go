@@ -24,8 +24,8 @@ var _ = Describe("Translation Service E2E", func() {
 
 	client := translationv1grpc.NewTranslationServiceClient(conn)
 
-	Context("MCP Config Generation", func() {
-		It("should generate github MCP config matching expected output", func() {
+	Context("GH Copilot config Generation", func() {
+		It("should generate github GH Copilot config matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
@@ -38,24 +38,24 @@ var _ = Describe("Translation Service E2E", func() {
 
 			resp, err := client.RecordToGHCopilot(ctx, req)
 			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
-			Expect(resp.Data).NotTo(BeNil(), "Expected MCP config data in response")
+			Expect(resp.Data).NotTo(BeNil(), "Expected GH Copilot config data in response")
 
 			// Convert response to JSON for comparison
 			actualJSON, err := json.MarshalIndent(resp.Data.AsMap(), "", "  ")
-			Expect(err).NotTo(HaveOccurred(), "Failed to marshal MCP config to JSON")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal GH Copilot config to JSON")
 
 			// Parse expected output
 			var expectedOutput map[string]interface{}
 			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
-			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected MCP output")
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected GH Copilot output")
 
 			// Parse actual output for comparison
 			var actualOutput map[string]interface{}
 			err = json.Unmarshal(actualJSON, &actualOutput)
-			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual MCP output")
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual GH Copilot output")
 
 			// Compare structure against expected output
-			Expect(actualOutput).To(Equal(expectedOutput), "MCP config should match expected output")
+			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
 	})
 

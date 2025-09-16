@@ -1,114 +1,24 @@
-# OASF SDK
+# Translation Service
 
-## Translation SDK
-
-### Prerequisites
+## Prerequisites
 
 - Translation SDK binary, distributed via [GitHub Releases](https://github.com/agntcy/oasf-sdk/releases)
 - Translation SDK docker images, distributed via
-[GitHub Packages](https://github.com/orgs/agntcy/packages?repo_name=oasf-sdk)
+  [GitHub Packages](https://github.com/orgs/agntcy/packages?repo_name=oasf-sdk)
 
-To start you need to have a [valid OASF data model](https://schema.oasf.outshift.com/0.5.0/objects/record) that you can
-convert to different formats, let's save the following example manifest to a file named `model.json`:
-
-```bash
-cat << 'EOF' > model.json
-{
-  "record": {
-    "name": "poc/integrations-agent-example",
-    "version": "v1.0.0",
-    "description": "An example agent with IDE integrations support",
-    "authors": [
-      "Adam Tagscherer <atagsche@cisco.com>"
-    ],
-    "created_at": "2025-06-16T17:06:37Z",
-    "skills": [
-      {
-        "name": "schema.oasf.agntcy.org/skills/contextual_comprehension",
-        "id": 10101
-      }
-    ],
-    "locators": [
-      {
-        "type": "docker-image",
-        "url": "https://ghcr.io/agntcy/dir/integrations-agent-example"
-      }
-    ],
-    "extensions": [
-      {
-        "name": "schema.oasf.agntcy.org/features/runtime/mcp",
-        "version": "v1.0.0",
-        "data": {
-          "servers": {
-            "github": {
-              "command": "docker",
-              "args": [
-                "run",
-                "-i",
-                "--rm",
-                "-e",
-                "GITHUB_PERSONAL_ACCESS_TOKEN",
-                "ghcr.io/github/github-mcp-server"
-              ],
-              "env": {
-                "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:GITHUB_PERSONAL_ACCESS_TOKEN}"
-              }
-            }
-          }
-        }
-      },
-      {
-        "name": "schema.oasf.agntcy.org/features/runtime/a2a",
-        "version": "v1.0.0",
-        "data": {
-          "name": "example-agent",
-          "description": "An agent that performs web searches and extracts information.",
-          "url": "http://localhost:8000",
-          "capabilities": {
-            "streaming": true,
-            "pushNotifications": false
-          },
-          "defaultInputModes": [
-            "text"
-          ],
-          "defaultOutputModes": [
-            "text"
-          ],
-          "skills": [
-            {
-              "id": "browser",
-              "name": "browser automation",
-              "description": "Performs web searches to retrieve information."
-            }
-          ]
-        }
-      }
-    ],
-    "signature": {}
-  }
-}
-EOF
-```
-
-Now let's start the translation SDK server as a docker container, which will listen for incoming requests on port
-`31234`:
+Let's start the OASF SDK as a docker container, which will listen for incoming requests on port `31234`:
 
 ```bash
 docker run -p 31234:31234 ghcr.io/agntcy/oasf-sdk:latest
 ```
 
-### VSCode MCP Config
+## GitHub Copilot config
 
-Create a VSCode MCP Config from the OASF data model using the `RecordToVSCodeCopilot` RPC method.
-You can pipe the output to a file wherever you want to save the MCP config.
+Create a GitHub Copilot config from the OASF data model using the `RecordToGHCopilot` RPC method.
+You can pipe the output to a file wherever you want to save the config.
 
 ```bash
-grpcurl -plaintext \
-  -d @ \
-  localhost:31234 \
-  translation.v1.TranslationService/RecordToVSCodeCopilot \
-  <model.json \
-  | jq
+cat e2e/fixtures/translation_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
 ```
 
 Output:
@@ -145,17 +55,12 @@ Output:
 }
 ```
 
-### A2A Card extraction
+## A2A Card extraction
 
-To extract A2A card from the OASF data model, use the `RecordToA2ACard` RPC method.
+To extract A2A card from the OASF data model, use the `RecordToA2A` RPC method.
 
 ```bash
-grpcurl -plaintext \
-  -d @ \
-  localhost:31234 \
-  translation.v1.TranslationService/RecordToA2A \
-  <model.json \
-  | jq
+cat e2e/fixtures/translation_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
 ```
 
 Output:
@@ -188,194 +93,277 @@ Output:
 }
 ```
 
-## Validation SDK
+# Validation Service
 
-The OASF Validation Service validates OASF Records against JSON Schema v0.7. It supports two validation modes:
+The OASF SDK Validation Service validates OASF Records against [JSON Schema v0.7](https://json-schema.org/draft-07).
+It supports two validation modes:
 - **Embedded schemas** - Uses JSON schemas built into the binary (default)
 - **Schema URL** - Fetches and validates against the schema URL from the record
 
-### Environment Variables
+## gRPC API
 
-- `VALIDATION_SERVER_LISTEN_ADDRESS`: Server listen address (default: `0.0.0.0:31235`)
+```bash
+cat e2e/fixtures/valid_v0.7.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+```
 
-### 1. As a Go Library
-
-Import the validation service directly into your Go project:
+## Golang example
 
 ```go
 package main
 
 import (
-    "fmt"
-    "log"
-    
-    "github.com/agntcy/oasf-sdk/validation/service"
-    validationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
-    objectsv3 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/objects/v3"
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/structpb"
+	
+	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
+	validationpb "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
 )
 
 func main() {
-    // Create validation service (schemas are embedded in the binary)
-    validator, err := service.NewValidationService()
-    if err != nil {
-        log.Fatal(err)
-    }
-    
-    // Create a record to validate
-    record := &objectsv3.Record{
-        Id:      "my-record",
-        Name:    "Test Record",
-        Version: "0.5.0",
-        // ... other fields
-    }
-    
-    // Option 1: Validate against embedded schemas (default)
-    req := &validationv1.ValidateRecordRequest{
-        Record:    record,
-        SchemaUrl: "", // Empty string uses embedded schemas
-    }
-    
-    // Option 2: Validate against a specific schema URL
-    req = &validationv1.ValidateRecordRequest{
-        Record:    record,
-        SchemaUrl: "https://example.com/schemas/v0.5.0.json", // Provide schema URL
-    }
-    
-    // Validate the record
-    isValid, errors, err := validator.ValidateRecord(req)
-    if err != nil {
-        log.Fatal(err)
-    }
-    
-    if isValid {
-        fmt.Printf("Record %s is valid!\n", record.Id)
-    } else {
-        fmt.Printf("Record %s is invalid:\n", record.Id)
-        for _, err := range errors {
-            fmt.Printf("  - %s\n", err)
-        }
-    }
+	// Connect to the validation service
+	conn, err := grpc.NewClient("localhost:31234", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := validationv1.NewValidationServiceClient(conn)
+
+	// Sample OASF record to validate
+	record := map[string]interface{}{
+		"name":           "example.org/my-agent",
+		"schema_version": "v0.7.0",
+		"version":        "v1.0.0",
+		"description":    "An example agent for demonstration",
+		"authors":        []string{"Your Name <your.email@example.com>"},
+		"created_at":     "2025-01-01T00:00:00Z",
+		"domains": []map[string]interface{}{
+			{
+				"id":   101,
+				"name": "technology/internet_of_things",
+			},
+		},
+		"locators": []map[string]interface{}{
+			{
+				"type": "docker_image",
+				"url":  "ghcr.io/example/my-agent:latest",
+			},
+		},
+		"skills": []map[string]interface{}{
+			{
+				"name": "natural_language_processing/natural_language_understanding",
+				"id":   101,
+			},
+		},
+	}
+
+	// Convert to protobuf Struct
+	recordStruct, err := structpb.NewStruct(record)
+	if err != nil {
+		log.Fatalf("Failed to convert record to struct: %v", err)
+	}
+
+	// Create validation request
+	req := &validationpb.ValidateRecordRequest{
+		Record: recordStruct,
+		// SchemaUrl: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record", // Optional
+	}
+
+	// Call validation service
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.ValidateRecord(ctx, req)
+	if err != nil {
+		log.Fatalf("Validation failed: %v", err)
+	}
+
+	// Print results
+	fmt.Printf("Valid: %t\n", resp.IsValid)
+	if len(resp.Errors) > 0 {
+		fmt.Printf("Errors:\n")
+		for _, err := range resp.Errors {
+			fmt.Printf("  - %s\n", err)
+		}
+	}
 }
 ```
 
-### 2. As a gRPC Server
-
-Run the validation service as a standalone server:
-
-```bash
-# Simple - just run it (schemas are embedded)
-docker run -p 31235:31235 ghcr.io/agntcy/oasf-sdk-validation:latest
-```
-
-Then call it from any language that supports gRPC:
-
-#### CLI Example (grpcurl)
-
-You can test the validation service from the command line using [grpcurl](https://github.com/fullstorydev/grpcurl):
-
-```bash
-cat agent.json | grpcurl -plaintext -d @ localhost:31235 validation.v1.ValidationService/ValidateRecord | jq
-```
-
-#### Python Example
-
-##### Single Record Validation
+## Python Example
 
 ```python
 import grpc
-from validation.v1 import validation_service_pb2_grpc, validation_service_pb2
+import json
+from google.protobuf.struct_pb2 import Struct
 
-channel = grpc.insecure_channel('localhost:31235')
-stub = validation_service_pb2_grpc.ValidationServiceStub(channel)
+# Import generated protobuf files (assuming they're generated and in your Python path)
+# You'll need to generate these from the .proto files using protoc
+import validation_v1_pb2
+import validation_v1_pb2_grpc
 
-// Validate against embedded schemas
-request = validation_service_pb2.ValidateRecordRequest(
-    record=your_record,
-    schema_url=""  # Empty string for embedded schemas
-)
+def validate_record():
+    # Sample OASF record to validate
+    record_data = {
+        "name": "example.org/my-agent",
+        "schema_version": "v0.7.0",
+        "version": "v1.0.0",
+        "description": "An example agent for demonstration",
+        "authors": ["Your Name <your.email@example.com>"],
+        "created_at": "2025-01-01T00:00:00Z",
+        "domains": [
+            {
+                "id": 101,
+                "name": "technology/internet_of_things"
+            }
+        ],
+        "locators": [
+            {
+                "type": "docker_image",
+                "url": "ghcr.io/example/my-agent:latest"
+            }
+        ],
+        "skills": [
+            {
+                "name": "natural_language_processing/natural_language_understanding",
+                "id": 101
+            }
+        ]
+    }
 
-# Or validate against specific schema URL
-request = validation_service_pb2.ValidateRecordRequest(
-    record=your_record,
-    schema_url="https://example.com/schemas/v0.5.0.json"
-)
-
-response = stub.ValidateRecord(request)
-
-if response.is_valid:
-    print("Record is valid!")
-else:
-    print(f"Validation errors: {response.errors}")
-```
-
-##### Streaming Validation
-
-```python
-def generate_requests():
-    for record in your_records:
-        yield validation_service_pb2.ValidateRecordStreamRequest(
-            record=record,
-            schema_url=""  # Empty for embedded, or provide URL string
+    # Create gRPC channel
+    with grpc.insecure_channel('localhost:31234') as channel:
+        stub = validation_v1_pb2_grpc.ValidationServiceStub(channel)
+        
+        # Convert dict to protobuf Struct
+        record_struct = Struct()
+        record_struct.update(record_data)
+        
+        # Create validation request
+        request = validation_v1_pb2.ValidateRecordRequest(
+            record=record_struct
+            # schema_url="https://schema.oasf.outshift.com/schema/0.7.0/objects/record"  # Optional
         )
+        
+        try:
+            # Call validation service
+            response = stub.ValidateRecord(request)
+            
+            # Print results
+            print(f"Valid: {response.is_valid}")
+            if response.errors:
+                print("Errors:")
+                for error in response.errors:
+                    print(f"  - {error}")
+            else:
+                print("No validation errors found!")
+                
+        except grpc.RpcError as e:
+            print(f"gRPC error: {e.code()}: {e.details()}")
 
-responses = stub.ValidateRecordStream(generate_requests())
-for response in responses:
-    if response.is_valid:
-        print("Record is valid!")
-    else:
-        print(f"Validation errors: {response.errors}")
+if __name__ == "__main__":
+    validate_record()
 ```
 
-#### JavaScript Example
-
-##### Single Record Validation
+## JavaScript Example
 
 ```javascript
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
+const path = require('path');
 
-const packageDefinition = protoLoader.loadSync('validation_service.proto');
-const validationService = grpc.loadPackageDefinition(packageDefinition).validation.v1;
+// Load the protobuf definition
+const PROTO_PATH = path.join(__dirname, 'proto/agntcy/oasfsdk/validation/v1/validation_service.proto');
 
-const client = new validationService.ValidationService('localhost:31235', grpc.credentials.createInsecure());
-
-// Single record validation
-client.ValidateRecord({
-    record: yourRecord,
-    schema_url: ""  // Empty for embedded schemas, or provide URL
-}, (error, response) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-    
-    if (response.isValid) {
-        console.log('Record is valid!');
-    } else {
-        console.log('Validation errors:', response.errors);
-    }
-});
-```
-
-##### Streaming Validation
-
-```javascript
-// Streaming validation
-const stream = client.ValidateRecordStream();
-stream.on('data', (response) => {
-    if (response.isValid) {
-        console.log('Record is valid!');
-    } else {
-        console.log('Validation errors:', response.errors);
-    }
+const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    defaults: true,
+    oneofs: true,
+    includeDirs: [path.join(__dirname, 'proto')]
 });
 
-// Send records to stream
-yourRecords.forEach(record => {
-    stream.write({
-        record: record,
-        schema_url: ""  // Empty for embedded, or provide URL string
+const validationProto = grpc.loadPackageDefinition(packageDefinition).agntcy.oasfsdk.validation.v1;
+
+async function validateRecord() {
+    // Sample OASF record to validate
+    const recordData = {
+        name: "example.org/my-agent",
+        schema_version: "v0.7.0",
+        version: "v1.0.0",
+        description: "An example agent for demonstration",
+        authors: ["Your Name <your.email@example.com>"],
+        created_at: "2025-01-01T00:00:00Z",
+        domains: [
+            {
+                id: 101,
+                name: "technology/internet_of_things"
+            }
+        ],
+        locators: [
+            {
+                type: "docker_image",
+                url: "ghcr.io/example/my-agent:latest"
+            }
+        ],
+        skills: [
+            {
+                name: "natural_language_processing/natural_language_understanding",
+                id: 101
+            }
+        ]
+    };
+
+    // Create gRPC client
+    const client = new validationProto.ValidationService(
+        'localhost:31234',
+        grpc.credentials.createInsecure()
+    );
+
+    // Create validation request
+    const request = {
+        record: recordData
+        // schema_url: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record"  // Optional
+    };
+
+    return new Promise((resolve, reject) => {
+        client.ValidateRecord(request, (error, response) => {
+            if (error) {
+                console.error('gRPC error:', error);
+                reject(error);
+                return;
+            }
+
+            // Print results
+            console.log(`Valid: ${response.is_valid}`);
+            if (response.errors && response.errors.length > 0) {
+                console.log('Errors:');
+                response.errors.forEach(err => {
+                    console.log(`  - ${err}`);
+                });
+            } else {
+                console.log('No validation errors found!');
+            }
+
+            resolve(response);
+        });
     });
-});
-stream.end();
+}
+
+// Run the validation
+validateRecord()
+    .then(() => {
+        console.log('Validation completed successfully');
+        process.exit(0);
+    })
+    .catch((error) => {
+        console.error('Validation failed:', error);
+        process.exit(1);
+    });
 ```
