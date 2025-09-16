@@ -84,8 +84,6 @@ jobs:
 
   prepare:
     name: Prepare
-    needs:
-        - release
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.modules.outputs.modules }}
