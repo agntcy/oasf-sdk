@@ -101,6 +101,8 @@ jobs:
     name: Create module tags
     needs: find-modules
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         tags: ${{ fromJson(needs.find-modules.outputs.modules) }}
