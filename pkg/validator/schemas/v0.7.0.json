@@ -2306,13 +2306,13 @@
             "items": {
               "oneOf": [
                 {
-                  "$ref": "#/$defs/objects/docker_deployment"
+                  "$ref": "#/$defs/objects/source_code_deployment"
                 },
                 {
                   "$ref": "#/$defs/objects/remote_service_deployment"
                 },
                 {
-                  "$ref": "#/$defs/objects/source_code_deployment"
+                  "$ref": "#/$defs/objects/docker_deployment"
                 }
               ]
             },
@@ -2992,12 +2992,7 @@
           }
         },
         "required": [
-          "algorithm",
-          "certificate",
-          "content_bundle",
-          "content_type",
-          "signature",
-          "signed_at"
+          "signature"
         ],
         "title": "Record Signature",
         "type": "object"
@@ -3053,10 +3048,10 @@
           "framework_config": {
             "oneOf": [
               {
-                "$ref": "#/$defs/objects/langgraph_config"
+                "$ref": "#/$defs/objects/llamaindex_config"
               },
               {
-                "$ref": "#/$defs/objects/llamaindex_config"
+                "$ref": "#/$defs/objects/langgraph_config"
               }
             ],
             "title": "Agentic Framework Config"
@@ -6314,7 +6309,7 @@
       }
     }
   },
-  "$id": "https://schema.oasf.outshift.com/schema/objects/record",
+  "$id": "https://schema.oasf.outshift.com/schema/0.7.0/objects/record",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "properties": {
@@ -6344,91 +6339,25 @@
       "items": {
         "oneOf": [
           {
-            "$ref": "#/$defs/domains/risk_management"
+            "$ref": "#/$defs/domains/biotechnology"
           },
           {
-            "$ref": "#/$defs/domains/online_safety"
+            "$ref": "#/$defs/domains/pharmaceutical_research"
           },
           {
-            "$ref": "#/$defs/domains/fraud_prevention"
+            "$ref": "#/$defs/domains/genomics"
           },
           {
-            "$ref": "#/$defs/domains/content_moderation"
+            "$ref": "#/$defs/domains/bioinformatics"
           },
           {
-            "$ref": "#/$defs/domains/data_privacy"
+            "$ref": "#/$defs/domains/molecular_biology"
           },
           {
-            "$ref": "#/$defs/domains/supply_chain"
+            "$ref": "#/$defs/domains/lean_manufacturing"
           },
           {
-            "$ref": "#/$defs/domains/public_transit"
-          },
-          {
-            "$ref": "#/$defs/domains/freight"
-          },
-          {
-            "$ref": "#/$defs/domains/autonomous_vehicles"
-          },
-          {
-            "$ref": "#/$defs/domains/logistics"
-          },
-          {
-            "$ref": "#/$defs/domains/automotive"
-          },
-          {
-            "$ref": "#/$defs/domains/health_information_systems"
-          },
-          {
-            "$ref": "#/$defs/domains/telemedicine"
-          },
-          {
-            "$ref": "#/$defs/domains/patient_management_systems"
-          },
-          {
-            "$ref": "#/$defs/domains/healthcare_informatics"
-          },
-          {
-            "$ref": "#/$defs/domains/medical_technology"
-          },
-          {
-            "$ref": "#/$defs/domains/software_engineering"
-          },
-          {
-            "$ref": "#/$defs/domains/internet_of_things"
-          },
-          {
-            "$ref": "#/$defs/domains/communication_systems"
-          },
-          {
-            "$ref": "#/$defs/domains/networking"
-          },
-          {
-            "$ref": "#/$defs/domains/network_management"
-          },
-          {
-            "$ref": "#/$defs/domains/security"
-          },
-          {
-            "$ref": "#/$defs/domains/network_operations"
-          },
-          {
-            "$ref": "#/$defs/domains/information_technology"
-          },
-          {
-            "$ref": "#/$defs/domains/retail"
-          },
-          {
-            "$ref": "#/$defs/domains/banking"
-          },
-          {
-            "$ref": "#/$defs/domains/consumer_goods"
-          },
-          {
-            "$ref": "#/$defs/domains/finance"
-          },
-          {
-            "$ref": "#/$defs/domains/investment_services"
+            "$ref": "#/$defs/domains/robotics"
           },
           {
             "$ref": "#/$defs/domains/automation"
@@ -6440,55 +6369,121 @@
             "$ref": "#/$defs/domains/supply_chain_management"
           },
           {
-            "$ref": "#/$defs/domains/lean_manufacturing"
+            "$ref": "#/$defs/domains/public_transit"
           },
           {
-            "$ref": "#/$defs/domains/robotics"
+            "$ref": "#/$defs/domains/logistics"
+          },
+          {
+            "$ref": "#/$defs/domains/autonomous_vehicles"
+          },
+          {
+            "$ref": "#/$defs/domains/automotive"
+          },
+          {
+            "$ref": "#/$defs/domains/freight"
+          },
+          {
+            "$ref": "#/$defs/domains/supply_chain"
+          },
+          {
+            "$ref": "#/$defs/domains/patient_management_systems"
+          },
+          {
+            "$ref": "#/$defs/domains/medical_technology"
+          },
+          {
+            "$ref": "#/$defs/domains/health_information_systems"
+          },
+          {
+            "$ref": "#/$defs/domains/telemedicine"
+          },
+          {
+            "$ref": "#/$defs/domains/healthcare_informatics"
+          },
+          {
+            "$ref": "#/$defs/domains/networking"
+          },
+          {
+            "$ref": "#/$defs/domains/information_technology"
+          },
+          {
+            "$ref": "#/$defs/domains/security"
+          },
+          {
+            "$ref": "#/$defs/domains/network_operations"
+          },
+          {
+            "$ref": "#/$defs/domains/internet_of_things"
+          },
+          {
+            "$ref": "#/$defs/domains/network_management"
+          },
+          {
+            "$ref": "#/$defs/domains/software_engineering"
+          },
+          {
+            "$ref": "#/$defs/domains/communication_systems"
+          },
+          {
+            "$ref": "#/$defs/domains/learning_management_systems"
+          },
+          {
+            "$ref": "#/$defs/domains/curriculum_design"
+          },
+          {
+            "$ref": "#/$defs/domains/e_learning"
+          },
+          {
+            "$ref": "#/$defs/domains/pedagogy"
+          },
+          {
+            "$ref": "#/$defs/domains/educational_technology"
+          },
+          {
+            "$ref": "#/$defs/domains/online_safety"
+          },
+          {
+            "$ref": "#/$defs/domains/risk_management"
+          },
+          {
+            "$ref": "#/$defs/domains/content_moderation"
+          },
+          {
+            "$ref": "#/$defs/domains/fraud_prevention"
+          },
+          {
+            "$ref": "#/$defs/domains/data_privacy"
+          },
+          {
+            "$ref": "#/$defs/domains/retail"
+          },
+          {
+            "$ref": "#/$defs/domains/investment_services"
+          },
+          {
+            "$ref": "#/$defs/domains/banking"
+          },
+          {
+            "$ref": "#/$defs/domains/consumer_goods"
+          },
+          {
+            "$ref": "#/$defs/domains/finance"
+          },
+          {
+            "$ref": "#/$defs/domains/training_and_development"
+          },
+          {
+            "$ref": "#/$defs/domains/hr_analytics"
+          },
+          {
+            "$ref": "#/$defs/domains/compensation_and_benefits"
           },
           {
             "$ref": "#/$defs/domains/recruitment"
           },
           {
             "$ref": "#/$defs/domains/employee_relations"
-          },
-          {
-            "$ref": "#/$defs/domains/training_and_development"
-          },
-          {
-            "$ref": "#/$defs/domains/compensation_and_benefits"
-          },
-          {
-            "$ref": "#/$defs/domains/hr_analytics"
-          },
-          {
-            "$ref": "#/$defs/domains/genomics"
-          },
-          {
-            "$ref": "#/$defs/domains/molecular_biology"
-          },
-          {
-            "$ref": "#/$defs/domains/biotechnology"
-          },
-          {
-            "$ref": "#/$defs/domains/bioinformatics"
-          },
-          {
-            "$ref": "#/$defs/domains/pharmaceutical_research"
-          },
-          {
-            "$ref": "#/$defs/domains/pedagogy"
-          },
-          {
-            "$ref": "#/$defs/domains/e_learning"
-          },
-          {
-            "$ref": "#/$defs/domains/curriculum_design"
-          },
-          {
-            "$ref": "#/$defs/domains/educational_technology"
-          },
-          {
-            "$ref": "#/$defs/domains/learning_management_systems"
           }
         ]
       },
@@ -6574,43 +6569,10 @@
       "items": {
         "oneOf": [
           {
-            "$ref": "#/$defs/skills/tabular_classification"
+            "$ref": "#/$defs/skills/audio_classification"
           },
           {
-            "$ref": "#/$defs/skills/tabular_regression"
-          },
-          {
-            "$ref": "#/$defs/skills/image_processing"
-          },
-          {
-            "$ref": "#/$defs/skills/visual_qa"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_image"
-          },
-          {
-            "$ref": "#/$defs/skills/image_to_text"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_video"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_3d"
-          },
-          {
-            "$ref": "#/$defs/skills/any_to_any"
-          },
-          {
-            "$ref": "#/$defs/skills/audio_processing"
-          },
-          {
-            "$ref": "#/$defs/skills/speech_recognition"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_speech"
-          },
-          {
-            "$ref": "#/$defs/skills/generation_of_any"
+            "$ref": "#/$defs/skills/audio_to_audio"
           },
           {
             "$ref": "#/$defs/skills/document_or_database_question_answering"
@@ -6622,115 +6584,43 @@
             "$ref": "#/$defs/skills/retrieval_of_information_search"
           },
           {
-            "$ref": "#/$defs/skills/document_retrieval"
-          },
-          {
             "$ref": "#/$defs/skills/indexing"
           },
           {
-            "$ref": "#/$defs/skills/image_feature_extraction"
+            "$ref": "#/$defs/skills/document_retrieval"
           },
           {
-            "$ref": "#/$defs/skills/image_classification"
+            "$ref": "#/$defs/skills/generation_of_any"
           },
           {
-            "$ref": "#/$defs/skills/keypoint_detection"
+            "$ref": "#/$defs/skills/coding_skills"
           },
           {
-            "$ref": "#/$defs/skills/mask_generation"
+            "$ref": "#/$defs/skills/code_optimization"
           },
           {
-            "$ref": "#/$defs/skills/image_to_3d"
+            "$ref": "#/$defs/skills/code_to_docstrings"
           },
           {
-            "$ref": "#/$defs/skills/image_segmentation"
+            "$ref": "#/$defs/skills/code_templates"
           },
           {
-            "$ref": "#/$defs/skills/image_generation"
+            "$ref": "#/$defs/skills/text_to_code"
           },
           {
-            "$ref": "#/$defs/skills/video_classification"
+            "$ref": "#/$defs/skills/mathematical_reasoning"
           },
           {
-            "$ref": "#/$defs/skills/depth_estimation"
+            "$ref": "#/$defs/skills/pure_math_operations"
           },
           {
-            "$ref": "#/$defs/skills/object_detection"
+            "$ref": "#/$defs/skills/math_word_problems"
           },
           {
-            "$ref": "#/$defs/skills/image_to_image"
+            "$ref": "#/$defs/skills/theorem_proving"
           },
           {
-            "$ref": "#/$defs/skills/text_classification"
-          },
-          {
-            "$ref": "#/$defs/skills/natural_language_inference"
-          },
-          {
-            "$ref": "#/$defs/skills/sentiment_analysis"
-          },
-          {
-            "$ref": "#/$defs/skills/topic_labeling"
-          },
-          {
-            "$ref": "#/$defs/skills/natural_language_understanding"
-          },
-          {
-            "$ref": "#/$defs/skills/contextual_comprehension"
-          },
-          {
-            "$ref": "#/$defs/skills/entity_recognition"
-          },
-          {
-            "$ref": "#/$defs/skills/semantic_understanding"
-          },
-          {
-            "$ref": "#/$defs/skills/natural_language_generation"
-          },
-          {
-            "$ref": "#/$defs/skills/text_completion"
-          },
-          {
-            "$ref": "#/$defs/skills/summarization"
-          },
-          {
-            "$ref": "#/$defs/skills/question_generation"
-          },
-          {
-            "$ref": "#/$defs/skills/dialogue_generation"
-          },
-          {
-            "$ref": "#/$defs/skills/story_generation"
-          },
-          {
-            "$ref": "#/$defs/skills/text_style_transfer"
-          },
-          {
-            "$ref": "#/$defs/skills/paraphrasing"
-          },
-          {
-            "$ref": "#/$defs/skills/ethical_interaction"
-          },
-          {
-            "$ref": "#/$defs/skills/content_moderation"
-          },
-          {
-            "$ref": "#/$defs/skills/bias_mitigation"
-          },
-          {
-            "$ref": "#/$defs/skills/feature_extraction"
-          },
-          {
-            "$ref": "#/$defs/skills/model_feature_extraction"
-          },
-          {
-            "$ref": "#/$defs/skills/token_classification"
-          },
-          {
-            "$ref": "#/$defs/skills/named_entity_recognition"
-          },
-          {
-            "$ref": "#/$defs/skills/pos_tagging"
+            "$ref": "#/$defs/skills/geometry"
           },
           {
             "$ref": "#/$defs/skills/personalization"
@@ -6742,7 +6632,28 @@
             "$ref": "#/$defs/skills/user_adaptation"
           },
           {
+            "$ref": "#/$defs/skills/creative_content"
+          },
+          {
+            "$ref": "#/$defs/skills/poetry_writing"
+          },
+          {
+            "$ref": "#/$defs/skills/storytelling"
+          },
+          {
+            "$ref": "#/$defs/skills/token_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/named_entity_recognition"
+          },
+          {
+            "$ref": "#/$defs/skills/pos_tagging"
+          },
+          {
             "$ref": "#/$defs/skills/information_retrieval_synthesis"
+          },
+          {
+            "$ref": "#/$defs/skills/knowledge_synthesis"
           },
           {
             "$ref": "#/$defs/skills/question_answering"
@@ -6751,28 +6662,37 @@
             "$ref": "#/$defs/skills/information_retrieval_synthesis_search"
           },
           {
-            "$ref": "#/$defs/skills/sentence_similarity"
-          },
-          {
-            "$ref": "#/$defs/skills/knowledge_synthesis"
+            "$ref": "#/$defs/skills/fact_extraction"
           },
           {
             "$ref": "#/$defs/skills/document_passage_retrieval"
           },
           {
-            "$ref": "#/$defs/skills/fact_extraction"
+            "$ref": "#/$defs/skills/sentence_similarity"
           },
           {
-            "$ref": "#/$defs/skills/creative_content"
+            "$ref": "#/$defs/skills/ethical_interaction"
           },
           {
-            "$ref": "#/$defs/skills/storytelling"
+            "$ref": "#/$defs/skills/content_moderation"
           },
           {
-            "$ref": "#/$defs/skills/poetry_writing"
+            "$ref": "#/$defs/skills/bias_mitigation"
+          },
+          {
+            "$ref": "#/$defs/skills/language_translation"
+          },
+          {
+            "$ref": "#/$defs/skills/multilingual_understanding"
+          },
+          {
+            "$ref": "#/$defs/skills/translation"
           },
           {
             "$ref": "#/$defs/skills/analytical_reasoning"
+          },
+          {
+            "$ref": "#/$defs/skills/inference_deduction"
           },
           {
             "$ref": "#/$defs/skills/problem_solving"
@@ -6781,52 +6701,127 @@
             "$ref": "#/$defs/skills/fact_verification"
           },
           {
-            "$ref": "#/$defs/skills/inference_deduction"
+            "$ref": "#/$defs/skills/natural_language_understanding"
           },
           {
-            "$ref": "#/$defs/skills/language_translation"
+            "$ref": "#/$defs/skills/entity_recognition"
           },
           {
-            "$ref": "#/$defs/skills/translation"
+            "$ref": "#/$defs/skills/semantic_understanding"
           },
           {
-            "$ref": "#/$defs/skills/multilingual_understanding"
+            "$ref": "#/$defs/skills/contextual_comprehension"
           },
           {
-            "$ref": "#/$defs/skills/coding_skills"
+            "$ref": "#/$defs/skills/feature_extraction"
           },
           {
-            "$ref": "#/$defs/skills/text_to_code"
+            "$ref": "#/$defs/skills/model_feature_extraction"
           },
           {
-            "$ref": "#/$defs/skills/code_templates"
+            "$ref": "#/$defs/skills/text_classification"
           },
           {
-            "$ref": "#/$defs/skills/code_to_docstrings"
+            "$ref": "#/$defs/skills/topic_labeling"
           },
           {
-            "$ref": "#/$defs/skills/code_optimization"
+            "$ref": "#/$defs/skills/sentiment_analysis"
           },
           {
-            "$ref": "#/$defs/skills/mathematical_reasoning"
+            "$ref": "#/$defs/skills/natural_language_inference"
           },
           {
-            "$ref": "#/$defs/skills/pure_math_operations"
+            "$ref": "#/$defs/skills/natural_language_generation"
           },
           {
-            "$ref": "#/$defs/skills/geometry"
+            "$ref": "#/$defs/skills/summarization"
           },
           {
-            "$ref": "#/$defs/skills/theorem_proving"
+            "$ref": "#/$defs/skills/dialogue_generation"
           },
           {
-            "$ref": "#/$defs/skills/math_word_problems"
+            "$ref": "#/$defs/skills/text_style_transfer"
           },
           {
-            "$ref": "#/$defs/skills/audio_to_audio"
+            "$ref": "#/$defs/skills/text_completion"
           },
           {
-            "$ref": "#/$defs/skills/audio_classification"
+            "$ref": "#/$defs/skills/paraphrasing"
+          },
+          {
+            "$ref": "#/$defs/skills/question_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/story_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/tabular_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/tabular_regression"
+          },
+          {
+            "$ref": "#/$defs/skills/image_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/depth_estimation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_to_image"
+          },
+          {
+            "$ref": "#/$defs/skills/keypoint_detection"
+          },
+          {
+            "$ref": "#/$defs/skills/image_segmentation"
+          },
+          {
+            "$ref": "#/$defs/skills/video_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/image_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_feature_extraction"
+          },
+          {
+            "$ref": "#/$defs/skills/object_detection"
+          },
+          {
+            "$ref": "#/$defs/skills/mask_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_to_3d"
+          },
+          {
+            "$ref": "#/$defs/skills/audio_processing"
+          },
+          {
+            "$ref": "#/$defs/skills/text_to_speech"
+          },
+          {
+            "$ref": "#/$defs/skills/speech_recognition"
+          },
+          {
+            "$ref": "#/$defs/skills/image_processing"
+          },
+          {
+            "$ref": "#/$defs/skills/text_to_video"
+          },
+          {
+            "$ref": "#/$defs/skills/text_to_3d"
+          },
+          {
+            "$ref": "#/$defs/skills/text_to_image"
+          },
+          {
+            "$ref": "#/$defs/skills/visual_qa"
+          },
+          {
+            "$ref": "#/$defs/skills/image_to_text"
+          },
+          {
+            "$ref": "#/$defs/skills/any_to_any"
           }
         ]
       },

@@ -24,7 +24,10 @@
             "type": "string"
           }
         },
-        "required": ["data", "name"],
+        "required": [
+          "data",
+          "name"
+        ],
         "title": "Evaluation",
         "type": "object"
       },
@@ -51,7 +54,10 @@
             "type": "string"
           }
         },
-        "required": ["data", "name"],
+        "required": [
+          "data",
+          "name"
+        ],
         "title": "Manifest",
         "type": "object"
       },
@@ -78,7 +84,10 @@
             "type": "string"
           }
         },
-        "required": ["data", "name"],
+        "required": [
+          "data",
+          "name"
+        ],
         "title": "Observability",
         "type": "object"
       }
@@ -114,7 +123,12 @@
             "title": "ThreadState"
           }
         },
-        "required": ["capabilities", "config", "input", "output"],
+        "required": [
+          "capabilities",
+          "config",
+          "input",
+          "output"
+        ],
         "title": "Agent Connect Protocol Specs",
         "type": "object"
       },
@@ -139,7 +153,10 @@
             "type": "string"
           }
         },
-        "required": ["type", "url"],
+        "required": [
+          "type",
+          "url"
+        ],
         "title": "ACP Details",
         "type": "object"
       },
@@ -166,7 +183,10 @@
             "title": "Reference"
           }
         },
-        "required": ["name", "ref"],
+        "required": [
+          "name",
+          "ref"
+        ],
         "title": "Agent Dependency",
         "type": "object"
       },
@@ -184,13 +204,13 @@
             "items": {
               "oneOf": [
                 {
+                  "$ref": "#/$defs/objects/remote_service_deployment"
+                },
+                {
                   "$ref": "#/$defs/objects/source_code_deployment"
                 },
                 {
                   "$ref": "#/$defs/objects/docker_deployment"
-                },
-                {
-                  "$ref": "#/$defs/objects/remote_service_deployment"
                 }
               ]
             },
@@ -205,7 +225,9 @@
             "type": "array"
           }
         },
-        "required": ["deployment_options"],
+        "required": [
+          "deployment_options"
+        ],
         "title": "Agent Workflow Server Deployment Manifest",
         "type": "object"
       },
@@ -225,7 +247,10 @@
             "type": "string"
           }
         },
-        "required": ["name", "version"],
+        "required": [
+          "name",
+          "version"
+        ],
         "title": "Agent Manifest Reference",
         "type": "object"
       },
@@ -291,7 +316,11 @@
             "type": "string"
           }
         },
-        "required": ["name", "url", "version"],
+        "required": [
+          "name",
+          "url",
+          "version"
+        ],
         "title": "Agntcy Observability Data Schema",
         "type": "object"
       },
@@ -341,7 +370,11 @@
             "type": "string"
           }
         },
-        "required": ["name", "url", "version"],
+        "required": [
+          "name",
+          "url",
+          "version"
+        ],
         "title": "Dataset",
         "type": "object"
       },
@@ -362,7 +395,10 @@
             "type": "string"
           }
         },
-        "required": ["image", "type"],
+        "required": [
+          "image",
+          "type"
+        ],
         "title": "Docker Deployment",
         "type": "object"
       },
@@ -386,7 +422,10 @@
             "type": "boolean"
           }
         },
-        "required": ["description", "name"],
+        "required": [
+          "description",
+          "name"
+        ],
         "title": "Environment Variable",
         "type": "object"
       },
@@ -412,7 +451,9 @@
             "type": "array"
           }
         },
-        "required": ["values"],
+        "required": [
+          "values"
+        ],
         "title": "Environment Variable Values",
         "type": "object"
       },
@@ -458,7 +499,10 @@
             "title": "Scores"
           }
         },
-        "required": ["metrics", "overall_scores"],
+        "required": [
+          "metrics",
+          "overall_scores"
+        ],
         "title": "Evaluation report",
         "type": "object"
       },
@@ -476,7 +520,11 @@
             "title": "Resume Payload"
           }
         },
-        "required": ["interrupt_payload", "interrupt_type", "resume_payload"],
+        "required": [
+          "interrupt_payload",
+          "interrupt_type",
+          "resume_payload"
+        ],
         "title": "Interrupts",
         "type": "object"
       },
@@ -492,7 +540,10 @@
             "type": "string"
           }
         },
-        "required": ["name", "value"],
+        "required": [
+          "name",
+          "value"
+        ],
         "title": "Key Value Object",
         "type": "object"
       },
@@ -509,7 +560,10 @@
             "type": "string"
           }
         },
-        "required": ["framework_type", "graph"],
+        "required": [
+          "framework_type",
+          "graph"
+        ],
         "title": "LangGraph Config",
         "type": "object"
       },
@@ -526,7 +580,10 @@
             "type": "string"
           }
         },
-        "required": ["framework_type", "path"],
+        "required": [
+          "framework_type",
+          "path"
+        ],
         "title": "Llamaindex Config",
         "type": "object"
       },
@@ -565,7 +622,10 @@
             "type": "string"
           }
         },
-        "required": ["type", "url"],
+        "required": [
+          "type",
+          "url"
+        ],
         "title": "Agent Locator",
         "type": "object"
       },
@@ -581,7 +641,10 @@
             "title": "Agent Workflow Server Deployment Manifest"
           }
         },
-        "required": ["acp_spec", "agent_deployment"],
+        "required": [
+          "acp_spec",
+          "agent_deployment"
+        ],
         "title": "Manifest Data",
         "type": "object"
       },
@@ -612,7 +675,12 @@
             "type": "string"
           }
         },
-        "required": ["data_points", "name", "type", "unit_of_measurement"],
+        "required": [
+          "data_points",
+          "name",
+          "type",
+          "unit_of_measurement"
+        ],
         "title": "Metric",
         "type": "object"
       },
@@ -627,7 +695,12 @@
         "properties": {
           "communication_protocols": {
             "items": {
-              "enum": ["Otel_OTP_v1", "HTTP_1.1", "gRPC", "AGP"],
+              "enum": [
+                "Otel_OTP_v1",
+                "HTTP_1.1",
+                "gRPC",
+                "AGP"
+              ],
               "type": "string"
             },
             "title": "Communication Protocols",
@@ -649,7 +722,11 @@
             "title": "Supported Data Schema"
           },
           "export_format": {
-            "enum": ["json", "xml", "csv"],
+            "enum": [
+              "json",
+              "xml",
+              "csv"
+            ],
             "title": "Export Format",
             "type": "string"
           }
@@ -698,7 +775,10 @@
             "type": "string"
           }
         },
-        "required": ["name", "version"],
+        "required": [
+          "name",
+          "version"
+        ],
         "title": "Publisher",
         "type": "object"
       },
@@ -751,7 +831,10 @@
             "type": "string"
           }
         },
-        "required": ["protocol", "type"],
+        "required": [
+          "protocol",
+          "type"
+        ],
         "title": "Remote Service Deployment",
         "type": "object"
       },
@@ -771,7 +854,11 @@
             "type": "string"
           }
         },
-        "required": ["in", "name", "type"],
+        "required": [
+          "in",
+          "name",
+          "type"
+        ],
         "title": "Security Scheme",
         "type": "object"
       },
@@ -781,10 +868,10 @@
           "framework_config": {
             "oneOf": [
               {
-                "$ref": "#/$defs/objects/llamaindex_config"
+                "$ref": "#/$defs/objects/langgraph_config"
               },
               {
-                "$ref": "#/$defs/objects/langgraph_config"
+                "$ref": "#/$defs/objects/llamaindex_config"
               }
             ],
             "title": "Agentic Framework Config"
@@ -803,7 +890,11 @@
             "type": "string"
           }
         },
-        "required": ["framework_config", "type", "url"],
+        "required": [
+          "framework_config",
+          "type",
+          "url"
+        ],
         "title": "Source Code Deployment",
         "type": "object"
       },
@@ -853,7 +944,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Storytelling",
         "type": "object"
       },
@@ -886,7 +980,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Fact and Claim Verification",
         "type": "object"
       },
@@ -919,7 +1016,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Contextual Comprehension",
         "type": "object"
       },
@@ -952,7 +1052,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image-to-3D",
         "type": "object"
       },
@@ -985,7 +1088,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Depth Estimation",
         "type": "object"
       },
@@ -1018,7 +1124,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Keypoint Detection",
         "type": "object"
       },
@@ -1051,7 +1160,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text Style Transfer",
         "type": "object"
       },
@@ -1084,7 +1196,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text to Speech",
         "type": "object"
       },
@@ -1117,7 +1232,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Math Word Problems",
         "type": "object"
       },
@@ -1150,7 +1268,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Story Generation",
         "type": "object"
       },
@@ -1183,7 +1304,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Personalisation and Adaptation",
         "type": "object"
       },
@@ -1216,7 +1340,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Code Template Filling",
         "type": "object"
       },
@@ -1249,7 +1376,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Entity Recognition",
         "type": "object"
       },
@@ -1282,7 +1412,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Information Retrieval and Synthesis",
         "type": "object"
       },
@@ -1315,7 +1448,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Language Translation and Multilingual Support",
         "type": "object"
       },
@@ -1348,7 +1484,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Natural Language Understanding",
         "type": "object"
       },
@@ -1381,7 +1520,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Generation of Any",
         "type": "object"
       },
@@ -1414,7 +1556,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text to Image",
         "type": "object"
       },
@@ -1447,7 +1592,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Audio Classification",
         "type": "object"
       },
@@ -1480,7 +1628,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text to Video",
         "type": "object"
       },
@@ -1513,7 +1664,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Tabular Regression",
         "type": "object"
       },
@@ -1546,7 +1700,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Translation",
         "type": "object"
       },
@@ -1579,7 +1736,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Automatic Speech Recognition",
         "type": "object"
       },
@@ -1612,7 +1772,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Document Retrieval",
         "type": "object"
       },
@@ -1645,7 +1808,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Code to Docstrings",
         "type": "object"
       },
@@ -1678,7 +1844,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Tabular Classification",
         "type": "object"
       },
@@ -1711,7 +1880,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Geometry",
         "type": "object"
       },
@@ -1744,7 +1916,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Bias Mitigation",
         "type": "object"
       },
@@ -1777,7 +1952,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Feature Extraction",
         "type": "object"
       },
@@ -1810,7 +1988,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Named Entity Recognition",
         "type": "object"
       },
@@ -1843,7 +2024,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Object Detection",
         "type": "object"
       },
@@ -1876,7 +2060,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image Feature Extraction",
         "type": "object"
       },
@@ -1909,7 +2096,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Search",
         "type": "object"
       },
@@ -1942,7 +2132,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text Completion",
         "type": "object"
       },
@@ -1975,7 +2168,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Tone and Style Adjustment",
         "type": "object"
       },
@@ -2008,7 +2204,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Search",
         "type": "object"
       },
@@ -2041,7 +2240,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Fact Extraction",
         "type": "object"
       },
@@ -2074,7 +2276,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Multilingual Understanding",
         "type": "object"
       },
@@ -2107,7 +2312,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image Classification",
         "type": "object"
       },
@@ -2140,7 +2348,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Knowledge Synthesis",
         "type": "object"
       },
@@ -2173,7 +2384,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Semantic Understanding",
         "type": "object"
       },
@@ -2206,7 +2420,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Pure Mathematical Operations",
         "type": "object"
       },
@@ -2239,7 +2456,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Visual Question Answering",
         "type": "object"
       },
@@ -2272,7 +2492,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Ethical and Safe Interaction",
         "type": "object"
       },
@@ -2305,7 +2528,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Audio to Audio",
         "type": "object"
       },
@@ -2338,7 +2564,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text Paraphrasing",
         "type": "object"
       },
@@ -2371,7 +2600,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Token Classification",
         "type": "object"
       },
@@ -2404,7 +2636,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Automated Theorem Proving",
         "type": "object"
       },
@@ -2437,7 +2672,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image Generation",
         "type": "object"
       },
@@ -2470,7 +2708,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Question Answering",
         "type": "object"
       },
@@ -2503,7 +2744,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Audio Processing",
         "type": "object"
       },
@@ -2536,7 +2780,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Natural Language Inference",
         "type": "object"
       },
@@ -2569,7 +2816,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Model Feature Extraction",
         "type": "object"
       },
@@ -2602,7 +2852,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image Segmentation",
         "type": "object"
       },
@@ -2635,7 +2888,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Dialogue Generation",
         "type": "object"
       },
@@ -2668,7 +2924,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Any to Any Transformation",
         "type": "object"
       },
@@ -2701,7 +2960,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Video Classification",
         "type": "object"
       },
@@ -2734,7 +2996,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Analytical and Logical Reasoning",
         "type": "object"
       },
@@ -2767,7 +3032,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Coding Skills",
         "type": "object"
       },
@@ -2800,7 +3068,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Content Moderation",
         "type": "object"
       },
@@ -2833,7 +3104,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text to 3D",
         "type": "object"
       },
@@ -2866,7 +3140,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Natural Language Generation",
         "type": "object"
       },
@@ -2899,7 +3176,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image Processing",
         "type": "object"
       },
@@ -2932,7 +3212,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Mathematical Reasoning",
         "type": "object"
       },
@@ -2965,7 +3248,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text Summarization",
         "type": "object"
       },
@@ -2998,7 +3284,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Mask Generation",
         "type": "object"
       },
@@ -3031,7 +3320,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image to Text",
         "type": "object"
       },
@@ -3064,7 +3356,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Inference and Deduction",
         "type": "object"
       },
@@ -3097,7 +3392,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Part-of-Speech Tagging",
         "type": "object"
       },
@@ -3130,7 +3428,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Sentence Similarity",
         "type": "object"
       },
@@ -3163,7 +3464,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Creative Content Generation",
         "type": "object"
       },
@@ -3196,7 +3500,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Document or Database Question Answering",
         "type": "object"
       },
@@ -3229,7 +3536,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Retrieval of information",
         "type": "object"
       },
@@ -3262,7 +3572,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Problem Solving",
         "type": "object"
       },
@@ -3295,7 +3608,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Code Refactoring and Optimization",
         "type": "object"
       },
@@ -3328,7 +3644,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Sentiment Analysis",
         "type": "object"
       },
@@ -3361,7 +3680,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text Classification",
         "type": "object"
       },
@@ -3394,7 +3716,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Topic Labelling and Tagging",
         "type": "object"
       },
@@ -3427,7 +3752,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Poetry and Creative Writing",
         "type": "object"
       },
@@ -3460,7 +3788,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Indexing",
         "type": "object"
       },
@@ -3493,7 +3824,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Image-to-Image",
         "type": "object"
       },
@@ -3526,7 +3860,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Text to Code",
         "type": "object"
       },
@@ -3559,7 +3896,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Document and Passage Retrieval",
         "type": "object"
       },
@@ -3592,7 +3932,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "Question Generation",
         "type": "object"
       },
@@ -3625,7 +3968,10 @@
             "type": "integer"
           }
         },
-        "required": ["category_uid", "class_uid"],
+        "required": [
+          "category_uid",
+          "class_uid"
+        ],
         "title": "User Adaptation",
         "type": "object"
       }
@@ -3716,70 +4062,10 @@
       "items": {
         "oneOf": [
           {
-            "$ref": "#/$defs/skills/coding_skills"
-          },
-          {
-            "$ref": "#/$defs/skills/code_templates"
-          },
-          {
-            "$ref": "#/$defs/skills/code_optimization"
-          },
-          {
-            "$ref": "#/$defs/skills/code_to_docstrings"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_code"
-          },
-          {
-            "$ref": "#/$defs/skills/mathematical_reasoning"
-          },
-          {
-            "$ref": "#/$defs/skills/math_word_problems"
-          },
-          {
-            "$ref": "#/$defs/skills/geometry"
-          },
-          {
-            "$ref": "#/$defs/skills/theorem_proving"
-          },
-          {
-            "$ref": "#/$defs/skills/pure_math_operations"
-          },
-          {
-            "$ref": "#/$defs/skills/image_to_image"
-          },
-          {
-            "$ref": "#/$defs/skills/image_feature_extraction"
-          },
-          {
-            "$ref": "#/$defs/skills/depth_estimation"
-          },
-          {
-            "$ref": "#/$defs/skills/image_segmentation"
-          },
-          {
-            "$ref": "#/$defs/skills/object_detection"
-          },
-          {
-            "$ref": "#/$defs/skills/keypoint_detection"
-          },
-          {
-            "$ref": "#/$defs/skills/image_generation"
-          },
-          {
-            "$ref": "#/$defs/skills/video_classification"
-          },
-          {
-            "$ref": "#/$defs/skills/image_to_3d"
-          },
-          {
-            "$ref": "#/$defs/skills/image_classification"
-          },
-          {
-            "$ref": "#/$defs/skills/mask_generation"
-          },
-          {
             "$ref": "#/$defs/skills/retrieval_of_information"
+          },
+          {
+            "$ref": "#/$defs/skills/indexing"
           },
           {
             "$ref": "#/$defs/skills/document_retrieval"
@@ -3788,22 +4074,13 @@
             "$ref": "#/$defs/skills/retrieval_of_information_search"
           },
           {
-            "$ref": "#/$defs/skills/indexing"
-          },
-          {
             "$ref": "#/$defs/skills/document_or_database_question_answering"
           },
           {
             "$ref": "#/$defs/skills/generation_of_any"
           },
           {
-            "$ref": "#/$defs/skills/audio_processing"
-          },
-          {
-            "$ref": "#/$defs/skills/text_to_speech"
-          },
-          {
-            "$ref": "#/$defs/skills/speech_recognition"
+            "$ref": "#/$defs/skills/any_to_any"
           },
           {
             "$ref": "#/$defs/skills/image_processing"
@@ -3815,64 +4092,103 @@
             "$ref": "#/$defs/skills/text_to_video"
           },
           {
+            "$ref": "#/$defs/skills/text_to_3d"
+          },
+          {
             "$ref": "#/$defs/skills/image_to_text"
           },
           {
             "$ref": "#/$defs/skills/text_to_image"
           },
           {
-            "$ref": "#/$defs/skills/text_to_3d"
+            "$ref": "#/$defs/skills/audio_processing"
           },
           {
-            "$ref": "#/$defs/skills/any_to_any"
+            "$ref": "#/$defs/skills/text_to_speech"
           },
           {
-            "$ref": "#/$defs/skills/tabular_regression"
+            "$ref": "#/$defs/skills/speech_recognition"
           },
           {
-            "$ref": "#/$defs/skills/tabular_classification"
+            "$ref": "#/$defs/skills/feature_extraction"
+          },
+          {
+            "$ref": "#/$defs/skills/model_feature_extraction"
+          },
+          {
+            "$ref": "#/$defs/skills/text_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/sentiment_analysis"
+          },
+          {
+            "$ref": "#/$defs/skills/topic_labeling"
+          },
+          {
+            "$ref": "#/$defs/skills/natural_language_inference"
+          },
+          {
+            "$ref": "#/$defs/skills/personalization"
+          },
+          {
+            "$ref": "#/$defs/skills/style_adjustment"
+          },
+          {
+            "$ref": "#/$defs/skills/user_adaptation"
+          },
+          {
+            "$ref": "#/$defs/skills/creative_content"
+          },
+          {
+            "$ref": "#/$defs/skills/poetry_writing"
+          },
+          {
+            "$ref": "#/$defs/skills/storytelling"
+          },
+          {
+            "$ref": "#/$defs/skills/natural_language_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/paraphrasing"
+          },
+          {
+            "$ref": "#/$defs/skills/style_transfer"
+          },
+          {
+            "$ref": "#/$defs/skills/summarization"
+          },
+          {
+            "$ref": "#/$defs/skills/dialogue_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/text_completion"
+          },
+          {
+            "$ref": "#/$defs/skills/story_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/question_generation"
           },
           {
             "$ref": "#/$defs/skills/ethical_interaction"
           },
           {
-            "$ref": "#/$defs/skills/bias_mitigation"
+            "$ref": "#/$defs/skills/content_moderation_skill"
           },
           {
-            "$ref": "#/$defs/skills/content_moderation_skill"
+            "$ref": "#/$defs/skills/bias_mitigation"
           },
           {
             "$ref": "#/$defs/skills/nlu"
           },
           {
-            "$ref": "#/$defs/skills/entity_recognition"
+            "$ref": "#/$defs/skills/semantic_understanding"
           },
           {
             "$ref": "#/$defs/skills/contextual_comprehension"
           },
           {
-            "$ref": "#/$defs/skills/semantic_understanding"
-          },
-          {
-            "$ref": "#/$defs/skills/information_retrieval_synthesis"
-          },
-          {
-            "$ref": "#/$defs/skills/sentence_similarity"
-          },
-          {
-            "$ref": "#/$defs/skills/information_retrieval_synthesis_search"
-          },
-          {
-            "$ref": "#/$defs/skills/fact_extraction"
-          },
-          {
-            "$ref": "#/$defs/skills/document_passage_retrieval"
-          },
-          {
-            "$ref": "#/$defs/skills/knowledge_synthesis"
-          },
-          {
-            "$ref": "#/$defs/skills/question_answering"
+            "$ref": "#/$defs/skills/entity_recognition"
           },
           {
             "$ref": "#/$defs/skills/language_translation"
@@ -3882,6 +4198,15 @@
           },
           {
             "$ref": "#/$defs/skills/multilingual_understanding"
+          },
+          {
+            "$ref": "#/$defs/skills/token_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/named_entity_recognition"
+          },
+          {
+            "$ref": "#/$defs/skills/pos_tagging"
           },
           {
             "$ref": "#/$defs/skills/analytical_reasoning"
@@ -3896,73 +4221,94 @@
             "$ref": "#/$defs/skills/problem_solving"
           },
           {
-            "$ref": "#/$defs/skills/feature_extraction"
+            "$ref": "#/$defs/skills/information_retrieval_synthesis"
           },
           {
-            "$ref": "#/$defs/skills/model_feature_extraction"
+            "$ref": "#/$defs/skills/information_retrieval_synthesis_search"
           },
           {
-            "$ref": "#/$defs/skills/creative_content"
+            "$ref": "#/$defs/skills/document_passage_retrieval"
           },
           {
-            "$ref": "#/$defs/skills/storytelling"
+            "$ref": "#/$defs/skills/knowledge_synthesis"
           },
           {
-            "$ref": "#/$defs/skills/poetry_writing"
+            "$ref": "#/$defs/skills/fact_extraction"
           },
           {
-            "$ref": "#/$defs/skills/text_classification"
+            "$ref": "#/$defs/skills/question_answering"
           },
           {
-            "$ref": "#/$defs/skills/sentiment_analysis"
+            "$ref": "#/$defs/skills/sentence_similarity"
           },
           {
-            "$ref": "#/$defs/skills/natural_language_inference"
+            "$ref": "#/$defs/skills/mathematical_reasoning"
           },
           {
-            "$ref": "#/$defs/skills/topic_labeling"
+            "$ref": "#/$defs/skills/math_word_problems"
           },
           {
-            "$ref": "#/$defs/skills/token_classification"
+            "$ref": "#/$defs/skills/theorem_proving"
           },
           {
-            "$ref": "#/$defs/skills/named_entity_recognition"
+            "$ref": "#/$defs/skills/geometry"
           },
           {
-            "$ref": "#/$defs/skills/pos_tagging"
+            "$ref": "#/$defs/skills/pure_math_operations"
           },
           {
-            "$ref": "#/$defs/skills/personalization"
+            "$ref": "#/$defs/skills/coding_skills"
           },
           {
-            "$ref": "#/$defs/skills/user_adaptation"
+            "$ref": "#/$defs/skills/code_templates"
           },
           {
-            "$ref": "#/$defs/skills/style_adjustment"
+            "$ref": "#/$defs/skills/text_to_code"
           },
           {
-            "$ref": "#/$defs/skills/natural_language_generation"
+            "$ref": "#/$defs/skills/code_optimization"
           },
           {
-            "$ref": "#/$defs/skills/story_generation"
+            "$ref": "#/$defs/skills/code_to_docstrings"
           },
           {
-            "$ref": "#/$defs/skills/dialogue_generation"
+            "$ref": "#/$defs/skills/video_classification"
           },
           {
-            "$ref": "#/$defs/skills/style_transfer"
+            "$ref": "#/$defs/skills/keypoint_detection"
           },
           {
-            "$ref": "#/$defs/skills/summarization"
+            "$ref": "#/$defs/skills/image_feature_extraction"
           },
           {
-            "$ref": "#/$defs/skills/text_completion"
+            "$ref": "#/$defs/skills/object_detection"
           },
           {
-            "$ref": "#/$defs/skills/paraphrasing"
+            "$ref": "#/$defs/skills/image_to_3d"
           },
           {
-            "$ref": "#/$defs/skills/question_generation"
+            "$ref": "#/$defs/skills/mask_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_segmentation"
+          },
+          {
+            "$ref": "#/$defs/skills/depth_estimation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_generation"
+          },
+          {
+            "$ref": "#/$defs/skills/image_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/image_to_image"
+          },
+          {
+            "$ref": "#/$defs/skills/tabular_classification"
+          },
+          {
+            "$ref": "#/$defs/skills/tabular_regression"
           },
           {
             "$ref": "#/$defs/skills/audio_classification"
