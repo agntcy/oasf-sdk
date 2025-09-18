@@ -108,7 +108,6 @@ cat e2e/fixtures/valid_v0.7.0_record.json | jq '{record: .}' | grpcurl -plaintex
 
 ## Golang example
 
-Install dependencies:
 ```bash
 go get github.com/agntcy/oasf-sdk/pkg@v0.0.5
 go get buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go@v1.36.9-20250917120021-8b2bf93bf8dc.1
