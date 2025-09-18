@@ -100,13 +100,19 @@ It supports two validation modes:
 - **Embedded schemas** - Uses JSON schemas built into the binary (default)
 - **Schema URL** - Fetches and validates against the schema URL from the record
 
-## gRPC API
+## gRPC API example
 
 ```bash
 cat e2e/fixtures/valid_v0.7.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
 
 ## Golang example
+
+```bash
+go get github.com/agntcy/oasf-sdk/pkg@v0.0.5
+go get buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go@v1.36.9-20250917120021-8b2bf93bf8dc.1
+go get buf.build/gen/go/agntcy/oasf-sdk/grpc/go@v1.5.1-20250917120021-8b2bf93bf8dc.2
+```
 
 ```go
 package main
@@ -117,12 +123,11 @@ import (
 	"log"
 	"time"
 
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/validation/v1/validationv1grpc"
+	"buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/validation/v1"
+	"github.com/agntcy/oasf-sdk/pkg/decoder"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/structpb"
-	
-	validationv1 "buf.build/gen/go/agntcy/oasf-sdk/grpc/go/validation/v1/validationv1grpc"
-	validationpb "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/validation/v1"
 )
 
 func main() {
@@ -133,7 +138,13 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := validationv1.NewValidationServiceClient(conn)
+	client := validationv1grpc.NewValidationServiceClient(conn)
+
+	authors := []string{"Your Name <your.email@example.com>"}
+	authorsIface := make([]interface{}, len(authors))
+	for i, v := range authors {
+		authorsIface[i] = v
+	}
 
 	// Sample OASF record to validate
 	record := map[string]interface{}{
@@ -141,7 +152,7 @@ func main() {
 		"schema_version": "v0.7.0",
 		"version":        "v1.0.0",
 		"description":    "An example agent for demonstration",
-		"authors":        []string{"Your Name <your.email@example.com>"},
+		"authors":        authorsIface,
 		"created_at":     "2025-01-01T00:00:00Z",
 		"domains": []map[string]interface{}{
 			{
@@ -163,16 +174,17 @@ func main() {
 		},
 	}
 
-	// Convert to protobuf Struct
-	recordStruct, err := structpb.NewStruct(record)
+	// Convert record to protobuf Struct
+	recordProto, err := decoder.StructToProto(record)
 	if err != nil {
-		log.Fatalf("Failed to convert record to struct: %v", err)
+		log.Fatalf("Failed to convert record to proto: %v", err)
 	}
 
 	// Create validation request
-	req := &validationpb.ValidateRecordRequest{
-		Record: recordStruct,
-		// SchemaUrl: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record", // Optional
+	req := &validationv1.ValidateRecordRequest{
+		Record:    recordProto,
+		// Optional: specify schema URL to validate against
+		// SchemaUrl: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record",
 	}
 
 	// Call validation service
@@ -195,17 +207,19 @@ func main() {
 }
 ```
 
-## Python Example
+## Python example
+
+```bash
+uv add 'agntcy-oasf-sdk-grpc-python==1.75.0.1.20250917120021+8b2bf93bf8dc' --index https://buf.build/gen/python
+uv add 'agntcy-oasf-sdk-protocolbuffers-python==32.1.0.1.20250917120021+8b2bf93bf8dc' --index https://buf.build/gen/python
+```
 
 ```python
 import grpc
-import json
 from google.protobuf.struct_pb2 import Struct
 
-# Import generated protobuf files (assuming they're generated and in your Python path)
-# You'll need to generate these from the .proto files using protoc
-import validation_v1_pb2
-import validation_v1_pb2_grpc
+from agntcy.oasfsdk.validation.v1.validation_service_pb2 import ValidateRecordRequest
+from agntcy.oasfsdk.validation.v1.validation_service_pb2_grpc import ValidationServiceStub
 
 def validate_record():
     # Sample OASF record to validate
@@ -238,22 +252,22 @@ def validate_record():
 
     # Create gRPC channel
     with grpc.insecure_channel('localhost:31234') as channel:
-        stub = validation_v1_pb2_grpc.ValidationServiceStub(channel)
-        
+        stub = ValidationServiceStub(channel)
+
         # Convert dict to protobuf Struct
         record_struct = Struct()
         record_struct.update(record_data)
-        
+
         # Create validation request
-        request = validation_v1_pb2.ValidateRecordRequest(
+        request = ValidateRecordRequest(
             record=record_struct
             # schema_url="https://schema.oasf.outshift.com/schema/0.7.0/objects/record"  # Optional
         )
-        
+
         try:
             # Call validation service
             response = stub.ValidateRecord(request)
-            
+
             # Print results
             print(f"Valid: {response.is_valid}")
             if response.errors:
@@ -262,7 +276,7 @@ def validate_record():
                     print(f"  - {error}")
             else:
                 print("No validation errors found!")
-                
+
         except grpc.RpcError as e:
             print(f"gRPC error: {e.code()}: {e.details()}")
 
@@ -270,26 +284,18 @@ if __name__ == "__main__":
     validate_record()
 ```
 
-## JavaScript Example
+## JavaScript example
+
+```bash
+npm config set @buf:registry https://buf.build/gen/npm/v1/
+npm install @buf/agntcy_oasf-sdk.grpc_node@1.13.0-20250917120021-8b2bf93bf8dc.2
+```
 
 ```javascript
 const grpc = require('@grpc/grpc-js');
-const protoLoader = require('@grpc/proto-loader');
-const path = require('path');
-
-// Load the protobuf definition
-const PROTO_PATH = path.join(__dirname, 'proto/agntcy/oasfsdk/validation/v1/validation_service.proto');
-
-const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
-    keepCase: true,
-    longs: String,
-    enums: String,
-    defaults: true,
-    oneofs: true,
-    includeDirs: [path.join(__dirname, 'proto')]
-});
-
-const validationProto = grpc.loadPackageDefinition(packageDefinition).agntcy.oasfsdk.validation.v1;
+const { ValidationServiceClient } = require('@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_grpc_pb');
+const { ValidateRecordRequest } = require('@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_pb');
+const { Struct } = require('google-protobuf/google/protobuf/struct_pb');
 
 async function validateRecord() {
     // Sample OASF record to validate
@@ -321,19 +327,21 @@ async function validateRecord() {
     };
 
     // Create gRPC client
-    const client = new validationProto.ValidationService(
+    const client = new ValidationServiceClient(
         'localhost:31234',
         grpc.credentials.createInsecure()
     );
 
+    // Convert JavaScript object to protobuf Struct using the proper method
+    const recordStruct = Struct.fromJavaScript(recordData);
+
     // Create validation request
-    const request = {
-        record: recordData
-        // schema_url: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record"  // Optional
-    };
+    const request = new ValidateRecordRequest();
+    request.setRecord(recordStruct);
+    // Optional: request.setSchemaUrl("https://schema.oasf.outshift.com/schema/0.7.0/objects/record");
 
     return new Promise((resolve, reject) => {
-        client.ValidateRecord(request, (error, response) => {
+        client.validateRecord(request, (error, response) => {
             if (error) {
                 console.error('gRPC error:', error);
                 reject(error);
@@ -341,10 +349,11 @@ async function validateRecord() {
             }
 
             // Print results
-            console.log(`Valid: ${response.is_valid}`);
-            if (response.errors && response.errors.length > 0) {
+            console.log(`Valid: ${response.getIsValid()}`);
+            const errors = response.getErrorsList();
+            if (errors && errors.length > 0) {
                 console.log('Errors:');
-                response.errors.forEach(err => {
+                errors.forEach(err => {
                     console.log(`  - ${err}`);
                 });
             } else {
