@@ -114,6 +114,95 @@ go get buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go@v1.36.9-2025091712002
 go get buf.build/gen/go/agntcy/oasf-sdk/grpc/go@v1.5.1-20250917120021-8b2bf93bf8dc.2
 ```
 
+Package based usage:
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/agntcy/oasf-sdk/pkg/decoder"
+	"github.com/agntcy/oasf-sdk/pkg/validator"
+)
+
+func main() {
+	// Create a new validator instance with embedded schemas
+	v, err := validator.New()
+	if err != nil {
+		log.Fatalf("Failed to create validator: %v", err)
+	}
+
+	// Sample OASF record data as a Go struct
+	recordData := map[string]interface{}{
+		"name":           "example.org/my-agent",
+		"schema_version": "v0.7.0",
+		"version":        "v1.0.0",
+		"description":    "An example agent for demonstration",
+		"authors":        []string{"Your Name <your.email@example.com>"},
+		"created_at":     "2025-01-01T00:00:00Z",
+		"domains": []map[string]interface{}{
+			{
+				"id":   101,
+				"name": "technology/internet_of_things",
+			},
+		},
+		"locators": []map[string]interface{}{
+			{
+				"type": "docker_image",
+				"url":  "ghcr.io/example/my-agent:latest",
+			},
+		},
+		"skills": []map[string]interface{}{
+			{
+				"name": "natural_language_processing/natural_language_understanding",
+				"id":   101,
+			},
+		},
+	}
+
+	// Convert Go struct to protobuf format using OASF SDK decoder
+	recordStruct, err := decoder.StructToProto(recordData)
+	if err != nil {
+		log.Fatalf("Failed to convert struct to proto: %v", err)
+	}
+
+	// Validate using embedded schemas (default behavior)
+	isValid, errors, err := v.ValidateRecord(recordStruct)
+	if err != nil {
+		log.Fatalf("Validation failed: %v", err)
+	}
+
+	fmt.Printf("Record is valid: %t\n", isValid)
+	if len(errors) > 0 {
+		fmt.Println("Validation errors:")
+		for _, errMsg := range errors {
+			fmt.Printf("  - %s\n", errMsg)
+		}
+	} else {
+		fmt.Println("No validation errors found!")
+	}
+
+	// Optional: Validate against a specific schema URL
+	isValidURL, errorsURL, err := v.ValidateRecord(
+		recordStruct,
+		validator.WithSchemaURL("https://schema.oasf.outshift.com/schema/0.7.0/objects/record"),
+	)
+	if err != nil {
+		log.Fatalf("URL validation failed: %v", err)
+	}
+
+	fmt.Printf("Record is valid (URL schema): %t\n", isValidURL)
+	if len(errorsURL) > 0 {
+		fmt.Println("URL validation errors:")
+		for _, errMsg := range errorsURL {
+			fmt.Printf("  - %s\n", errMsg)
+		}
+	}
+}
+```
+
+Service based usage:
 ```go
 package main
 
