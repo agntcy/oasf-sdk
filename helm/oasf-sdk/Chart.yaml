@@ -1,0 +1,12 @@
+apiVersion: v2
+type: application
+name: oasf-sdk
+version: 0.0.1
+appVersion: latest
+description: OASF SDK - A Software Development Kit for interacting with the Open Agentic Schema Framework (OASF) API.
+icon: https://avatars.githubusercontent.com/u/197140426
+sources:
+  - https://github.com/agntcy/oasf-sdk
+maintainers:
+  - name: adamtagscherer
+    email: atagsche@cisco.com

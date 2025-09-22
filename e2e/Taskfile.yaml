@@ -1,0 +1,70 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+version: "3"
+
+vars:
+  KIND_VERSION: "0.25.0"
+  KIND_BIN: "{{ .BIN_DIR }}/kind-{{.KIND_VERSION}}"
+  HELM_VERSION: "3.16.3"
+  HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
+
+tasks:
+
+  ##
+  ## Tests
+  ##
+  test:setup:
+    desc: Setup the test kind cluster and install the helm chart on it
+    deps:
+      - deps:kind
+      - deps:helm
+    cmds:
+      - "{{.KIND_BIN}} create cluster --config=kind-config.yaml"
+      - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk"
+      - sleep 20
+
+  test:tear-down:
+    desc: Tear down the e2e kind cluster
+    cmds:
+      - "{{.KIND_BIN}} delete cluster"
+
+  test:
+    desc: Run the E2E tests
+    deps:
+      - test:setup
+    cmds:
+      - go test ./... -v --count=1
+      - task: test:tear-down
+
+  ##
+  ## Dependencies
+  ##
+  deps:kind:
+    desc: Ensure supported kind version is installed
+    internal: true
+    deps:
+      - :deps:bin-dir
+    preconditions:
+      - which go
+    cmds:
+      - echo "Downloading Kind v{{.KIND_VERSION}}..."
+      - GOBIN={{.BIN_DIR}} go install sigs.k8s.io/kind@v{{.KIND_VERSION}}
+      - mv {{.BIN_DIR}}/kind {{.KIND_BIN}}
+    status:
+      - test -x {{.KIND_BIN}}
+
+  deps:helm:
+    desc: Ensure supported Helm version is installed
+    internal: true
+    deps:
+      - :deps:bin-dir
+    preconditions:
+      - which curl
+      - which tar
+    cmds:
+      - echo "Downloading Helm v{{.HELM_VERSION}}..."
+      - curl -sSfL 'https://get.helm.sh/helm-v{{.HELM_VERSION}}-{{OS}}-{{ARCH}}.tar.gz' --output - | tar xzvOf - '{{OS}}-{{ARCH}}/helm' > {{.HELM_BIN}}
+      - chmod +x {{.HELM_BIN}}
+    status:
+      - test -x {{.HELM_BIN}}

@@ -1,18 +1,23 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-version: '3'
+version: "3"
 
 vars:
-  BIN_DIR: '{{ .ROOT_DIR }}/bin'
-  PROTOC_VERSION: '27.1'
-  PROTOC_BIN: '{{ .BIN_DIR }}/protoc-{{.PROTOC_VERSION}}'
-  BUFBUILD_VERSION: '1.50.1'
-  BUFBUILD_BIN: '{{ .BIN_DIR }}/bufbuild-{{.BUFBUILD_VERSION}}'
-  LICENSEI_VERSION: '0.9.0'
-  LICENSEI_BIN: '{{ .BIN_DIR }}/licensei-{{.LICENSEI_VERSION}}'
-  MULTIMOD_VERSION: '0.17.0'
-  MULTIMOD_BIN: '{{ .BIN_DIR }}/multimod-{{.MULTIMOD_VERSION}}'
+  BIN_DIR: "{{ .ROOT_DIR }}/bin"
+  PROTOC_VERSION: "27.1"
+  PROTOC_BIN: "{{ .BIN_DIR }}/protoc-{{.PROTOC_VERSION}}"
+  BUFBUILD_VERSION: "1.50.1"
+  BUFBUILD_BIN: "{{ .BIN_DIR }}/bufbuild-{{.BUFBUILD_VERSION}}"
+  LICENSEI_VERSION: "0.9.0"
+  LICENSEI_BIN: "{{ .BIN_DIR }}/licensei-{{.LICENSEI_VERSION}}"
+  MULTIMOD_VERSION: "0.17.0"
+  MULTIMOD_BIN: "{{ .BIN_DIR }}/multimod-{{.MULTIMOD_VERSION}}"
+
+includes:
+  e2e:
+    taskfile: ./e2e/Taskfile.yaml
+    dir: ./e2e
 
 tasks:
   default:
@@ -26,8 +31,8 @@ tasks:
       - task: deps:bufbuild
     dir: ./proto
     cmds:
-      - '{{.BUFBUILD_BIN}} dep update'
-      - '{{.BUFBUILD_BIN}} format --output ./'
+      - "{{.BUFBUILD_BIN}} dep update"
+      - "{{.BUFBUILD_BIN}} format --output ./"
 
   lint:
     desc: Run linters
@@ -36,16 +41,16 @@ tasks:
       - task: deps:bufbuild
     dir: ./proto
     cmds:
-      - '{{.BUFBUILD_BIN}} dep update'
-      - '{{.BUFBUILD_BIN}} format --diff --exit-code'
-      - '{{.BUFBUILD_BIN}} lint'
+      - "{{.BUFBUILD_BIN}} dep update"
+      - "{{.BUFBUILD_BIN}} format --diff --exit-code"
+      - "{{.BUFBUILD_BIN}} lint"
 
   compile:
     desc: Compile binary for host platform
     dir: ./server
     vars:
-      GOOS: '{{ .GOOS | default OS }}'
-      GOARCH: '{{ .GOARCH | default ARCH }}'
+      GOOS: "{{ .GOOS | default OS }}"
+      GOARCH: "{{ .GOARCH | default ARCH }}"
       BINARY_NAME: '{{ .BINARY_NAME | default "oasf-sdk" }}'
       OUT_BINARY: '{{ .OUT_BINARY | default (printf "%s/%s" .BIN_DIR .BINARY_NAME) }}'
     cmds:
@@ -56,11 +61,11 @@ tasks:
     cmds:
       - for:
           matrix:
-            OS: ['linux', 'darwin', 'windows']
-            ARCH: ['amd64', 'arm64']
+            OS: ["linux", "darwin", "windows"]
+            ARCH: ["amd64", "arm64"]
         cmd: |
           GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasf-sdk-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile
-  
+
   build:
     desc: Build image for host platform
     cmds:
@@ -79,41 +84,14 @@ tasks:
     deps:
       - task: deps:multimod-bin
     cmds:
-      - '{{ .MULTIMOD_BIN }} verify'
+      - "{{ .MULTIMOD_BIN }} verify"
 
   release:prepare:
     desc: Prepare release
     deps:
       - task: deps:multimod-bin
     cmds:
-      - '{{ .MULTIMOD_BIN }} prerelease --all-module-sets --skip-go-mod-tidy=true --commit-to-different-branch=false'
-
-  ##
-  ## Test
-  ##
-  test:e2e:
-    desc: Run end-to-end tests
-    dir: e2e
-    cmds:
-      - defer: { task: test:e2e:destroy }
-      - go mod tidy
-      - go test ./... -v
-
-  test:e2e:setup:
-    desc: Setup dependencies for e2e tests
-    cmds:
-      - |
-        docker run -d \
-          --name oasf-sdk \
-          -p 31234:31234 \
-          oasf-sdk
-
-  test:e2e:destroy:
-    desc: Destroy dependencies for e2e tests
-    cmds:
-      - |
-        docker stop oasf-sdk
-        docker rm oasf-sdk
+      - "{{ .MULTIMOD_BIN }} prerelease --all-module-sets --skip-go-mod-tidy=true --commit-to-different-branch=false"
 
   ##
   ## License
@@ -233,7 +211,7 @@ tasks:
     deps:
       - deps:bin-dir
     vars:
-      MULTIMOD_REPO_DIR: '{{ .BIN_DIR }}/opentelemetry-go-build-tools'
+      MULTIMOD_REPO_DIR: "{{ .BIN_DIR }}/opentelemetry-go-build-tools"
     cmds:
       - git clone https://github.com/open-telemetry/opentelemetry-go-build-tools --branch multimod/v{{.MULTIMOD_VERSION}} {{.MULTIMOD_REPO_DIR}}
       - go build -C {{.MULTIMOD_REPO_DIR}}/multimod -o {{.MULTIMOD_BIN}} main.go
