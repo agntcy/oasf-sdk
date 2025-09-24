@@ -19,13 +19,13 @@ type validationCtrl struct {
 }
 
 func New() (validationv1grpc.ValidationServiceServer, error) {
-	validator, err := validator.New()
+	v, err := validator.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create validation service: %w", err)
 	}
 
 	return &validationCtrl{
-		validator: validator,
+		validator: v,
 	}, nil
 }
 

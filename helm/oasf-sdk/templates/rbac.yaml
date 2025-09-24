@@ -1,0 +1,45 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ template "oasf-sdk.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ include "oasf-sdk.chart" . }}
+    app.kubernetes.io/name: {{ include "oasf-sdk.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- if .Values.serviceAccount.labels }}
+{{ toYaml .Values.serviceAccount.labels | indent 4 }}
+    {{- end }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "oasf-sdk.fullname" . }}
+rules:
+  {{- range .Values.rbac.rules }}
+  - apiGroups: {{ toYaml .apiGroups | nindent 4 }}
+    resources: {{ toYaml .resources | nindent 4 }}
+    verbs: {{ toYaml .verbs | nindent 4 }}
+  {{- end }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "oasf-sdk.fullname" . }}
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: {{ template "oasf-sdk.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  namespace: {{ .Release.Namespace }}
+  name: {{ template "oasf-sdk.serviceAccountName" . }}

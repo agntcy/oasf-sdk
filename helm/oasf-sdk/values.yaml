@@ -1,0 +1,77 @@
+# -- Number of replicas
+replicaCount: 1
+
+image:
+  # -- Container image repo that contains server
+  repository: ghcr.io/agntcy/oasf-sdk
+  # -- Container image tag
+  tag: ""
+  # -- Container image pull policy
+  pullPolicy: IfNotPresent
+  # -- Container image pull secrets for private repositories
+  imagePullSecrets: []
+
+service:
+  # -- Service name
+  name: oasf-sdk
+  # -- Service type
+  type: NodePort
+  # -- Service external port
+  externalPort: 31234
+  # -- Service internal port
+  internalPort: 31234
+  # -- Service node port
+  nodePort: 31234
+  # -- Service annotations, e.g. if type is AWS LoadBalancer and you want to add security groups
+  annotations: {}
+
+ingress:
+  # -- Specifies whether an ingress should be created
+  enabled: false
+  # -- Ingress annotations
+  annotations:
+    kubernetes.io/spec.ingressClassName: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  # -- Ingress class name
+  ingressClassName: ""
+  # -- Ingress domain prefix
+  domainPrefix: oasf-sdk
+  # -- Ingress api domain name
+  apiDomainName: dev.agntcy.org
+
+# -- Custom environment variables available to the deployment
+env: {}
+
+# -- Extra labels to add to the deployment and pods
+labels: {}
+
+# -- Resources to request for the deployment and pods
+resources: {}
+
+# -- Service account
+serviceAccount:
+  # -- Specifies whether a service account should be created
+  create: false
+  # -- The name of the service account to use.
+  # If not set and `create` is true, a name is generated using the fullname template.
+  name: ""
+  # -- Labels to add to the service account
+  labels: {}
+  # -- Annotations to add to the service account.
+  # For example, use `iam.gke.io/gcp-service-account: gsa@project.iam.gserviceaccount.com` to enable GKE workload identity.
+  annotations: {}
+
+# -- Rules to add to the role
+rbac:
+  rules: []
+
+# Tolerations for pod assignment
+# Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations: []
+
+# Node labels for pod assignment
+# Ref: https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector: {}

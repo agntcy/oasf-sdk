@@ -1,0 +1,33 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ template "oasf-sdk.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: {{ template "oasf-sdk.chart" . }}
+    app.kubernetes.io/name: {{ template "oasf-sdk.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+{{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  tls:
+    - hosts:
+        - "{{ .Values.ingress.domainPrefix }}.{{ .Values.ingress.apiDomainName }}"
+      secretName: "{{ .Release.Name }}-tls"
+  rules:
+    - host: "{{ .Values.ingress.domainPrefix }}.{{ .Values.ingress.apiDomainName }}"
+      http:
+        paths:
+          - backend:
+              service:
+                name: {{ template "oasf-sdk.fullname" . }}
+                port:
+                  number: {{ .Values.service.externalPort }}
+            path: /
+            pathType: Prefix
+{{- end -}}
