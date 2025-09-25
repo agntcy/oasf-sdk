@@ -114,7 +114,12 @@ func RecordToA2A(record *structpb.Struct) (*A2ACard, error) {
 
 func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
 	// Find module by name
-	for _, module := range record.GetFields()["modules"].GetListValue().Values {
+	modules, ok := record.GetFields()["modules"]
+	if !ok {
+		return false, nil
+	}
+
+	for _, module := range modules.GetListValue().Values {
 		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
 			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
 		}
