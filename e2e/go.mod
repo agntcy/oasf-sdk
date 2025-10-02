@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250915083413-97472ce2fb9f.2
 	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.9-20250915083413-97472ce2fb9f.1
-	github.com/agntcy/oasf-sdk/pkg v0.0.5
+	github.com/agntcy/oasf-sdk/pkg v0.0.6
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
 	google.golang.org/grpc v1.74.2
