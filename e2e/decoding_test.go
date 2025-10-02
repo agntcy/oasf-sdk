@@ -222,6 +222,23 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(resp.GetV1Alpha0().GetSchemaVersion()).To(Equal("v0.3.1"))
 		})
 
+		It("should correctly identify 0.3.1 schema version", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(valid031Record)
+			Expect(err).NotTo(HaveOccurred())
+
+			req := &decodingv1.DecodeRecordRequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.DecodeRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.GetV1Alpha0()).NotTo(BeNil())
+			Expect(resp.GetV1Alpha0().GetSchemaVersion()).To(Equal("0.3.1"))
+		})
+
 		It("should correctly identify v0.7.0 schema version", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()

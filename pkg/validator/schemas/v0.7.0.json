@@ -6408,10 +6408,10 @@
             "$ref": "#/$defs/domains/information_technology"
           },
           {
-            "$ref": "#/$defs/domains/security"
+            "$ref": "#/$defs/domains/network_operations"
           },
           {
-            "$ref": "#/$defs/domains/network_operations"
+            "$ref": "#/$defs/domains/security"
           },
           {
             "$ref": "#/$defs/domains/internet_of_things"

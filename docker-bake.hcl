@@ -19,15 +19,3 @@ target "oasf-sdk" {
   ]
   tags = ["oasf-sdk"]
 }
-
-target "oasf-sdk-e2e" {
-  context = "."
-  dockerfile = "Dockerfile"
-  output = [
-    "type=image",
-  ]
-  platforms = [
-    "linux/amd64",
-  ]
-  tags = ["oasf-sdk"]
-}

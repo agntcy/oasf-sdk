@@ -20,8 +20,15 @@ tasks:
       - deps:kind
       - deps:helm
     cmds:
+      - echo "Building local Docker image with latest changes..."
+      - task: :build
+      - echo "Creating Kind cluster..."
       - "{{.KIND_BIN}} create cluster --config=kind-config.yaml"
-      - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk"
+      - echo "Loading Docker image into Kind cluster..."
+      - "{{.KIND_BIN}} load docker-image oasf-sdk:latest"
+      - echo "Installing Helm chart with local image..."
+      - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk --set image.repository=oasf-sdk --set image.tag=latest --set image.pullPolicy=Never"
+      - echo "Waiting for deployment to be ready..."
       - sleep 20
 
   test:tear-down:
