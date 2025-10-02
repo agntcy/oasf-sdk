@@ -14,6 +14,9 @@ var invalidV070Record []byte
 //go:embed fixtures/valid_v0.3.1_record.json
 var validV031Record []byte
 
+//go:embed fixtures/valid_0.3.1_record.json
+var valid031Record []byte
+
 //go:embed fixtures/invalid_v0.3.1_record.json
 var invalidV031Record []byte
 

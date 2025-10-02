@@ -6,8 +6,8 @@ It answeres the question: *what OASF versions are supported in a given OASF-SDK 
 
 ## Version Support
 
-| OASF-SDK           | OASF v1alpha0 | OASF v1alpha1 |
-|--------------------|---------------|---------------|
-| ConversionService  | ✅             | ✅             |
-| TranslationService | ✅             | ✅             |
-| ValidationService  | ✅             | ✅             |
+| OASF-SDK           | OASF v1alpha0 | OASF v1alpha1   |
+|--------------------|---------------|-----------------|
+| ConversionService  | ✅            | ✅              |
+| TranslationService | ✅            | ✅              |
+| ValidationService  | ✅            | ✅              |

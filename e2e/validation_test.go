@@ -50,6 +50,11 @@ var _ = Describe("Validation Service E2E", func() {
 			shouldPass: true,
 		},
 		{
+			name:       "valid_record_0.3.1.json",
+			jsonData:   valid031Record,
+			shouldPass: true,
+		},
+		{
 			name:     "invalid_record_v0.3.1.json",
 			jsonData: invalidV031Record,
 		},
