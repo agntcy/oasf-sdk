@@ -1,6 +1,6 @@
 {
   "name": "example.org/valid-agent",
-  "schema_version": "v0.7.0",
+  "schema_version": "0.7.0",
   "description": "Valid agent record conforming to schema v0.5.0",
   "authors": ["Test Corp"],
   "created_at": "2025-01-01T00:00:00Z",
