@@ -1,6 +1,6 @@
 {
     "name": "poc/integrations-agent-example",
-    "schema_version": "v0.7.0",
+    "schema_version": "0.7.0",
     "version": "v1.0.0",
     "description": "An example agent with IDE integrations support",
     "authors": [

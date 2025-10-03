@@ -43,7 +43,7 @@ func DecodeRecord(record *structpb.Struct) (*decodingv1.DecodeRecordResponse, er
 			},
 		}, nil
 
-	case "v0.7.0":
+	case "0.7.0":
 		record, err := ProtoToStruct[typesv1alpha1.Record](record)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %s record: %w", schemaVersion, err)

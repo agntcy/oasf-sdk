@@ -103,7 +103,7 @@ It supports two validation modes:
 ## gRPC API example
 
 ```bash
-cat e2e/fixtures/valid_v0.7.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+cat e2e/fixtures/valid_0.7.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
 
 ## Golang example
@@ -136,7 +136,7 @@ func main() {
 	// Sample OASF record data as a Go struct
 	recordData := map[string]interface{}{
 		"name":           "example.org/my-agent",
-		"schema_version": "v0.7.0",
+		"schema_version": "0.7.0",
 		"version":        "v1.0.0",
 		"description":    "An example agent for demonstration",
 		"authors":        []string{"Your Name <your.email@example.com>"},
@@ -238,7 +238,7 @@ func main() {
 	// Sample OASF record to validate
 	record := map[string]interface{}{
 		"name":           "example.org/my-agent",
-		"schema_version": "v0.7.0",
+		"schema_version": "0.7.0",
 		"version":        "v1.0.0",
 		"description":    "An example agent for demonstration",
 		"authors":        authorsIface,
@@ -314,7 +314,7 @@ def validate_record():
     # Sample OASF record to validate
     record_data = {
         "name": "example.org/my-agent",
-        "schema_version": "v0.7.0",
+        "schema_version": "0.7.0",
         "version": "v1.0.0",
         "description": "An example agent for demonstration",
         "authors": ["Your Name <your.email@example.com>"],
@@ -390,7 +390,7 @@ async function validateRecord() {
     // Sample OASF record to validate
     const recordData = {
         name: "example.org/my-agent",
-        schema_version: "v0.7.0",
+        schema_version: "0.7.0",
         version: "v1.0.0",
         description: "An example agent for demonstration",
         authors: ["Your Name <your.email@example.com>"],
