@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250915083413-97472ce2fb9f.2
 	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.9-20250915083413-97472ce2fb9f.1
-	github.com/agntcy/oasf-sdk/pkg v0.0.6
+	github.com/agntcy/oasf-sdk/pkg v0.0.7
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
