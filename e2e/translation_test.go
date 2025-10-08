@@ -93,4 +93,39 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
 		})
 	})
+
+	Context("A2A to Record Translation", func() {
+		It("should convert A2A card to OASF record matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedA2AData, err := decoder.JsonToProto(expectedA2AOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode A2A data")
+
+			req := &translationv1.A2AToRecordRequest{
+				Data: encodedA2AData,
+			}
+
+			resp, err := client.A2AToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "A2AToRecord should not fail")
+			Expect(resp.Record).NotTo(BeNil(), "Expected OASF record in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.Record.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal record to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedA2AToRecordOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected A2AToRecord output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual A2AToRecord output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
+		})
+	})
 })

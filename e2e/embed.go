@@ -34,3 +34,6 @@ var expectedGHCopilotOutput []byte
 
 //go:embed fixtures/expected_a2a_output.json
 var expectedA2AOutput []byte
+
+//go:embed fixtures/expected_a2atorecord_output.json
+var expectedA2AToRecordOutput []byte
