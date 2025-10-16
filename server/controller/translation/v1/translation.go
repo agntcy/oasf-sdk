@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-
 	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/translation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
@@ -58,6 +57,13 @@ func (t *translationCtrl) GHCopilotToRecord(context.Context, *translationv1.GHCo
 }
 
 // A2AToRecord implements translationv1grpc.TranslationServiceServer.
-func (t *translationCtrl) A2AToRecord(context.Context, *translationv1.A2AToRecordRequest) (*translationv1.A2AToRecordResponse, error) {
-	panic("unimplemented")
+func (t *translationCtrl) A2AToRecord(_ context.Context, req *translationv1.A2AToRecordRequest) (*translationv1.A2AToRecordResponse, error) {
+	slog.Info("Received A2AToRecord request", "request", req)
+
+	result, err := translator.A2AToRecord(req.GetData())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate record from A2A data: %w", err)
+	}
+
+	return &translationv1.A2AToRecordResponse{Record: result}, nil
 }
