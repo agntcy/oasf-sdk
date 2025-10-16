@@ -4,7 +4,14 @@
   ],
   "created_at": "2025-10-06T00:00:00Z",
   "description": "An agent that performs web searches and extracts information.",
-  "locators": [],
+  "locators": [{
+    "type": "source_code",
+    "url": "https://example.com/mcp-server.git"
+  }],
+  "domains": [{
+    "id": 0,
+    "name": "base_domain"
+  }],
   "modules": [
     {
       "data": {
@@ -49,12 +56,11 @@
           "http"
         ]
       },
-      "name": "runtime/a2a",
-      "version": "v1.0.0"
+      "name": "runtime/a2a"
     }
   ],
   "name": "example-agent",
   "schema_version": "0.7.0",
-  "skills": [],
+  "skills": [{"id":0,"name":"base_skill"}],
   "version": "v1.0.0"
 }

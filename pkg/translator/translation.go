@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
 	"github.com/agntcy/oasf-sdk/pkg/validator"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -208,9 +209,6 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 			"name": {
 				Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
 			},
-			"version": {
-				Kind: &structpb.Value_StringValue{StringValue: "v1.0.0"},
-			},
 			"data": {
 				Kind: &structpb.Value_StructValue{StructValue: a2aModuleData},
 			},
@@ -257,12 +255,68 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 			},
 			"skills": {
 				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{Values: []*structpb.Value{}}, // Empty skills array
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{
+								Kind: &structpb.Value_StructValue{
+									StructValue: &structpb.Struct{
+										Fields: map[string]*structpb.Value{
+											"id": {
+												Kind: &structpb.Value_NumberValue{NumberValue: 0},
+											},
+											"name": {
+												Kind: &structpb.Value_StringValue{StringValue: "base_skill"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			"locators": {
 				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{Values: []*structpb.Value{}}, // Empty locators array
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{
+								Kind: &structpb.Value_StructValue{
+									StructValue: &structpb.Struct{
+										Fields: map[string]*structpb.Value{
+											"type": {
+												Kind: &structpb.Value_StringValue{StringValue: "source_code"},
+											},
+											"url": {
+												Kind: &structpb.Value_StringValue{StringValue: "https://example.com/mcp-server.git"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"domains": {
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{
+								Kind: &structpb.Value_StructValue{
+									StructValue: &structpb.Struct{
+										Fields: map[string]*structpb.Value{
+											"id": {
+												Kind: &structpb.Value_NumberValue{NumberValue: 0},
+											},
+											"name": {
+												Kind: &structpb.Value_StringValue{StringValue: "base_domain"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			"modules": {
