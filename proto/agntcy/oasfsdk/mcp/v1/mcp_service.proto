@@ -1,0 +1,26 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package agntcy.oasfsdk.mcp.v1;
+
+option go_package = "github.com/agntcy/oasf-sdk/proto/gen/go/agntcy/oasfsdk/mcp/v1;mcpv1";
+
+import "google/protobuf/struct.proto";
+
+// MCPService provides methods to convert between MCP configurations and OASF records.
+service MCPService {
+  // MCPServerToRecord generates a Record from a native MCP Server 
+  rpc MCPServerToRecord(MCPServerToRecordRequest) returns (MCPServerToRecordResponse);
+}
+
+message MCPServerToRecordRequest {
+  // The Native MCP server to be converted into a Record.
+  google.protobuf.Struct mcp_server = 1;
+}
+
+message MCPServerToRecordResponse {
+  // The generated Record object.
+  google.protobuf.Struct record = 1;
+}
