@@ -395,6 +395,7 @@ async function validateRecord() {
         description: "An example agent for demonstration",
         authors: ["Your Name <your.email@example.com>"],
         created_at: "2025-01-01T00:00:00Z",
+        previous_record_cid: "2883dcaa-ae90-11f0-9e37-5e1f5302e045",
         domains: [
             {
                 id: 101,
