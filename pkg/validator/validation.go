@@ -124,11 +124,8 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 		return nil, fmt.Errorf("failed to get schema version from record: %w", err)
 	}
 
-	// Normalize the base URL (remove trailing slash if present)
-	baseURL := strings.TrimSuffix(schemaURL, "/")
-
-	// Construct the validation URL
-	validationURL := fmt.Sprintf("%s/api/%s/validate/object/record", baseURL, schemaVersion)
+	// Construct the full validation URL
+	validationURL := constructValidationURL(schemaURL, schemaVersion)
 
 	// Convert record to JSON for the POST request
 	recordJSON, err := json.Marshal(record)
@@ -181,4 +178,18 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 	}
 
 	return errors, nil
+}
+
+// constructValidationURL builds the full validation URL from a base URL and schema version
+func constructValidationURL(baseURL, schemaVersion string) string {
+	// Normalize the base URL (remove trailing slash if present)
+	normalizedURL := strings.TrimSuffix(baseURL, "/")
+
+	// Add protocol if missing (default to http:// for localhost or IP addresses)
+	if !strings.HasPrefix(normalizedURL, "http://") && !strings.HasPrefix(normalizedURL, "https://") {
+		normalizedURL = "http://" + normalizedURL
+	}
+
+	// Construct the full validation URL
+	return fmt.Sprintf("%s/api/%s/validate/object/record", normalizedURL, schemaVersion)
 }
