@@ -186,7 +186,7 @@ func main() {
 	// Optional: Validate against a specific schema URL
 	isValidURL, errorsURL, err := v.ValidateRecord(
 		recordStruct,
-		validator.WithSchemaURL("https://schema.oasf.outshift.com/schema/0.7.0/objects/record"),
+		validator.WithSchemaURL("https://schema.oasf.outshift.com"),
 	)
 	if err != nil {
 		log.Fatalf("URL validation failed: %v", err)
@@ -273,7 +273,7 @@ func main() {
 	req := &validationv1.ValidateRecordRequest{
 		Record:    recordProto,
 		// Optional: specify schema URL to validate against
-		// SchemaUrl: "https://schema.oasf.outshift.com/schema/0.7.0/objects/record",
+		// SchemaUrl: "https://schema.oasf.outshift.com",
 	}
 
 	// Call validation service
@@ -350,7 +350,7 @@ def validate_record():
         # Create validation request
         request = ValidateRecordRequest(
             record=record_struct
-            # schema_url="https://schema.oasf.outshift.com/schema/0.7.0/objects/record"  # Optional
+            # schema_url="https://schema.oasf.outshift.com"  # Optional
         )
 
         try:
@@ -395,6 +395,7 @@ async function validateRecord() {
         description: "An example agent for demonstration",
         authors: ["Your Name <your.email@example.com>"],
         created_at: "2025-01-01T00:00:00Z",
+        previous_record_cid: "2883dcaa-ae90-11f0-9e37-5e1f5302e045",
         domains: [
             {
                 id: 101,
@@ -427,7 +428,7 @@ async function validateRecord() {
     // Create validation request
     const request = new ValidateRecordRequest();
     request.setRecord(recordStruct);
-    // Optional: request.setSchemaUrl("https://schema.oasf.outshift.com/schema/0.7.0/objects/record");
+    // Optional: request.setSchemaUrl("https://schema.oasf.outshift.com");
 
     return new Promise((resolve, reject) => {
         client.validateRecord(request, (error, response) => {
