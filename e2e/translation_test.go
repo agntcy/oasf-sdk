@@ -25,11 +25,11 @@ var _ = Describe("Translation Service E2E", func() {
 	client := translationv1grpc.NewTranslationServiceClient(conn)
 
 	Context("GH Copilot config Generation", func() {
-		It("should generate github GH Copilot config matching expected output", func() {
+		It("should generate github GH Copilot config from 0.8.0 record matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := decoder.JsonToProto(translationRecord)
+			encodedRecord, err := decoder.JsonToProto(translationV080Record)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToGHCopilotRequest{
@@ -57,14 +57,34 @@ var _ = Describe("Translation Service E2E", func() {
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
-	})
 
-	Context("A2A Card Extraction", func() {
-		It("should extract A2A card matching expected output", func() {
+		It("should generate github GH Copilot config from 0.7.0 record (backward compatibility)", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := decoder.JsonToProto(translationRecord)
+			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToGHCopilotRequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToGHCopilot(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail for 0.7.0 record")
+			Expect(resp.Data).NotTo(BeNil(), "Expected GH Copilot config data in response")
+
+			// Verify we got valid MCP config structure
+			mcpConfig := resp.Data.AsMap()["mcpConfig"]
+			Expect(mcpConfig).NotTo(BeNil(), "Expected mcpConfig in response")
+		})
+	})
+
+	Context("A2A Card Extraction", func() {
+		It("should extract A2A card from 0.8.0 record matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationV080Record)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
 			req := &translationv1.RecordToA2ARequest{
@@ -91,6 +111,26 @@ var _ = Describe("Translation Service E2E", func() {
 
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
+		})
+
+		It("should extract A2A card from 0.7.0 record (backward compatibility)", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToA2ARequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToA2A(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail for 0.7.0 record")
+			Expect(resp.Data).NotTo(BeNil(), "Expected A2A card data in response")
+
+			// Verify we got valid A2A card structure
+			a2aCard := resp.Data.AsMap()["a2aCard"]
+			Expect(a2aCard).NotTo(BeNil(), "Expected a2aCard in response")
 		})
 	})
 

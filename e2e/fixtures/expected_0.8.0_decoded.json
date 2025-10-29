@@ -1,0 +1,27 @@
+{
+  "name": "example.org/valid-agent",
+  "version": "v1.0.0",
+  "schema_version": "0.8.0",
+  "description": "Valid agent record conforming to schema v0.5.0",
+  "authors": ["Test Corp"],
+  "created_at": "2025-01-01T00:00:00Z",
+  "skills": [
+    {
+      "name": "natural_language_processing/natural_language_understanding",
+      "id": 101
+    }
+  ],
+  "locators": [
+    {
+      "type": "docker_image",
+      "url": "ghcr.io/example/valid-agent:latest"
+    }
+  ],
+  "domains": [
+    {
+      "id": 101,
+      "name": "technology/internet_of_things"
+    }
+  ]
+}
+

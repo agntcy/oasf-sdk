@@ -75,6 +75,47 @@ var _ = Describe("Decoding Service E2E", func() {
 		})
 	})
 
+	Context("0.8.0 Record Decoding", func() {
+		It("should decode 0.8.0 record to v1alpha2 format matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Convert JSON to protobuf format
+			encodedRecord, err := decoder.JsonToProto(validV080Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode 0.8.0 record to protobuf")
+
+			req := &decodingv1.DecodeRecordRequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.DecodeRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "DecodeRecord should not fail for 0.8.0 record")
+			Expect(resp).NotTo(BeNil(), "Response should not be nil")
+
+			// Verify the response contains v1alpha2 record
+			Expect(resp.GetV1Alpha2()).NotTo(BeNil(), "Should return v1alpha2 record for 0.8.0 schema")
+			Expect(resp.GetV1Alpha1()).To(BeNil(), "Should not return v1alpha1 record for 0.8.0 schema")
+			Expect(resp.GetV1Alpha0()).To(BeNil(), "Should not return v1alpha0 record for 0.8.0 schema")
+
+			// Convert the decoded response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetV1Alpha2(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal decoded record to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedV080Decoded, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "Decoded 0.8.0 record should match expected output")
+		})
+	})
+
 	Context("0.7.0 Record Decoding", func() {
 		It("should decode 0.7.0 record to v1alpha1 format matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
