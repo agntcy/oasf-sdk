@@ -5,11 +5,19 @@
 - Translation SDK binary, distributed via [GitHub Releases](https://github.com/agntcy/oasf-sdk/releases)
 - Translation SDK docker images, distributed via
   [GitHub Packages](https://github.com/orgs/agntcy/packages?repo_name=oasf-sdk)
+- Docker
 
 Let's start the OASF SDK as a docker container, which will listen for incoming requests on port `31234`:
 
 ```bash
 docker run -p 31234:31234 ghcr.io/agntcy/oasf-sdk:latest
+```
+
+Or, for local testing purposes:
+
+```bash
+task build
+docker run -p 31234:31234 oasf-sdk:latest
 ```
 
 ## GitHub Copilot config
@@ -18,7 +26,7 @@ Create a GitHub Copilot config from the OASF data model using the `RecordToGHCop
 You can pipe the output to a file wherever you want to save the config.
 
 ```bash
-cat e2e/fixtures/translation_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
+cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
 ```
 
 Output:
@@ -60,7 +68,7 @@ Output:
 To extract A2A card from the OASF data model, use the `RecordToA2A` RPC method.
 
 ```bash
-cat e2e/fixtures/translation_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
+cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
 ```
 
 Output:
@@ -98,20 +106,26 @@ Output:
 The OASF SDK Validation Service validates OASF Records against [JSON Schema v0.7](https://json-schema.org/draft-07).
 It supports two validation modes:
 - **Embedded schemas** - Uses JSON schemas built into the binary (default)
-- **Schema URL** - Fetches and validates against the schema URL from the record
+- **Schema URL** - Uses the API validator of the given OASF schema server
 
 ## gRPC API example
 
+**Using embedded schemas (default):**
 ```bash
-cat e2e/fixtures/valid_0.7.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+```
+
+**Using explicit schema URL:**
+```bash
+cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
 
 ## Golang example
 
 ```bash
-go get github.com/agntcy/oasf-sdk/pkg@v0.0.5
-go get buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go@v1.36.9-20250917120021-8b2bf93bf8dc.1
-go get buf.build/gen/go/agntcy/oasf-sdk/grpc/go@v1.5.1-20250917120021-8b2bf93bf8dc.2
+go get github.com/agntcy/oasf-sdk/pkg@v0.0.9
+go get buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go@v1.36.10-20251029125108-823ea6fabc82.1
+go get buf.build/gen/go/agntcy/oasf-sdk/grpc/go@v1.5.1-20251029125108-823ea6fabc82.2
 ```
 
 Package based usage:
@@ -136,7 +150,7 @@ func main() {
 	// Sample OASF record data as a Go struct
 	recordData := map[string]interface{}{
 		"name":           "example.org/my-agent",
-		"schema_version": "0.7.0",
+		"schema_version": "0.8.0",
 		"version":        "v1.0.0",
 		"description":    "An example agent for demonstration",
 		"authors":        []string{"Your Name <your.email@example.com>"},
@@ -238,7 +252,7 @@ func main() {
 	// Sample OASF record to validate
 	record := map[string]interface{}{
 		"name":           "example.org/my-agent",
-		"schema_version": "0.7.0",
+		"schema_version": "0.8.0",
 		"version":        "v1.0.0",
 		"description":    "An example agent for demonstration",
 		"authors":        authorsIface,
@@ -314,7 +328,7 @@ def validate_record():
     # Sample OASF record to validate
     record_data = {
         "name": "example.org/my-agent",
-        "schema_version": "0.7.0",
+        "schema_version": "0.8.0",
         "version": "v1.0.0",
         "description": "An example agent for demonstration",
         "authors": ["Your Name <your.email@example.com>"],
@@ -390,7 +404,7 @@ async function validateRecord() {
     // Sample OASF record to validate
     const recordData = {
         name: "example.org/my-agent",
-        schema_version: "0.7.0",
+        schema_version: "0.8.0",
         version: "v1.0.0",
         description: "An example agent for demonstration",
         authors: ["Your Name <your.email@example.com>"],
