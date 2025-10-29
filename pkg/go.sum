@@ -1,5 +1,7 @@
 buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029103530-02d3fd9f4aaf.1 h1:WXih2O/NBAnB2TtRMIO1fp8xibrPqRlNvF/gDW69BoY=
 buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029103530-02d3fd9f4aaf.1/go.mod h1:1vxa2jgd9CN0UsaUIhzO8zqdrZi/XVw29U/wLnI59Qw=
+buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1 h1:THc6uLCGTpU393vVD5Eu5JHUdikvaP1+dqAclQe8pOE=
+buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1/go.mod h1:xkbAJMbZuuebIblSFnLrfTpvmfjarhKsIid+Q9snDQ0=
 buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.10-20251022143645-07a420b66e81.1 h1:ZObM/Cdu5dZO4ibBXNRSy+rFwG4oV86mYfKbI0Z7AAI=
 buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.10-20251022143645-07a420b66e81.1/go.mod h1:yJHswa2p3J+WxGLpgzuWNWn3I1CIkxdOu80Y/vN5lbE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
