@@ -14,14 +14,15 @@ import (
 )
 
 const (
-	MCPModuleName = "runtime/mcp"
-	A2AModuleName = "runtime/a2a"
+	MCPModuleName = "integration/mcp"
+	A2AModuleName = "integration/a2a"
+	targetSchema  = "0.8.0"
 )
 
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
 func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
-	// Get MCP module
-	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName)
+	// Get MCP module - use suffix matching
+	found, mcpModule := getModuleDataFromRecord(record, "mcp")
 	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
@@ -93,8 +94,8 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 
 // RecordToA2A translates a record into an A2ACard structure.
 func RecordToA2A(record *structpb.Struct) (*A2ACard, error) {
-	// Get A2A module
-	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName)
+	// Get A2A module - use suffix matching
+	found, a2aModule := getModuleDataFromRecord(record, "a2a")
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
@@ -121,13 +122,13 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 		return nil, errors.New("missing 'a2aCard' in input data")
 	}
 
-	a2aCardStruct := a2aCardVal.GetStructValue()
-	if a2aCardStruct == nil {
+	A2ACardStruct := a2aCardVal.GetStructValue()
+	if A2ACardStruct == nil {
 		return nil, errors.New("'a2aCard' is not a struct")
 	}
 
 	// Convert A2A card struct to map for easier access
-	cardMap := a2aCardStruct.AsMap()
+	cardMap := A2ACardStruct.AsMap()
 
 	// Extract name and description from A2A card for record metadata
 	cardName := "generated-agent"
@@ -144,11 +145,11 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 		}
 	}
 
-	// Create A2A data structure conforming to OASF v0.7.0 A2A data schema
-	a2aModuleData := &structpb.Struct{
+	// Create A2A data structure conforming to OASF v0.8.0 A2A data schema
+	A2AModuleData := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"card_data": {
-				Kind: &structpb.Value_StructValue{StructValue: a2aCardStruct},
+				Kind: &structpb.Value_StructValue{StructValue: A2ACardStruct},
 			},
 			"protocol_version": {
 				Kind: &structpb.Value_StringValue{StringValue: "v1.0.0"},
@@ -204,13 +205,13 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 	}
 
 	// Create the A2A module with schema-compliant data
-	a2aModule := &structpb.Struct{
+	A2AModule := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"name": {
 				Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
 			},
 			"data": {
-				Kind: &structpb.Value_StructValue{StructValue: a2aModuleData},
+				Kind: &structpb.Value_StructValue{StructValue: A2AModuleData},
 			},
 		},
 	}
@@ -219,7 +220,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 	modulesList := &structpb.ListValue{
 		Values: []*structpb.Value{
 			{
-				Kind: &structpb.Value_StructValue{StructValue: a2aModule},
+				Kind: &structpb.Value_StructValue{StructValue: A2AModule},
 			},
 		},
 	}
@@ -231,7 +232,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_StringValue{StringValue: cardName},
 			},
 			"schema_version": {
-				Kind: &structpb.Value_StringValue{StringValue: "0.7.0"},
+				Kind: &structpb.Value_StringValue{StringValue: targetSchema},
 			},
 			"version": {
 				Kind: &structpb.Value_StringValue{StringValue: "v1.0.0"},

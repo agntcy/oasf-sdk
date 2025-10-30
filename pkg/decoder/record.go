@@ -10,6 +10,7 @@ import (
 	decodingv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/decoding/v1"
 	typesv1alpha0 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha0"
 	typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha1"
+	typesv1alpha2 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha2"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -52,6 +53,18 @@ func DecodeRecord(record *structpb.Struct) (*decodingv1.DecodeRecordResponse, er
 		return &decodingv1.DecodeRecordResponse{
 			Record: &decodingv1.DecodeRecordResponse_V1Alpha1{
 				V1Alpha1: record,
+			},
+		}, nil
+
+	case "0.8.0":
+		record, err := ProtoToStruct[typesv1alpha2.Record](record)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %s record: %w", schemaVersion, err)
+		}
+
+		return &decodingv1.DecodeRecordResponse{
+			Record: &decodingv1.DecodeRecordResponse_V1Alpha2{
+				V1Alpha2: record,
 			},
 		}, nil
 

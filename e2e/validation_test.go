@@ -30,6 +30,21 @@ var _ = Describe("Validation Service E2E", func() {
 		shouldPass bool
 	}{
 		{
+			name:       "valid_record_0.8.0.json",
+			jsonData:   validV080Record,
+			shouldPass: true,
+		},
+		{
+			name:       "valid_record_0.8.0.json with explicit schema URL",
+			jsonData:   validV080Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
+			shouldPass: true,
+		},
+		{
+			name:     "invalid_record_0.8.0.json",
+			jsonData: invalidV080Record,
+		},
+		{
 			name:       "valid_record_0.7.0.json",
 			jsonData:   validV070Record,
 			shouldPass: true,

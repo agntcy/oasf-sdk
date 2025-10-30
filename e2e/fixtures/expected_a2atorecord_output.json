@@ -56,11 +56,11 @@
           "http"
         ]
       },
-      "name": "runtime/a2a"
+      "name": "integration/a2a"
     }
   ],
   "name": "example-agent",
-  "schema_version": "0.7.0",
+  "schema_version": "0.8.0",
   "skills": [{"id":0,"name":"base_skill"}],
   "version": "v1.0.0"
 }

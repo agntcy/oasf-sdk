@@ -3,8 +3,8 @@ module github.com/agntcy/oasf-sdk/server
 go 1.24.4
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20250915083413-97472ce2fb9f.2
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.9-20250915083413-97472ce2fb9f.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20251029125108-823ea6fabc82.2
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1
 	github.com/agntcy/oasf-sdk/pkg v0.0.8
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.10.1
@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.9-20250915080448-a3d79079b9ac.1 // indirect
+	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.10-20251022143645-07a420b66e81.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
@@ -35,7 +35,7 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
+	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 
