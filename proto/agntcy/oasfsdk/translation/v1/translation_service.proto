@@ -20,6 +20,9 @@ service TranslationService {
 
   // A2AToRecord generates a Record from an A2A card.
   rpc A2AToRecord(A2AToRecordRequest) returns (A2AToRecordResponse);
+
+  // MCPToRecord generates a Record from an MCP Registry entry.
+  rpc MCPToRecord(MCPToRecordRequest) returns (MCPToRecordResponse);
 }
 
 message RecordToGHCopilotRequest {
@@ -58,6 +61,16 @@ message A2AToRecordRequest {
 }
 
 message A2AToRecordResponse {
+  // The generated Record object in a structured format.
+  google.protobuf.Struct record = 1;
+}
+
+message MCPToRecordRequest {
+  // The MCP Registry entry to be converted to Record object.
+  google.protobuf.Struct data = 1;
+}
+
+message MCPToRecordResponse {
   // The generated Record object in a structured format.
   google.protobuf.Struct record = 1;
 }
