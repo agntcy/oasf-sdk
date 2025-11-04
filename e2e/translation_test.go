@@ -168,4 +168,39 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
 		})
 	})
+
+	Context("MCP to Record Translation", func() {
+		It("should convert MCP Registry entry to OASF record matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedMCPData, err := decoder.JsonToProto(translationMCPRegistry)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode MCP Registry data")
+
+			req := &translationv1.MCPToRecordRequest{
+				Data: encodedMCPData,
+			}
+
+			resp, err := client.MCPToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "MCPToRecord should not fail")
+			Expect(resp.Record).NotTo(BeNil(), "Expected OASF record in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.Record.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal record to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedMCPToRecordOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected MCPToRecord output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual MCPToRecord output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
+		})
+	})
 })

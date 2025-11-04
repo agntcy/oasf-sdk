@@ -3,8 +3,8 @@ module github.com/agntcy/oasf-sdk/e2e
 go 1.24.4
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20251029125108-823ea6fabc82.2
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20251104080327-0fc042e98377.2
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251104080327-0fc042e98377.1
 	github.com/agntcy/oasf-sdk/pkg v0.0.9
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1

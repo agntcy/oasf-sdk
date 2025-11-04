@@ -101,6 +101,71 @@ Output:
 }
 ```
 
+## MCP Registry to OASF Record
+
+To convert an MCP Registry server.json to an OASF record, use the `MCPToRecord` RPC method. This translates the deployment metadata from an MCP server.json file into an OASF 0.8.0 record with the MCP module populated.
+
+**Note:** The MCP Registry server.json contains deployment metadata (packages, remotes, etc.), not runtime capabilities (tools, resources, prompts). Those are discovered via the MCP protocol when a client connects to the server.
+
+```bash
+cat e2e/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/MCPToRecord
+```
+
+Output:
+```json
+{
+  "record": {
+    "name": "io.github.modelcontextprotocol/filesystem",
+    "schema_version": "0.8.0",
+    "version": "1.0.0",
+    "description": "Secure file system operations through MCP",
+    "authors": ["modelcontextprotocol"],
+    "created_at": "2025-10-06T00:00:00Z",
+    "skills": [
+      {
+        "id": 0,
+        "name": "base_skill"
+      }
+    ],
+    "locators": [
+      {
+        "type": "source_code",
+        "url": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem"
+      }
+    ],
+    "domains": [
+      {
+        "id": 0,
+        "name": "base_domain"
+      }
+    ],
+    "modules": [
+      {
+        "name": "integration/mcp",
+        "data": {
+          "servers": [
+            {
+              "name": "Filesystem",
+              "type": "local",
+              "capabilities": [],
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+              "description": "Secure file system operations through MCP",
+              "env_vars": [
+                {
+                  "name": "MCP_LOG_LEVEL",
+                  "value": "info"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
 # Validation Service
 
 The OASF SDK Validation Service validates OASF Records against [JSON Schema v0.7](https://json-schema.org/draft-07).

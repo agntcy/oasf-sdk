@@ -6,6 +6,9 @@ version: "3"
 vars:
   KIND_VERSION: "0.25.0"
   KIND_BIN: "{{ .BIN_DIR }}/kind-{{.KIND_VERSION}}"
+  KUBECTL_VERSION: '1.31.3'
+  KUBECTL_BIN: '{{ .BIN_DIR }}/kubectl-{{.KUBECTL_VERSION}}'
+  CLUSTER_NAME: "oasf-sdk-test"
   HELM_VERSION: "3.16.3"
   HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
 
@@ -17,36 +20,50 @@ tasks:
   test:setup:
     desc: Setup the test kind cluster and install the helm chart on it
     deps:
+      - deps:kubectl
       - deps:kind
       - deps:helm
     cmds:
       - echo "Building local Docker image with latest changes..."
       - task: :build
       - echo "Creating Kind cluster..."
-      - "{{.KIND_BIN}} create cluster --config=kind-config.yaml"
+      - "{{.KIND_BIN}} create cluster --name {{.CLUSTER_NAME}} --config=kind-config.yaml"
       - echo "Loading Docker image into Kind cluster..."
-      - "{{.KIND_BIN}} load docker-image oasf-sdk:latest"
+      - "{{.KIND_BIN}} load docker-image oasf-sdk:latest --name {{.CLUSTER_NAME}}"
       - echo "Installing Helm chart with local image..."
       - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk --set image.repository=oasf-sdk --set image.tag=latest --set image.pullPolicy=Never"
       - echo "Waiting for deployment to be ready..."
-      - sleep 20
+      - "{{.KUBECTL_BIN}} rollout status deployment/oasf-sdk --timeout=20s"
 
   test:tear-down:
     desc: Tear down the e2e kind cluster
     cmds:
-      - "{{.KIND_BIN}} delete cluster"
+      - "{{.KIND_BIN}} delete cluster --name {{.CLUSTER_NAME}}"
 
   test:
     desc: Run the E2E tests
-    deps:
-      - test:setup
     cmds:
+      - defer: { task: test:tear-down }
+      - task: test:setup
       - go test ./... -v --count=1
-      - task: test:tear-down
 
   ##
   ## Dependencies
   ##
+  deps:kubectl:
+    desc: Ensure supported kubectl version is installed
+    internal: true
+    deps:
+      - :deps:bin-dir
+    preconditions:
+      - which curl
+    cmds:
+      - cmd: echo "Downloading Kubectl v{{.KUBECTL_VERSION}}..."
+      - cmd: curl -L "https://dl.k8s.io/release/v{{.KUBECTL_VERSION}}/bin/{{OS}}/{{ARCH}}/kubectl" -o {{.KUBECTL_BIN}}
+      - cmd: chmod +x {{.KUBECTL_BIN}}
+    status:
+      - test -x {{.KUBECTL_BIN}}
+
   deps:kind:
     desc: Ensure supported kind version is installed
     internal: true

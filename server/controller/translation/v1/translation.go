@@ -67,3 +67,15 @@ func (t *translationCtrl) A2AToRecord(_ context.Context, req *translationv1.A2AT
 
 	return &translationv1.A2AToRecordResponse{Record: result}, nil
 }
+
+// MCPToRecord implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) MCPToRecord(_ context.Context, req *translationv1.MCPToRecordRequest) (*translationv1.MCPToRecordResponse, error) {
+	slog.Info("Received MCPToRecord request", "request", req)
+
+	result, err := translator.MCPToRecord(req.GetData())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate record from MCP Registry data: %w", err)
+	}
+
+	return &translationv1.MCPToRecordResponse{Record: result}, nil
+}
