@@ -1,0 +1,45 @@
+{
+  "server": {
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+    "name": "io.github.modelcontextprotocol/filesystem",
+    "title": "Filesystem",
+    "description": "Secure file system operations through MCP",
+    "version": "1.0.0",
+    "websiteUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/modelcontextprotocol/servers"
+    },
+    "packages": [
+      {
+        "registryType": "npm",
+        "identifier": "@modelcontextprotocol/server-filesystem",
+        "version": "1.0.0",
+        "transport": {
+          "type": "stdio"
+        },
+        "runtimeHint": "npx",
+        "runtimeArguments": [
+          {
+            "type": "named",
+            "name": "-y"
+          }
+        ],
+        "packageArguments": [
+          {
+            "type": "positional",
+            "value": "/tmp",
+            "description": "Root directory path"
+          }
+        ],
+        "environmentVariables": [
+          {
+            "name": "MCP_LOG_LEVEL",
+            "value": "info",
+            "description": "Log level for MCP server"
+          }
+        ]
+      }
+    ]
+  }
+}
