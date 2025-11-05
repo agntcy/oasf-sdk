@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/agntcy/oasf-sdk/pkg/validator"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -286,15 +285,6 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
 			},
 		},
-	}
-
-	// Validate OASF compliance using the validator
-	v, err := validator.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create validator: %w", err)
-	}
-	if _, _, err := v.ValidateRecord(record); err != nil {
-		return nil, fmt.Errorf("record validation failed: %w", err)
 	}
 	return record, nil
 }
@@ -581,15 +571,6 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
 			},
 		},
-	}
-
-	// Validate OASF compliance using the validator
-	v, err := validator.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create validator: %w", err)
-	}
-	if _, _, err := v.ValidateRecord(record); err != nil {
-		return nil, fmt.Errorf("record validation failed: %w", err)
 	}
 	return record, nil
 }
