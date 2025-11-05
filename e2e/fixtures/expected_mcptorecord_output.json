@@ -4,7 +4,12 @@
   ],
   "created_at": "2025-10-06T00:00:00Z",
   "description": "Secure file system operations through MCP",
-  "domains": [],
+  "domains": [
+    {
+      "id": 10204,
+      "name": "technology/software_engineering/apis_integration"
+    }
+  ],
   "locators": [
     {
       "type": "source_code",
@@ -41,6 +46,11 @@
   ],
   "name": "io.github.modelcontextprotocol/filesystem",
   "schema_version": "0.8.0",
-  "skills": [],
+  "skills": [
+    {
+      "id": 703,
+      "name": "multi_modal/any_to_any"
+    }
+  ],
   "version": "1.0.0"
 }

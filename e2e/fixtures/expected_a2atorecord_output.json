@@ -10,7 +10,12 @@
       "url": "https://example.com/mcp-server.git"
     }
   ],
-  "domains": [],
+  "domains": [
+    {
+      "id": 10204,
+      "name": "technology/software_engineering/apis_integration"
+    }
+  ],
   "modules": [
     {
       "data": {
@@ -60,6 +65,11 @@
   ],
   "name": "example-agent",
   "schema_version": "0.8.0",
-  "skills": [],
+  "skills": [
+    {
+      "id": 1004,
+      "name": "agent_orchestration/agent_coordination"
+    }
+  ],
   "version": "v1.0.0"
 }

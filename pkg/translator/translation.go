@@ -254,7 +254,26 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
 			},
 			"skills": {
-				Kind: &structpb.Value_ListValue{},
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{
+								Kind: &structpb.Value_StructValue{
+									StructValue: &structpb.Struct{
+										Fields: map[string]*structpb.Value{
+											"id": {
+												Kind: &structpb.Value_NumberValue{NumberValue: 1004},
+											},
+											"name": {
+												Kind: &structpb.Value_StringValue{StringValue: "agent_orchestration/agent_coordination"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"locators": {
 				Kind: &structpb.Value_ListValue{
@@ -279,7 +298,26 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				},
 			},
 			"domains": {
-				Kind: &structpb.Value_ListValue{},
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: []*structpb.Value{
+							{
+								Kind: &structpb.Value_StructValue{
+									StructValue: &structpb.Struct{
+										Fields: map[string]*structpb.Value{
+											"id": {
+												Kind: &structpb.Value_NumberValue{NumberValue: 10204},
+											},
+											"name": {
+												Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			"modules": {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
@@ -536,26 +574,22 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					},
 				},
 			},
-			"created_at": {
-				Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
-			},
-			"skills": {
-				Kind: &structpb.Value_ListValue{},
-			},
-			"locators": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"type": {
-												Kind: &structpb.Value_StringValue{StringValue: "source_code"},
-											},
-											"url": {
-												Kind: &structpb.Value_StringValue{StringValue: locatorUrl},
-											},
+		"created_at": {
+			Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
+		},
+		"skills": {
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{
+					Values: []*structpb.Value{
+						{
+							Kind: &structpb.Value_StructValue{
+								StructValue: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"id": {
+											Kind: &structpb.Value_NumberValue{NumberValue: 703},
+										},
+										"name": {
+											Kind: &structpb.Value_StringValue{StringValue: "multi_modal/any_to_any"},
 										},
 									},
 								},
@@ -564,10 +598,52 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					},
 				},
 			},
-			"domains": {
-				Kind: &structpb.Value_ListValue{},
+		},
+		"locators": {
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{
+					Values: []*structpb.Value{
+						{
+							Kind: &structpb.Value_StructValue{
+								StructValue: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"type": {
+											Kind: &structpb.Value_StringValue{StringValue: "source_code"},
+										},
+										"url": {
+											Kind: &structpb.Value_StringValue{StringValue: locatorUrl},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
-			"modules": {
+		},
+		"domains": {
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{
+					Values: []*structpb.Value{
+						{
+							Kind: &structpb.Value_StructValue{
+								StructValue: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"id": {
+											Kind: &structpb.Value_NumberValue{NumberValue: 10204},
+										},
+										"name": {
+											Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"modules": {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
 			},
 		},
