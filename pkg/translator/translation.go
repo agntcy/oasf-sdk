@@ -255,26 +255,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
 			},
 			"skills": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 0},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "base_skill"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Kind: &structpb.Value_ListValue{},
 			},
 			"locators": {
 				Kind: &structpb.Value_ListValue{
@@ -299,26 +280,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				},
 			},
 			"domains": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 0},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "base_domain"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Kind: &structpb.Value_ListValue{},
 			},
 			"modules": {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
@@ -588,26 +550,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
 			},
 			"skills": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 0},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "base_skill"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Kind: &structpb.Value_ListValue{},
 			},
 			"locators": {
 				Kind: &structpb.Value_ListValue{
@@ -632,26 +575,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				},
 			},
 			"domains": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 0},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "base_domain"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Kind: &structpb.Value_ListValue{},
 			},
 			"modules": {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
