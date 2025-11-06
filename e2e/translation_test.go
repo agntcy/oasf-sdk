@@ -202,5 +202,92 @@ var _ = Describe("Translation Service E2E", func() {
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
 		})
+
+		It("should convert minimal local MCP server (pypi, no runtimeHint) to OASF record", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedMCPData, err := decoder.JsonToProto(translationMCPMinimalLocal)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode minimal local MCP data")
+
+			req := &translationv1.MCPToRecordRequest{
+				Data: encodedMCPData,
+			}
+
+			resp, err := client.MCPToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "MCPToRecord should not fail for minimal local")
+			Expect(resp.Record).NotTo(BeNil(), "Expected OASF record in response")
+
+			actualJSON, err := json.MarshalIndent(resp.Record.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal record to JSON")
+
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedMCPMinimalLocalOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected minimal local output")
+
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual minimal local output")
+
+			Expect(actualOutput).To(Equal(expectedOutput), "Minimal local OASF record should match expected output")
+		})
+
+		It("should convert HTTP remote MCP server with headers to OASF record", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedMCPData, err := decoder.JsonToProto(translationMCPHTTPHeaders)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode HTTP headers MCP data")
+
+			req := &translationv1.MCPToRecordRequest{
+				Data: encodedMCPData,
+			}
+
+			resp, err := client.MCPToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "MCPToRecord should not fail for HTTP with headers")
+			Expect(resp.Record).NotTo(BeNil(), "Expected OASF record in response")
+
+			actualJSON, err := json.MarshalIndent(resp.Record.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal record to JSON")
+
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedMCPHTTPHeadersOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected HTTP headers output")
+
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual HTTP headers output")
+
+			Expect(actualOutput).To(Equal(expectedOutput), "HTTP headers OASF record should match expected output")
+		})
+
+		It("should convert minimal SSE remote MCP server to OASF record", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedMCPData, err := decoder.JsonToProto(translationMCPSSEMinimal)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode SSE minimal MCP data")
+
+			req := &translationv1.MCPToRecordRequest{
+				Data: encodedMCPData,
+			}
+
+			resp, err := client.MCPToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "MCPToRecord should not fail for SSE minimal")
+			Expect(resp.Record).NotTo(BeNil(), "Expected OASF record in response")
+
+			actualJSON, err := json.MarshalIndent(resp.Record.AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal record to JSON")
+
+			var expectedOutput map[string]interface{}
+			err = json.Unmarshal(expectedMCPSSEMinimalOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected SSE minimal output")
+
+			var actualOutput map[string]interface{}
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual SSE minimal output")
+
+			Expect(actualOutput).To(Equal(expectedOutput), "SSE minimal OASF record should match expected output")
+		})
 	})
 })

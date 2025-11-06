@@ -1,0 +1,25 @@
+{
+  "server": {
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+    "name": "ai.meminal/meminal",
+    "description": "Memory for deep conversational context across any platform",
+    "repository": {
+      "url": "https://github.com/meminal/meminal-mcp",
+      "source": "github"
+    },
+    "version": "1.0.0",
+    "remotes": [
+      {
+        "type": "streamable-http",
+        "url": "https://meminal.ai/mcp",
+        "headers": [
+          {
+            "description": "Bearer token for authentication (OAuth or Personal Access Token)",
+            "isSecret": true,
+            "name": "Authorization"
+          }
+        ]
+      }
+    ]
+  }
+}

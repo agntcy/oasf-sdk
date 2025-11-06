@@ -1,0 +1,15 @@
+{
+  "server": {
+    "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+    "name": "ai.gomarble/mcp-api",
+    "description": "GoMarble MCP API Server",
+    "repository": {},
+    "version": "1.0.0",
+    "remotes": [
+      {
+        "type": "sse",
+        "url": "https://apps.gomarble.ai/mcp-api/sse"
+      }
+    ]
+  }
+}
