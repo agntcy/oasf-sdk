@@ -483,9 +483,9 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 						}
 					}
 
-				serverFields["command"] = &structpb.Value{
-					Kind: &structpb.Value_StringValue{StringValue: command},
-				}
+					serverFields["command"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: command},
+					}
 				} else {
 					// For http/sse servers, URL from transport is required
 					// If missing, the record will be invalid (url is required for non-local servers)
@@ -656,9 +656,23 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									Kind: &structpb.Value_StringValue{StringValue: defaultVal},
 								}
 							}
+							// Try direct description first
 							if description, ok := envMap["description"].(string); ok {
 								envFields["description"] = &structpb.Value{
 									Kind: &structpb.Value_StringValue{StringValue: description},
+								}
+							} else if variables, ok := envMap["variables"].(map[string]interface{}); ok {
+								// Check for description in variables.{variable_name}.description
+								// Extract variable name from value (e.g., "{weather_choices}" -> "weather_choices")
+								if value, ok := envMap["value"].(string); ok && len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
+									varKey := value[1 : len(value)-1]
+									if varDef, ok := variables[varKey].(map[string]interface{}); ok {
+										if desc, ok := varDef["description"].(string); ok {
+											envFields["description"] = &structpb.Value{
+												Kind: &structpb.Value_StringValue{StringValue: desc},
+											}
+										}
+									}
 								}
 							}
 							if len(envFields) > 0 {
