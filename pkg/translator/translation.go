@@ -641,11 +641,17 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					for _, envVar := range envVars {
 						if envMap, ok := envVar.(map[string]interface{}); ok {
 							envFields := map[string]*structpb.Value{}
-							if name, ok := envMap["name"].(string); ok {
-								envFields["name"] = &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: name},
-								}
+
+							// Skip env vars with empty or missing name (invalid)
+							name, hasName := envMap["name"].(string)
+							if !hasName || name == "" {
+								continue
 							}
+
+							envFields["name"] = &structpb.Value{
+								Kind: &structpb.Value_StringValue{StringValue: name},
+							}
+
 							// Try "value" first, then "default"
 							if value, ok := envMap["value"].(string); ok {
 								envFields["default_value"] = &structpb.Value{
@@ -656,25 +662,33 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									Kind: &structpb.Value_StringValue{StringValue: defaultVal},
 								}
 							}
+
 							// Try direct description first
-							if description, ok := envMap["description"].(string); ok {
-								envFields["description"] = &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: description},
-								}
+							description := ""
+							if desc, ok := envMap["description"].(string); ok && desc != "" {
+								description = desc
 							} else if variables, ok := envMap["variables"].(map[string]interface{}); ok {
 								// Check for description in variables.{variable_name}.description
 								// Extract variable name from value (e.g., "{weather_choices}" -> "weather_choices")
 								if value, ok := envMap["value"].(string); ok && len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
 									varKey := value[1 : len(value)-1]
 									if varDef, ok := variables[varKey].(map[string]interface{}); ok {
-										if desc, ok := varDef["description"].(string); ok {
-											envFields["description"] = &structpb.Value{
-												Kind: &structpb.Value_StringValue{StringValue: desc},
-											}
+										if desc, ok := varDef["description"].(string); ok && desc != "" {
+											description = desc
 										}
 									}
 								}
 							}
+
+							// OASF requires description - provide default if missing
+							if description == "" {
+								description = fmt.Sprintf("Environment variable: %s", name)
+							}
+
+							envFields["description"] = &structpb.Value{
+								Kind: &structpb.Value_StringValue{StringValue: description},
+							}
+
 							if len(envFields) > 0 {
 								envVarsValues = append(envVarsValues, &structpb.Value{
 									Kind: &structpb.Value_StructValue{
