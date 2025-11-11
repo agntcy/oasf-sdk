@@ -5,6 +5,7 @@ package validator
 
 type option struct {
 	schemaURL string
+	strict    bool
 }
 
 type Option func(*option)
@@ -12,5 +13,11 @@ type Option func(*option)
 func WithSchemaURL(url string) Option {
 	return func(o *option) {
 		o.schemaURL = url
+	}
+}
+
+func WithStrict(strict bool) Option {
+	return func(o *option) {
+		o.strict = strict
 	}
 }

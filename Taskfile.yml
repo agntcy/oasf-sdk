@@ -66,6 +66,15 @@ tasks:
         cmd: |
           GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasf-sdk-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile
 
+  test:
+    desc: Run Go unit tests for all modules (excludes e2e)
+    vars:
+      GO_MOD_DIR:
+        sh: find . -name go.mod -not -path "./e2e/*" -exec dirname {} \;
+    cmds:
+      - for: { var: GO_MOD_DIR }
+        cmd: echo "Running tests in {{.ITEM}}" && cd {{.ITEM}} && go test -v ./...
+
   build:
     desc: Build image for host platform
     cmds:
