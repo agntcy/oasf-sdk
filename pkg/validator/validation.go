@@ -23,13 +23,15 @@ type Validator struct {
 
 // ValidationError represents a single validation error from the API
 type ValidationError struct {
-	Error         string `json:"error"`
-	Message       string `json:"message"`
-	Value         any    `json:"value,omitempty"`
-	Attribute     string `json:"attribute,omitempty"`
-	ValueType     string `json:"value_type,omitempty"`
-	AttributePath string `json:"attribute_path,omitempty"`
-	ExpectedType  string `json:"expected_type,omitempty"`
+	Error         string                 `json:"error"`
+	Message       string                 `json:"message"`
+	Value         any                    `json:"value,omitempty"`
+	Attribute     string                 `json:"attribute,omitempty"`
+	ValueType     string                 `json:"value_type,omitempty"`
+	AttributePath string                 `json:"attribute_path,omitempty"`
+	ExpectedType  string                 `json:"expected_type,omitempty"`
+	Constraint    map[string]interface{} `json:"constraint,omitempty"`
+	ObjectName    string                 `json:"object_name,omitempty"`
 }
 
 // ValidationResponse represents the response from the validator API
@@ -165,6 +167,15 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 		if err.AttributePath != "" {
 			errorMsg = fmt.Sprintf("Validation Error at %s: %s", err.AttributePath, err.Message)
 		}
+
+		// Add constraint information if this is a constraint_failed error
+		if err.Error == "constraint_failed" && err.Constraint != nil {
+			constraintJSON, marshalErr := json.Marshal(err.Constraint)
+			if marshalErr == nil {
+				errorMsg = fmt.Sprintf("%s Constraint: %s", errorMsg, string(constraintJSON))
+			}
+		}
+
 		errors = append(errors, errorMsg)
 	}
 
