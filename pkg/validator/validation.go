@@ -58,20 +58,32 @@ func New() (*Validator, error) {
 
 // ValidateRecord validates a record against a specified schema URL or its embedded schema version.
 func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (bool, []string, error) {
-	// Apply options
-	opts := &option{}
+	// Apply options with defaults
+	opts := &option{
+		strict: true,
+	}
 	for _, o := range options {
 		o(opts)
 	}
 
 	// Validate against schema URL if provided
 	if opts.schemaURL != "" {
-		schemaErrors, err := v.validateWithSchemaURL(record, opts.schemaURL)
+		errorMessages, warningMessages, err := v.validateWithSchemaURL(record, opts.schemaURL)
 		if err != nil {
 			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 		}
 
-		return len(schemaErrors) == 0, schemaErrors, nil
+		// Combine errors and warnings
+		allMessages := append(errorMessages, warningMessages...)
+
+		if opts.strict {
+			// In strict mode, warnings are treated as errors
+			return len(allMessages) == 0, allMessages, nil
+		} else {
+			// In non-strict mode, only errors matter for validation result
+			// but we still return warnings in the messages list
+			return len(errorMessages) == 0, allMessages, nil
+		}
 	}
 
 	// Get schema version
@@ -119,11 +131,11 @@ func (v *Validator) validateWithJSONSchema(record *structpb.Struct, schema *gojs
 	return errors, nil
 }
 
-func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL string) ([]string, error) {
+func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL string) ([]string, []string, error) {
 	// Get schema version from the record
 	schemaVersion, err := decoder.GetRecordSchemaVersion(record)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get schema version from record: %w", err)
+		return nil, nil, fmt.Errorf("failed to get schema version from record: %w", err)
 	}
 
 	// Construct the full validation URL
@@ -132,36 +144,36 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 	// Convert record to JSON for the POST request
 	recordJSON, err := json.Marshal(record)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal record to JSON: %w", err)
+		return nil, nil, fmt.Errorf("failed to marshal record to JSON: %w", err)
 	}
 
 	// Create POST request
 	req, err := http.NewRequest("POST", validationURL, bytes.NewBuffer(recordJSON))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create POST request to %s: %w", validationURL, err)
+		return nil, nil, fmt.Errorf("failed to create POST request to %s: %w", validationURL, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send request
 	resp, err := v.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send POST request to %s: %w", validationURL, err)
+		return nil, nil, fmt.Errorf("failed to send POST request to %s: %w", validationURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to validate record at URL %s: HTTP %d", validationURL, resp.StatusCode)
+		return nil, nil, fmt.Errorf("failed to validate record at URL %s: HTTP %d", validationURL, resp.StatusCode)
 	}
 
 	// Parse response
 	var validationResp ValidationResponse
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&validationResp); err != nil {
-		return nil, fmt.Errorf("failed to decode validation response from URL %s: %w", validationURL, err)
+		return nil, nil, fmt.Errorf("failed to decode validation response from URL %s: %w", validationURL, err)
 	}
 
 	// Convert errors to string format
-	var errors []string
+	var errorMessages []string
 	for _, err := range validationResp.Errors {
 		errorMsg := fmt.Sprintf("Validation Error: %s", err.Message)
 		if err.AttributePath != "" {
@@ -176,19 +188,20 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 			}
 		}
 
-		errors = append(errors, errorMsg)
+		errorMessages = append(errorMessages, errorMsg)
 	}
 
-	// Also include warnings as errors for consistency with the existing API
+	// Convert warnings to string format
+	var warningMessages []string
 	for _, warning := range validationResp.Warnings {
 		warningMsg := fmt.Sprintf("Validation Warning: %s", warning.Message)
 		if warning.AttributePath != "" {
 			warningMsg = fmt.Sprintf("Validation Warning at %s: %s", warning.AttributePath, warning.Message)
 		}
-		errors = append(errors, warningMsg)
+		warningMessages = append(warningMessages, warningMsg)
 	}
 
-	return errors, nil
+	return errorMessages, warningMessages, nil
 }
 
 // constructValidationURL builds the full validation URL from a base URL and schema version
