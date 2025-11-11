@@ -5,6 +5,7 @@ package validator
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -90,4 +91,54 @@ func GetAvailableSchemaVersions() ([]string, error) {
 	}
 
 	return versions, nil
+}
+
+// GetSchemaKey is a generic function to extract any $defs category from a schema.
+// For example, extracting skills, domains, modules, or any other $defs key.
+// Returns the category definitions as JSON bytes, or an error if not found.
+func GetSchemaKey(version, defsKey string) ([]byte, error) {
+	schemaData, err := GetSchemaContent(version)
+	if err != nil {
+		return nil, err
+	}
+
+	var schemaMap map[string]interface{}
+	if err := json.Unmarshal(schemaData, &schemaMap); err != nil {
+		return nil, fmt.Errorf("failed to parse schema: %w", err)
+	}
+
+	defs, ok := schemaMap["$defs"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("schema does not contain $defs section")
+	}
+
+	category, ok := defs[defsKey].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("schema does not contain '%s' definitions in $defs", defsKey)
+	}
+
+	categoryJSON, err := json.Marshal(category)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal %s: %w", defsKey, err)
+	}
+
+	return categoryJSON, nil
+}
+
+// GetSchemaSkills is a convenience function to extract skills from a schema.
+// Returns the skills as JSON bytes, or an error if the version is not found or parsing fails.
+func GetSchemaSkills(version string) ([]byte, error) {
+	return GetSchemaKey(version, "skills")
+}
+
+// GetSchemaDomains is a convenience function to extract domains from a schema.
+// Returns the domains as JSON bytes, or an error if the version is not found or parsing fails.
+func GetSchemaDomains(version string) ([]byte, error) {
+	return GetSchemaKey(version, "domains")
+}
+
+// GetSchemaModules is a convenience function to extract modules from a schema.
+// Returns the modules as JSON bytes, or an error if the version is not found or parsing fails.
+func GetSchemaModules(version string) ([]byte, error) {
+	return GetSchemaKey(version, "modules")
 }
