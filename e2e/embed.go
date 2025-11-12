@@ -55,3 +55,21 @@ var translationMCPRegistry []byte
 
 //go:embed fixtures/expected_mcptorecord_output.json
 var expectedMCPToRecordOutput []byte
+
+//go:embed fixtures/translation_mcp_minimal_local.json
+var translationMCPMinimalLocal []byte
+
+//go:embed fixtures/expected_mcp_minimal_local_output.json
+var expectedMCPMinimalLocalOutput []byte
+
+//go:embed fixtures/translation_mcp_http_headers.json
+var translationMCPHTTPHeaders []byte
+
+//go:embed fixtures/expected_mcp_http_headers_output.json
+var expectedMCPHTTPHeadersOutput []byte
+
+//go:embed fixtures/translation_mcp_sse_minimal.json
+var translationMCPSSEMinimal []byte
+
+//go:embed fixtures/expected_mcp_sse_minimal_output.json
+var expectedMCPSSEMinimalOutput []byte

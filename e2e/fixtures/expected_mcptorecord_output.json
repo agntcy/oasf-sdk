@@ -1,4 +1,8 @@
 {
+  "annotations": {
+    "mcp.package.@modelcontextprotocol/server-filesystem.registryType": "npm",
+    "mcp.package.@modelcontextprotocol/server-filesystem.version": "1.0.0"
+  },
   "authors": [
     "modelcontextprotocol"
   ],
@@ -6,14 +10,14 @@
   "description": "Secure file system operations through MCP",
   "domains": [
     {
-      "id": 0,
-      "name": "base_domain"
+      "id": 10204,
+      "name": "technology/software_engineering/apis_integration"
     }
   ],
   "locators": [
     {
       "type": "source_code",
-      "url": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem"
+      "url": "https://github.com/modelcontextprotocol/servers"
     }
   ],
   "modules": [
@@ -36,7 +40,7 @@
                 "name": "MCP_LOG_LEVEL"
               }
             ],
-            "name": "Filesystem",
+            "name": "io.github.modelcontextprotocol/filesystem",
             "type": "local"
           }
         ]
@@ -48,8 +52,8 @@
   "schema_version": "0.8.0",
   "skills": [
     {
-      "id": 0,
-      "name": "base_skill"
+      "id": 703,
+      "name": "multi_modal/any_to_any"
     }
   ],
   "version": "1.0.0"

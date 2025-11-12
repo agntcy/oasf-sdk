@@ -1,0 +1,53 @@
+{
+  "annotations": {
+    "mcp.package.mcpcap.registryType": "pypi",
+    "mcp.package.mcpcap.registryBaseUrl": "https://pypi.org",
+    "mcp.package.mcpcap.version": "0.4.4"
+  },
+  "authors": [
+    "mcpcap"
+  ],
+  "created_at": "2025-10-06T00:00:00Z",
+  "description": "An MCP server for analyzing PCAP files.",
+  "domains": [
+    {
+      "id": 10204,
+      "name": "technology/software_engineering/apis_integration"
+    }
+  ],
+  "locators": [
+    {
+      "type": "source_code",
+      "url": "https://github.com/mcpcap/mcpcap"
+    }
+  ],
+  "modules": [
+    {
+      "data": {
+        "servers": [
+        {
+          "args": [
+            "-m",
+            "mcpcap"
+          ],
+          "capabilities": [],
+          "command": "python",
+          "description": "An MCP server for analyzing PCAP files.",
+          "name": "ai.mcpcap/mcpcap",
+          "type": "local"
+        }
+        ]
+      },
+      "name": "integration/mcp"
+    }
+  ],
+  "name": "ai.mcpcap/mcpcap",
+  "schema_version": "0.8.0",
+  "skills": [
+    {
+      "id": 703,
+      "name": "multi_modal/any_to_any"
+    }
+  ],
+  "version": "0.6.0"
+}

@@ -1,0 +1,47 @@
+{
+  "authors": [
+    "meminal"
+  ],
+  "created_at": "2025-10-06T00:00:00Z",
+  "description": "Memory for deep conversational context across any platform",
+  "domains": [
+    {
+      "id": 10204,
+      "name": "technology/software_engineering/apis_integration"
+    }
+  ],
+  "locators": [
+    {
+      "type": "source_code",
+      "url": "https://github.com/meminal/meminal-mcp"
+    }
+  ],
+  "modules": [
+    {
+      "data": {
+        "servers": [
+          {
+            "capabilities": [],
+            "description": "Memory for deep conversational context across any platform",
+            "headers": {
+              "Authorization": "{authorization}"
+            },
+            "name": "ai.meminal/meminal",
+            "type": "http",
+            "url": "https://meminal.ai/mcp"
+          }
+        ]
+      },
+      "name": "integration/mcp"
+    }
+  ],
+  "name": "ai.meminal/meminal",
+  "schema_version": "0.8.0",
+  "skills": [
+    {
+      "id": 703,
+      "name": "multi_modal/any_to_any"
+    }
+  ],
+  "version": "1.0.0"
+}
