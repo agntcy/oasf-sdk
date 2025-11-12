@@ -19,7 +19,7 @@ git checkout -b release/v1.0.0
 * Commit the changes with a suitable message.
 ```sh
 git add versions.yaml
-git commit -m "release: update module set to version v1.0.0"
+git commit -s -m "release: update module set to version v1.0.0"
 ```
 
 * Run the version verification command to check for any issues.
