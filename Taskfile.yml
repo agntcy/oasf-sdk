@@ -101,6 +101,7 @@ tasks:
       - task: deps:multimod-bin
     cmds:
       - "{{ .MULTIMOD_BIN }} prerelease --all-module-sets --skip-go-mod-tidy=true --commit-to-different-branch=false"
+      - git commit --amend --signoff --no-edit
 
   ##
   ## License
