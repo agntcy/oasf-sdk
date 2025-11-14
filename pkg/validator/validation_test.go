@@ -4,6 +4,7 @@
 package validator
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -12,8 +13,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// TestValidateWithSchemaURL_StrictMode tests the strict mode validation behavior
-func TestValidateWithSchemaURL_StrictMode(t *testing.T) {
+// TestValidateWithSchemaURL_StrictMode tests the strict mode validation behavior.
+func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 	tests := []struct {
 		name             string
 		strict           bool
@@ -182,7 +183,10 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				json.NewEncoder(w).Encode(tt.mockResponse)
+
+				if err := json.NewEncoder(w).Encode(tt.mockResponse); err != nil {
+					t.Errorf("Failed to encode mock response: %v", err)
+				}
 			}))
 			defer server.Close()
 
@@ -193,9 +197,9 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) {
 			}
 
 			// Create a test record
-			record, err := structpb.NewStruct(map[string]interface{}{
+			record, err := structpb.NewStruct(map[string]any{
 				"schema_version": "0.8.0",
-				"data": map[string]interface{}{
+				"data": map[string]any{
 					"name": "test",
 				},
 			})
@@ -205,22 +209,25 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) {
 
 			// Validate with the mock server URL
 			var valid bool
+
 			var messages []string
 			if tt.strict {
-				valid, messages, err = validator.ValidateRecord(record, WithSchemaURL(server.URL), WithStrict(true))
+				valid, messages, err = validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL), WithStrict(true))
 			} else {
-				valid, messages, err = validator.ValidateRecord(record, WithSchemaURL(server.URL), WithStrict(false))
+				valid, messages, err = validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL), WithStrict(false))
 			}
 
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
+
 				return
 			}
 
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
+
 				return
 			}
 
@@ -235,7 +242,7 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) {
 	}
 }
 
-// TestValidateWithSchemaURL_ConstraintFailed tests that constraint information is included in error messages
+// TestValidateWithSchemaURL_ConstraintFailed tests that constraint information is included in error messages.
 func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	// Create a mock response with constraint_failed error
 	mockResponse := ValidationResponse{
@@ -244,8 +251,8 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 			{
 				Error:   "constraint_failed",
 				Message: "Constraint failed: \"at_least_one\" from object \"mcp_server\" at \"data.servers[0]\"; expected at least one constraint attribute, but got none.",
-				Constraint: map[string]interface{}{
-					"at_least_one": []interface{}{"url", "command"},
+				Constraint: map[string]any{
+					"at_least_one": []any{"url", "command"},
 				},
 				ObjectName:    "mcp_server",
 				AttributePath: "data.servers[0]",
@@ -259,7 +266,10 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(mockResponse)
+
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -270,11 +280,11 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 
 	// Create a test record
-	record, err := structpb.NewStruct(map[string]interface{}{
+	record, err := structpb.NewStruct(map[string]any{
 		"schema_version": "0.8.0",
-		"data": map[string]interface{}{
-			"servers": []interface{}{
-				map[string]interface{}{},
+		"data": map[string]any{
+			"servers": []any{
+				map[string]any{},
 			},
 		},
 	})
@@ -283,7 +293,7 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 
 	// Validate with the mock server URL
-	valid, messages, err := validator.ValidateRecord(record, WithSchemaURL(server.URL))
+	valid, messages, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -309,7 +319,7 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 }
 
-// TestValidateWithSchemaURL_DefaultStrictMode tests that strict mode is enabled by default
+// TestValidateWithSchemaURL_DefaultStrictMode tests that strict mode is enabled by default.
 func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 	// Create a mock response with only warnings
 	mockResponse := ValidationResponse{
@@ -329,7 +339,10 @@ func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(mockResponse)
+
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -340,9 +353,9 @@ func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 	}
 
 	// Create a test record
-	record, err := structpb.NewStruct(map[string]interface{}{
+	record, err := structpb.NewStruct(map[string]any{
 		"schema_version": "0.8.0",
-		"data": map[string]interface{}{
+		"data": map[string]any{
 			"name": "test",
 		},
 	})
@@ -351,7 +364,7 @@ func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 	}
 
 	// Validate WITHOUT specifying WithStrict - should default to strict=true
-	valid, messages, err := validator.ValidateRecord(record, WithSchemaURL(server.URL))
+	valid, messages, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -366,7 +379,7 @@ func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 	}
 }
 
-// Helper function to check if a string contains a substring
+// Helper function to check if a string contains a substring.
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsHelper(s, substr))
 }
@@ -377,5 +390,6 @@ func containsHelper(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }

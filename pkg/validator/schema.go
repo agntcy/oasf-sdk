@@ -6,6 +6,7 @@ package validator
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -33,12 +34,14 @@ func loadEmbeddedSchemas() (map[string]*gojsonschema.Schema, error) {
 		version := strings.TrimSuffix(filename, ".json")
 
 		schemaPath := filepath.Join("schemas", filename)
+
 		schemaData, err := embeddedSchemas.ReadFile(schemaPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read embedded schema file %s: %w", filename, err)
 		}
 
 		schemaLoader := gojsonschema.NewStringLoader(string(schemaData))
+
 		schema, err := gojsonschema.NewSchema(schemaLoader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile embedded schema %s: %w", filename, err)
@@ -48,7 +51,7 @@ func loadEmbeddedSchemas() (map[string]*gojsonschema.Schema, error) {
 	}
 
 	if len(schemas) == 0 {
-		return nil, fmt.Errorf("no valid JSON schema files found in embedded schemas")
+		return nil, errors.New("no valid JSON schema files found in embedded schemas")
 	}
 
 	return schemas, nil
@@ -75,7 +78,7 @@ func GetAvailableSchemaVersions() ([]string, error) {
 		return nil, fmt.Errorf("failed to read embedded schemas directory: %w", err)
 	}
 
-	var versions []string
+	versions := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
@@ -87,7 +90,7 @@ func GetAvailableSchemaVersions() ([]string, error) {
 	}
 
 	if len(versions) == 0 {
-		return nil, fmt.Errorf("no valid JSON schema files found in embedded schemas")
+		return nil, errors.New("no valid JSON schema files found in embedded schemas")
 	}
 
 	return versions, nil
@@ -102,17 +105,17 @@ func GetSchemaKey(version, defsKey string) ([]byte, error) {
 		return nil, err
 	}
 
-	var schemaMap map[string]interface{}
+	var schemaMap map[string]any
 	if err := json.Unmarshal(schemaData, &schemaMap); err != nil {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
 	}
 
-	defs, ok := schemaMap["$defs"].(map[string]interface{})
+	defs, ok := schemaMap["$defs"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("schema does not contain $defs section")
+		return nil, errors.New("schema does not contain $defs section")
 	}
 
-	category, ok := defs[defsKey].(map[string]interface{})
+	category, ok := defs[defsKey].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("schema does not contain '%s' definitions in $defs", defsKey)
 	}

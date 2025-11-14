@@ -34,7 +34,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	if err := server.start(); err != nil {
+	if err := server.start(ctx); err != nil {
 		return fmt.Errorf("failed to start server: %w", err)
 	}
 	defer server.close()
@@ -76,8 +76,10 @@ func (s Server) close() {
 	s.grpcServer.GracefulStop()
 }
 
-func (s Server) start() error {
-	listen, err := net.Listen("tcp", s.cfg.ListenAddress)
+func (s Server) start(ctx context.Context) error {
+	lc := &net.ListenConfig{}
+
+	listen, err := lc.Listen(ctx, "tcp", s.cfg.ListenAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", s.cfg.ListenAddress, err)
 	}

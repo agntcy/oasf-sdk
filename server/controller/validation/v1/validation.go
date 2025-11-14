@@ -5,6 +5,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,10 +30,10 @@ func New() (validationv1grpc.ValidationServiceServer, error) {
 	}, nil
 }
 
-func (v validationCtrl) ValidateRecord(_ context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
+func (v validationCtrl) ValidateRecord(ctx context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
 	slog.Info("Received ValidateRecord request", "request", req)
 
-	isValid, errors, err := v.validator.ValidateRecord(req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+	isValid, errors, err := v.validator.ValidateRecord(ctx, req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
@@ -48,14 +49,15 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 
 	for {
 		req, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
+
 		if err != nil {
 			return fmt.Errorf("failed to receive record: %w", err)
 		}
 
-		isValid, errors, err := v.validator.ValidateRecord(req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+		isValid, errors, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
 		if err != nil {
 			return fmt.Errorf("failed to validate record: %w", err)
 		}
