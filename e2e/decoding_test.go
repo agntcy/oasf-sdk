@@ -51,12 +51,12 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to marshal decoded record to JSON")
 
 			// Parse expected output
-			var expectedRecord map[string]interface{}
+			var expectedRecord map[string]any
 			err = json.Unmarshal(expectedV031Decoded, &expectedRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected decoded output")
 
 			// Parse actual output for comparison
-			var actualRecord map[string]interface{}
+			var actualRecord map[string]any
 			err = json.Unmarshal(actualJSON, &actualRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual decoded output")
 
@@ -102,12 +102,12 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to marshal decoded record to JSON")
 
 			// Parse expected output
-			var expectedOutput map[string]interface{}
+			var expectedOutput map[string]any
 			err = json.Unmarshal(expectedV080Decoded, &expectedOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
 
 			// Parse actual output
-			var actualOutput map[string]interface{}
+			var actualOutput map[string]any
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
@@ -143,12 +143,12 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "Failed to marshal decoded record to JSON")
 
 			// Parse expected output
-			var expectedRecord map[string]interface{}
+			var expectedRecord map[string]any
 			err = json.Unmarshal(expectedV070Decoded, &expectedRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected decoded output")
 
 			// Parse actual output for comparison
-			var actualRecord map[string]interface{}
+			var actualRecord map[string]any
 			err = json.Unmarshal(actualJSON, &actualRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual decoded output")
 
@@ -172,7 +172,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			defer cancel()
 
 			// Create a record without schema_version field
-			recordWithoutSchema := map[string]interface{}{
+			recordWithoutSchema := map[string]any{
 				"authors":     []string{"Test Author"},
 				"created_at":  "2025-09-11T12:00:00Z",
 				"description": "Record without schema version",
@@ -196,7 +196,7 @@ var _ = Describe("Decoding Service E2E", func() {
 			defer cancel()
 
 			// Create a record with unsupported schema version
-			recordWithUnsupportedSchema := map[string]interface{}{
+			recordWithUnsupportedSchema := map[string]any{
 				"authors":        []string{"Test Author"},
 				"created_at":     "2025-09-11T12:00:00Z",
 				"description":    "Record with unsupported schema",

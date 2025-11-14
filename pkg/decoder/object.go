@@ -5,6 +5,7 @@ package decoder
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -13,7 +14,7 @@ import (
 func JsonToProto(data []byte) (*structpb.Struct, error) {
 	var result *structpb.Struct
 	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal JSON to protobuf struct: %w", err)
 	}
 
 	return result, nil
@@ -23,7 +24,7 @@ func JsonToProto(data []byte) (*structpb.Struct, error) {
 func StructToProto(goObj any) (*structpb.Struct, error) {
 	jsonBytes, err := json.Marshal(goObj)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal Go struct to JSON: %w", err)
 	}
 
 	return JsonToProto(jsonBytes)
@@ -34,13 +35,13 @@ func ProtoToStruct[T any](obj *structpb.Struct) (*T, error) {
 	// Convert protobuf Struct to JSON
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal protobuf struct to JSON: %w", err)
 	}
 
 	// Unmarshal JSON to the target Go type
 	var result T
 	if err := json.Unmarshal(jsonBytes, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal JSON to Go struct: %w", err)
 	}
 
 	return &result, nil

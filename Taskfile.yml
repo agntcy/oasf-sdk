@@ -13,6 +13,11 @@ vars:
   LICENSEI_BIN: "{{ .BIN_DIR }}/licensei-{{.LICENSEI_VERSION}}"
   MULTIMOD_VERSION: "0.17.0"
   MULTIMOD_BIN: "{{ .BIN_DIR }}/multimod-{{.MULTIMOD_VERSION}}"
+  GOLANGCI_LINT_VERSION: "2.6.1"
+  GOLANGCI_LINT_BIN: "{{ .BIN_DIR }}/golangci-lint-{{.GOLANGCI_LINT_VERSION}}"
+
+  GO_MOD_DIR:
+    sh: find . -name go.mod -exec dirname {} \;
 
 includes:
   e2e:
@@ -33,17 +38,6 @@ tasks:
     cmds:
       - "{{.BUFBUILD_BIN}} dep update"
       - "{{.BUFBUILD_BIN}} format --output ./"
-
-  lint:
-    desc: Run linters
-    deps:
-      - task: deps:protoc
-      - task: deps:bufbuild
-    dir: ./proto
-    cmds:
-      - "{{.BUFBUILD_BIN}} dep update"
-      - "{{.BUFBUILD_BIN}} format --diff --exit-code"
-      - "{{.BUFBUILD_BIN}} lint"
 
   compile:
     desc: Compile binary for host platform
@@ -84,6 +78,38 @@ tasks:
     desc: Build image for multiple platforms
     cmds:
       - docker buildx bake
+  
+  ##
+  ## Linting
+  ##
+  lint:golangci-lint:
+    desc: Run golangci-lint
+    deps:
+      - task: deps:golangci-lint
+    vars:
+      FIX: '{{ .FIX | default "false" }}'
+      FIX_FLAG: '{{if eq .FIX "true"}}--fix{{end}}'
+    cmds:
+      - for: { var: GO_MOD_DIR }
+        cmd: |
+          echo "Running golangci-lint in {{.ITEM}}"
+          cd {{.ITEM}}
+          {{.GOLANGCI_LINT_BIN}} run --config {{.ROOT_DIR}}/.golangci.yml {{.FIX_FLAG}}
+
+  lint:buf:
+    desc: Run Buf linters
+    deps:
+      - task: deps:protoc
+      - task: deps:bufbuild
+    dir: ./proto
+    cmds:
+      - "{{.BUFBUILD_BIN}} lint"
+
+  lint:
+    desc: Run all linters
+    deps:
+      - task: lint:buf
+      - task: lint:golangci-lint
 
   ##
   ## Release
@@ -132,9 +158,6 @@ tasks:
     desc: Cache licenses of dependencies
     deps:
       - task: deps:licensei
-    vars:
-      GO_MOD_DIR:
-        sh: find . -name go.mod -exec dirname {} \;
     cmds:
       - for: { var: GO_MOD_DIR }
         cmd: echo "Caching licenses in {{.ITEM}}" && cd {{.ITEM}} && {{ .LICENSEI_BIN }} cache --config {{.ROOT_DIR}}/.licensei.toml
@@ -144,9 +167,6 @@ tasks:
   ##
   deps:tidy:
     desc: Ensure dependencies are up-to-date
-    vars:
-      GO_MOD_DIR:
-        sh: find . -name go.mod -exec dirname {} \;
     cmds:
       - for: { var: GO_MOD_DIR }
         cmd: go -C {{.ITEM}} mod tidy -go={{.GO_VERSION}}
@@ -228,3 +248,15 @@ tasks:
       - rm -rf {{.MULTIMOD_REPO_DIR}}
     status:
       - test -x {{.MULTIMOD_BIN}}
+
+  deps:golangci-lint:
+    desc: Install golangci-lint
+    internal: true
+    deps:
+      - deps:bin-dir
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v{{.GOLANGCI_LINT_VERSION}}
+      - mv {{.BIN_DIR}}/golangci-lint {{.GOLANGCI_LINT_BIN}}
+      - chmod +x {{.GOLANGCI_LINT_BIN}}
+    status:
+      - test -x {{.GOLANGCI_LINT_BIN}}

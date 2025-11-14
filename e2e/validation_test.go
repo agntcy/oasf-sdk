@@ -93,11 +93,11 @@ var _ = Describe("Validation Service E2E", func() {
 
 				Expect(err).NotTo(HaveOccurred(), "ValidateRecord should not fail", err)
 				if tc.shouldPass {
-					Expect(resp.IsValid).To(BeTrue(), "Expected valid record", resp.Errors)
-					Expect(resp.Errors).To(BeEmpty(), "Expected no validation errors", resp.Errors)
+					Expect(resp.GetIsValid()).To(BeTrue(), "Expected valid record", resp.GetErrors())
+					Expect(resp.GetErrors()).To(BeEmpty(), "Expected no validation errors", resp.GetErrors())
 				} else {
-					Expect(resp.IsValid).To(BeFalse(), "Expected invalid record", resp.Errors)
-					Expect(resp.Errors).NotTo(BeEmpty(), "Expected validation errors", resp.Errors)
+					Expect(resp.GetIsValid()).To(BeFalse(), "Expected invalid record", resp.GetErrors())
+					Expect(resp.GetErrors()).NotTo(BeEmpty(), "Expected validation errors", resp.GetErrors())
 				}
 			})
 		})

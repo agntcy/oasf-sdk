@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const testSchemaVersion = "0.7.0"
+
 func TestGetSchemaContent(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -39,7 +41,7 @@ func TestGetSchemaContent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content, err := GetSchemaContent(tt.version)
-			if tt.expectError {
+			if tt.expectError { //nolint:nestif
 				if err == nil {
 					t.Errorf("GetSchemaContent() expected error but got none")
 				}
@@ -47,11 +49,12 @@ func TestGetSchemaContent(t *testing.T) {
 				if err != nil {
 					t.Errorf("GetSchemaContent() unexpected error: %v", err)
 				}
+
 				if len(content) == 0 {
 					t.Errorf("GetSchemaContent() returned empty content")
 				}
 				// Verify it's valid JSON
-				var jsonMap map[string]interface{}
+				var jsonMap map[string]any
 				if err := json.Unmarshal(content, &jsonMap); err != nil {
 					t.Errorf("GetSchemaContent() returned invalid JSON: %v", err)
 				}
@@ -110,11 +113,13 @@ func TestGetSchemaKey(t *testing.T) {
 				if err == nil {
 					t.Errorf("GetSchemaKey() expected error but got none")
 				}
+
 				return
 			}
 
 			if err != nil {
 				t.Errorf("GetSchemaKey() unexpected error: %v", err)
+
 				return
 			}
 
@@ -128,7 +133,7 @@ func TestGetSchemaKey(t *testing.T) {
 				}
 
 				// Verify it's valid JSON
-				var jsonMap map[string]interface{}
+				var jsonMap map[string]any
 				if err := json.Unmarshal(result, &jsonMap); err != nil {
 					t.Errorf("GetSchemaKey() returned invalid JSON: %v", err)
 				}
@@ -168,7 +173,7 @@ func TestGetSchemaSkills(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			skills, err := GetSchemaSkills(tt.version)
-			if tt.expectError {
+			if tt.expectError { //nolint:nestif
 				if err == nil {
 					t.Errorf("GetSchemaSkills() expected error but got none")
 				}
@@ -176,12 +181,13 @@ func TestGetSchemaSkills(t *testing.T) {
 				if err != nil {
 					t.Errorf("GetSchemaSkills() unexpected error: %v", err)
 				}
+
 				if len(skills) == 0 {
 					t.Errorf("GetSchemaSkills() returned empty skills")
 				}
 
 				// Verify it's valid JSON
-				var skillsMap map[string]interface{}
+				var skillsMap map[string]any
 				if err := json.Unmarshal(skills, &skillsMap); err != nil {
 					t.Errorf("GetSchemaSkills() returned invalid JSON: %v", err)
 				}
@@ -221,7 +227,7 @@ func TestGetSchemaDomains(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			domains, err := GetSchemaDomains(tt.version)
-			if tt.expectError {
+			if tt.expectError { //nolint:nestif
 				if err == nil {
 					t.Errorf("GetSchemaDomains() expected error but got none")
 				}
@@ -231,13 +237,13 @@ func TestGetSchemaDomains(t *testing.T) {
 				}
 
 				// Verify it's valid JSON
-				var domainsMap map[string]interface{}
+				var domainsMap map[string]any
 				if err := json.Unmarshal(domains, &domainsMap); err != nil {
 					t.Errorf("GetSchemaDomains() returned invalid JSON: %v", err)
 				}
 
 				// For version 0.7.0, we expect domains
-				if tt.version == "0.7.0" {
+				if tt.version == testSchemaVersion {
 					if len(domainsMap) == 0 {
 						t.Errorf("GetSchemaDomains() returned empty domains map for version %s", tt.version)
 					}
@@ -281,76 +287,58 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 	}
 }
 
-func TestGetSchemaSkillsVsFullSchema(t *testing.T) {
-	// This test ensures that GetSchemaSkills returns the same skills
-	// section as in the full schema
-	version := "0.7.0"
+// Helper function to compare schema section counts between dedicated getter and full schema.
+func compareSchemaSection(t *testing.T, version string, sectionName string, getSection func(string) ([]byte, error)) {
+	t.Helper()
 
 	fullSchema, err := GetSchemaContent(version)
 	if err != nil {
 		t.Fatalf("Failed to get full schema: %v", err)
 	}
 
-	var fullSchemaMap map[string]interface{}
+	var fullSchemaMap map[string]any
 	if err := json.Unmarshal(fullSchema, &fullSchemaMap); err != nil {
 		t.Fatalf("Failed to parse full schema: %v", err)
 	}
 
-	skills, err := GetSchemaSkills(version)
+	sectionData, err := getSection(version)
 	if err != nil {
-		t.Fatalf("Failed to get skills: %v", err)
+		t.Fatalf("Failed to get %s: %v", sectionName, err)
 	}
 
-	var skillsMap map[string]interface{}
-	if err := json.Unmarshal(skills, &skillsMap); err != nil {
-		t.Fatalf("Failed to parse skills: %v", err)
+	var sectionMap map[string]any
+	if err := json.Unmarshal(sectionData, &sectionMap); err != nil {
+		t.Fatalf("Failed to parse %s: %v", sectionName, err)
 	}
 
-	// Extract skills from full schema
-	defs := fullSchemaMap["$defs"].(map[string]interface{})
-	fullSchemaSkills := defs["skills"].(map[string]interface{})
-
-	// Compare the number of skills
-	if len(skillsMap) != len(fullSchemaSkills) {
-		t.Errorf("Skills count mismatch: GetSchemaSkills returned %d skills, full schema has %d skills",
-			len(skillsMap), len(fullSchemaSkills))
+	// Extract section from full schema
+	defs, ok := fullSchemaMap["$defs"].(map[string]any)
+	if !ok {
+		t.Fatalf("Expected $defs to be map[string]any")
 	}
+
+	fullSchemaSection, ok := defs[sectionName].(map[string]any)
+	if !ok {
+		t.Fatalf("Expected %s to be map[string]any", sectionName)
+	}
+
+	// Compare the number of items
+	if len(sectionMap) != len(fullSchemaSection) {
+		t.Errorf("%s count mismatch: getter returned %d items, full schema has %d items",
+			sectionName, len(sectionMap), len(fullSchemaSection))
+	}
+}
+
+func TestGetSchemaSkillsVsFullSchema(t *testing.T) {
+	// This test ensures that GetSchemaSkills returns the same skills
+	// section as in the full schema
+	compareSchemaSection(t, testSchemaVersion, "skills", GetSchemaSkills)
 }
 
 func TestGetSchemaDomainsVsFullSchema(t *testing.T) {
 	// This test ensures that GetSchemaDomains returns the same domains
 	// section as in the full schema
-	version := "0.7.0"
-
-	fullSchema, err := GetSchemaContent(version)
-	if err != nil {
-		t.Fatalf("Failed to get full schema: %v", err)
-	}
-
-	var fullSchemaMap map[string]interface{}
-	if err := json.Unmarshal(fullSchema, &fullSchemaMap); err != nil {
-		t.Fatalf("Failed to parse full schema: %v", err)
-	}
-
-	domains, err := GetSchemaDomains(version)
-	if err != nil {
-		t.Fatalf("Failed to get domains: %v", err)
-	}
-
-	var domainsMap map[string]interface{}
-	if err := json.Unmarshal(domains, &domainsMap); err != nil {
-		t.Fatalf("Failed to parse domains: %v", err)
-	}
-
-	// Extract domains from full schema
-	defs := fullSchemaMap["$defs"].(map[string]interface{})
-	fullSchemaDomains := defs["domains"].(map[string]interface{})
-
-	// Compare the number of domains
-	if len(domainsMap) != len(fullSchemaDomains) {
-		t.Errorf("Domains count mismatch: GetSchemaDomains returned %d domains, full schema has %d domains",
-			len(domainsMap), len(fullSchemaDomains))
-	}
+	compareSchemaSection(t, testSchemaVersion, "domains", GetSchemaDomains)
 }
 
 func TestGetSchemaModules(t *testing.T) {

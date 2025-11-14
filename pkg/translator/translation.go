@@ -12,6 +12,25 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// Constants for repeated strings.
+const (
+	serverTypeLocal  = "local"
+	serverTypeSSE    = "sse"
+	serverTypeHTTP   = "http"
+	packageTypeNPM   = "npm"
+	packageTypePyPI  = "pypi"
+	packageTypeOCI   = "oci"
+	packageTypeNuGet = "nuget"
+	packageTypeMCPB  = "mcpb"
+)
+
+// OASF schema domain and skill IDs.
+const (
+	domainAgentOrchestration = 1004  // agent_orchestration/agent_coordination
+	domainMultiModal         = 703   // multi_modal/any_to_any
+	skillAPIIntegration      = 10204 // technology/software_engineering/apis_integration
+)
+
 const (
 	MCPModuleName = "integration/mcp"
 	A2AModuleName = "integration/a2a"
@@ -40,29 +59,31 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 	servers := make(map[string]MCPServer)
 	inputs := []MCPInput{}
 
-	for serverName, serverVal := range serversStruct.Fields {
+	for serverName, serverVal := range serversStruct.GetFields() {
 		serverMap := serverVal.GetStructValue()
 		if serverMap == nil {
 			continue
 		}
 
-		command, ok := serverMap.Fields["command"]
+		command, ok := serverMap.GetFields()["command"]
 		if !ok {
 			return nil, fmt.Errorf("missing 'command' for server '%s'", serverName)
 		}
 
 		args := []string{}
-		if argsVal, ok := serverMap.Fields["args"]; ok {
-			for _, arg := range argsVal.GetListValue().Values {
+
+		if argsVal, ok := serverMap.GetFields()["args"]; ok {
+			for _, arg := range argsVal.GetListValue().GetValues() {
 				args = append(args, arg.GetStringValue())
 			}
 		}
 
 		env := map[string]string{}
-		if envVal, ok := serverMap.Fields["env"]; ok {
+
+		if envVal, ok := serverMap.GetFields()["env"]; ok {
 			envStruct := envVal.GetStructValue()
 			if envStruct != nil {
-				for key, val := range envStruct.Fields {
+				for key, val := range envStruct.GetFields() {
 					env[key] = val.GetStringValue()
 
 					if after, ok0 := strings.CutPrefix(val.GetStringValue(), "${input:"); ok0 {
@@ -71,7 +92,7 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 							ID:          id,
 							Type:        "promptString",
 							Password:    true,
-							Description: fmt.Sprintf("Secret value for %s", id),
+							Description: "Secret value for " + id,
 						})
 					}
 				}
@@ -138,6 +159,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 			cardName = nameStr
 		}
 	}
+
 	if description, ok := cardMap["description"]; ok {
 		if descStr, ok := description.(string); ok {
 			cardDescription = descStr
@@ -262,7 +284,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 									StructValue: &structpb.Struct{
 										Fields: map[string]*structpb.Value{
 											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 1004},
+												Kind: &structpb.Value_NumberValue{NumberValue: domainAgentOrchestration},
 											},
 											"name": {
 												Kind: &structpb.Value_StringValue{StringValue: "agent_orchestration/agent_coordination"},
@@ -306,7 +328,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 									StructValue: &structpb.Struct{
 										Fields: map[string]*structpb.Value{
 											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 10204},
+												Kind: &structpb.Value_NumberValue{NumberValue: skillAPIIntegration},
 											},
 											"name": {
 												Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
@@ -324,11 +346,12 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 			},
 		},
 	}
+
 	return record, nil
 }
 
 // MCPToRecord translates an MCP Registry server.json into an OASF-compliant record format.
-func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
+func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:gocognit,gocyclo,cyclop,maintidx
 	// Extract the server from the input data
 	mcpServerVal, ok := mcpData.GetFields()["server"]
 	if !ok {
@@ -353,13 +376,16 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 	if name, ok := serverMap["name"].(string); ok {
 		serverName = name
 	}
+
 	if description, ok := serverMap["description"].(string); ok {
 		serverDescription = description
 	}
+
 	if version, ok := serverMap["version"].(string); ok {
 		serverVersion = version
 	}
-	if repo, ok := serverMap["repository"].(map[string]interface{}); ok {
+
+	if repo, ok := serverMap["repository"].(map[string]any); ok {
 		if url, ok := repo["url"].(string); ok {
 			repoUrl = url
 		}
@@ -382,9 +408,9 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 	annotations := make(map[string]string)
 
 	// Process packages (local stdio servers)
-	if packages, ok := serverMap["packages"].([]interface{}); ok {
+	if packages, ok := serverMap["packages"].([]any); ok { //nolint:nestif
 		for _, pkg := range packages {
-			if pkgMap, ok := pkg.(map[string]interface{}); ok {
+			if pkgMap, ok := pkg.(map[string]any); ok {
 				// Extract metadata early for use throughout
 				registryType := ""
 				identifier := ""
@@ -392,6 +418,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				if rt, ok := pkgMap["registryType"].(string); ok {
 					registryType = rt
 				}
+
 				if id, ok := pkgMap["identifier"].(string); ok {
 					identifier = id
 				}
@@ -420,14 +447,16 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				}
 
 				// Determine server type from transport and extract URL if present
-				serverType := "local"
+				serverType := serverTypeLocal
 				transportUrl := ""
-				if transport, ok := pkgMap["transport"].(map[string]interface{}); ok {
+
+				if transport, ok := pkgMap["transport"].(map[string]any); ok {
 					if tType, ok := transport["type"].(string); ok {
-						if tType == "sse" {
-							serverType = "sse"
-						} else if tType == "streamable-http" {
-							serverType = "http"
+						switch tType {
+						case serverTypeSSE:
+							serverType = serverTypeSSE
+						case "streamable-http":
+							serverType = serverTypeHTTP
 						}
 						// stdio is local (default)
 					}
@@ -462,21 +491,21 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				// For http/sse servers, add url from websiteUrl or construct from registry
 				if serverType == "local" {
 					// Build command: use runtimeHint if available, otherwise generate from registryType
-					command := ""
+					var command string
 					if runtimeHint, ok := pkgMap["runtimeHint"].(string); ok {
 						command = runtimeHint
 					} else {
 						// Generate command based on registryType
 						switch registryType {
-						case "npm":
+						case packageTypeNPM:
 							command = "npx"
-						case "pypi":
+						case packageTypePyPI:
 							command = "python"
-						case "oci":
+						case packageTypeOCI:
 							command = "docker"
-						case "nuget":
+						case packageTypeNuGet:
 							command = "dotnet"
-						case "mcpb":
+						case packageTypeMCPB:
 							command = "mcpb"
 						default:
 							command = "echo"
@@ -486,13 +515,11 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					serverFields["command"] = &structpb.Value{
 						Kind: &structpb.Value_StringValue{StringValue: command},
 					}
-				} else {
+				} else if transportUrl != "" {
 					// For http/sse servers, URL from transport is required
 					// If missing, the record will be invalid (url is required for non-local servers)
-					if transportUrl != "" {
-						serverFields["url"] = &structpb.Value{
-							Kind: &structpb.Value_StringValue{StringValue: transportUrl},
-						}
+					serverFields["url"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: transportUrl},
 					}
 				}
 
@@ -504,17 +531,17 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					_, hasRuntimeHint := pkgMap["runtimeHint"]
 					if !hasRuntimeHint && registryType != "" {
 						switch registryType {
-						case "pypi":
+						case packageTypePyPI:
 							// python -m <package>
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: "-m"},
 							})
-						case "oci":
+						case packageTypeOCI:
 							// docker run <image>
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: "run"},
 							})
-						case "nuget":
+						case packageTypeNuGet:
 							// dotnet tool run <package>
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: "tool"},
@@ -522,12 +549,12 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: "run"},
 							})
-						case "mcpb":
+						case packageTypeMCPB:
 							// mcpb run <package>
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: "run"},
 							})
-						case "npm":
+						case packageTypeNPM:
 							// npx <package> (no extra args needed)
 						default:
 							// echo "command generation for registryType <type> is not yet implemented"
@@ -538,9 +565,9 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					}
 
 					// Add runtime arguments
-					if runtimeArgs, ok := pkgMap["runtimeArguments"].([]interface{}); ok {
+					if runtimeArgs, ok := pkgMap["runtimeArguments"].([]any); ok {
 						for _, arg := range runtimeArgs {
-							if argMap, ok := arg.(map[string]interface{}); ok {
+							if argMap, ok := arg.(map[string]any); ok {
 								if argType, ok := argMap["type"].(string); ok && argType == "named" {
 									if name, ok := argMap["name"].(string); ok {
 										argsValues = append(argsValues, &structpb.Value{
@@ -561,7 +588,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 
 						// For some registry types, append version to the identifier
 						switch registryType {
-						case "npm":
+						case packageTypeNPM:
 							// npm: npx package@version
 							if pkgVersion != "" && !hasRuntimeHint {
 								argsValues = append(argsValues, &structpb.Value{
@@ -572,12 +599,12 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									Kind: &structpb.Value_StringValue{StringValue: identifier},
 								})
 							}
-						case "pypi":
+						case packageTypePyPI:
 							// pypi: python -m package (version pinned at install time, not at runtime)
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: identifier},
 							})
-						case "oci":
+						case packageTypeOCI:
 							// oci: docker run image:version
 							if pkgVersion != "" && !hasRuntimeHint {
 								argsValues = append(argsValues, &structpb.Value{
@@ -588,7 +615,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									Kind: &structpb.Value_StringValue{StringValue: identifier},
 								})
 							}
-						case "nuget":
+						case packageTypeNuGet:
 							// nuget: dotnet tool run package --version x.x.x
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: identifier},
@@ -601,7 +628,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									Kind: &structpb.Value_StringValue{StringValue: pkgVersion},
 								})
 							}
-						case "mcpb":
+						case packageTypeMCPB:
 							// mcpb: mcpb run package (version typically in URL)
 							argsValues = append(argsValues, &structpb.Value{
 								Kind: &structpb.Value_StringValue{StringValue: identifier},
@@ -614,9 +641,9 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 					}
 
 					// Add package arguments
-					if packageArgs, ok := pkgMap["packageArguments"].([]interface{}); ok {
+					if packageArgs, ok := pkgMap["packageArguments"].([]any); ok {
 						for _, arg := range packageArgs {
-							if argMap, ok := arg.(map[string]interface{}); ok {
+							if argMap, ok := arg.(map[string]any); ok {
 								if value, ok := argMap["value"].(string); ok {
 									argsValues = append(argsValues, &structpb.Value{
 										Kind: &structpb.Value_StringValue{StringValue: value},
@@ -636,10 +663,10 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				}
 
 				// Add environment variables
-				if envVars, ok := pkgMap["environmentVariables"].([]interface{}); ok {
+				if envVars, ok := pkgMap["environmentVariables"].([]any); ok {
 					envVarsValues := make([]*structpb.Value, 0, len(envVars))
 					for _, envVar := range envVars {
-						if envMap, ok := envVar.(map[string]interface{}); ok {
+						if envMap, ok := envVar.(map[string]any); ok {
 							envFields := map[string]*structpb.Value{}
 
 							// Skip env vars with empty or missing name (invalid)
@@ -667,12 +694,12 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 							description := ""
 							if desc, ok := envMap["description"].(string); ok && desc != "" {
 								description = desc
-							} else if variables, ok := envMap["variables"].(map[string]interface{}); ok {
+							} else if variables, ok := envMap["variables"].(map[string]any); ok {
 								// Check for description in variables.{variable_name}.description
 								// Extract variable name from value (e.g., "{weather_choices}" -> "weather_choices")
 								if value, ok := envMap["value"].(string); ok && len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
 									varKey := value[1 : len(value)-1]
-									if varDef, ok := variables[varKey].(map[string]interface{}); ok {
+									if varDef, ok := variables[varKey].(map[string]any); ok {
 										if desc, ok := varDef["description"].(string); ok && desc != "" {
 											description = desc
 										}
@@ -682,7 +709,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 
 							// OASF requires description - provide default if missing
 							if description == "" {
-								description = fmt.Sprintf("Environment variable: %s", name)
+								description = "Environment variable: " + name
 							}
 
 							envFields["description"] = &structpb.Value{
@@ -698,6 +725,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 							}
 						}
 					}
+
 					if len(envVarsValues) > 0 {
 						serverFields["env_vars"] = &structpb.Value{
 							Kind: &structpb.Value_ListValue{
@@ -717,16 +745,18 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 	}
 
 	// Process remotes (HTTP/SSE servers)
-	if remotes, ok := serverMap["remotes"].([]interface{}); ok {
+	if remotes, ok := serverMap["remotes"].([]any); ok { //nolint:nestif
 		for _, remote := range remotes {
-			if remoteMap, ok := remote.(map[string]interface{}); ok {
+			if remoteMap, ok := remote.(map[string]any); ok {
 				// Determine server type from remote type
 				remoteType := "http"
+
 				if rType, ok := remoteMap["type"].(string); ok {
-					if rType == "sse" {
-						remoteType = "sse"
-					} else if rType == "streamable-http" {
-						remoteType = "http"
+					switch rType {
+					case serverTypeSSE:
+						remoteType = serverTypeSSE
+					case "streamable-http":
+						remoteType = serverTypeHTTP
 					}
 				}
 
@@ -759,10 +789,11 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				}
 
 				// Add headers if present
-				if headers, ok := remoteMap["headers"].([]interface{}); ok && len(headers) > 0 {
+				if headers, ok := remoteMap["headers"].([]any); ok && len(headers) > 0 {
 					headersMap := &structpb.Struct{Fields: map[string]*structpb.Value{}}
+
 					for _, header := range headers {
-						if headerMap, ok := header.(map[string]interface{}); ok {
+						if headerMap, ok := header.(map[string]any); ok {
 							if name, ok := headerMap["name"].(string); ok {
 								headerValue := ""
 								if val, ok := headerMap["value"].(string); ok {
@@ -771,13 +802,15 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									// Use description as a placeholder if no value
 									headerValue = "{" + strings.ToLower(strings.ReplaceAll(name, " ", "_")) + "}"
 								}
+
 								headersMap.Fields[name] = &structpb.Value{
 									Kind: &structpb.Value_StringValue{StringValue: headerValue},
 								}
 							}
 						}
 					}
-					if len(headersMap.Fields) > 0 {
+
+					if len(headersMap.GetFields()) > 0 {
 						serverFields["headers"] = &structpb.Value{
 							Kind: &structpb.Value_StructValue{StructValue: headersMap},
 						}
@@ -840,21 +873,22 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 			"description": {
 				Kind: &structpb.Value_StringValue{StringValue: serverDescription},
 			},
-		"authors": {
-			Kind: &structpb.Value_ListValue{
-				ListValue: &structpb.ListValue{
-					Values: func() []*structpb.Value {
-						authorValues := make([]*structpb.Value, 0, len(authors))
-						for _, author := range authors {
-							authorValues = append(authorValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: author},
-							})
-						}
-						return authorValues
-					}(),
+			"authors": {
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{
+						Values: func() []*structpb.Value {
+							authorValues := make([]*structpb.Value, 0, len(authors))
+							for _, author := range authors {
+								authorValues = append(authorValues, &structpb.Value{
+									Kind: &structpb.Value_StringValue{StringValue: author},
+								})
+							}
+
+							return authorValues
+						}(),
+					},
 				},
 			},
-		},
 			"created_at": {
 				Kind: &structpb.Value_StringValue{StringValue: "2025-10-06T00:00:00Z"},
 			},
@@ -867,7 +901,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									StructValue: &structpb.Struct{
 										Fields: map[string]*structpb.Value{
 											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 703},
+												Kind: &structpb.Value_NumberValue{NumberValue: domainMultiModal},
 											},
 											"name": {
 												Kind: &structpb.Value_StringValue{StringValue: "multi_modal/any_to_any"},
@@ -911,7 +945,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 									StructValue: &structpb.Struct{
 										Fields: map[string]*structpb.Value{
 											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: 10204},
+												Kind: &structpb.Value_NumberValue{NumberValue: skillAPIIntegration},
 											},
 											"name": {
 												Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
@@ -938,6 +972,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_StringValue{StringValue: v},
 			}
 		}
+
 		record.Fields["annotations"] = &structpb.Value{
 			Kind: &structpb.Value_StructValue{
 				StructValue: &structpb.Struct{Fields: annotationFields},
@@ -955,10 +990,11 @@ func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, 
 		return false, nil
 	}
 
-	for _, module := range modules.GetListValue().Values {
+	for _, module := range modules.GetListValue().GetValues() {
 		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
 			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
 		}
 	}
+
 	return false, nil
 }

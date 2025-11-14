@@ -1,0 +1,58 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - depguard # Allow all package imports
+    - embeddedstructfieldcheck # Allow embedded fields in any position
+    - err113
+    - exhaustruct # Allow structures with uninitialized fields
+    - funcorder # Allow flexible function ordering within structs
+    - funlen # Allow long functions
+    - godoclint # Allow flexible godoc comment styles
+    - gochecknoglobals # Allow global variables
+    - gochecknoinits # Allow init function
+    - godox # Allow TODOs
+    - inamedparam # Allow unnamed args
+    - ireturn # Allow returning with interfaces
+    - lll # Allow long lines
+    - noinlineerr # Allow inline error handling
+    - nolintlint # Allow nolint
+    - paralleltest # Allow missing t.Parallel() in tests
+    - revive # Allow flexible code style conventions
+    - tagliatelle # Allow json(camel)
+    - testpackage # Allow not having a test package
+    - varnamelen # Allow short var names
+    - wsl # Deprecated
+  settings:
+    cyclop:
+      max-complexity: 15
+    gomoddirectives:
+      replace-allow-list: []
+      replace-local: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+        path: types/adapters/record_oasfv.*\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

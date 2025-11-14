@@ -13,7 +13,6 @@ vars:
   HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
 
 tasks:
-
   ##
   ## Tests
   ##

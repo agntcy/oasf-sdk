@@ -5,6 +5,7 @@ package validator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,25 +17,27 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const defaultHTTPTimeoutSeconds = 30
+
 type Validator struct {
 	schemas    map[string]*gojsonschema.Schema
 	httpClient *http.Client
 }
 
-// ValidationError represents a single validation error from the API
+// ValidationError represents a single validation error from the API.
 type ValidationError struct {
-	Error         string                 `json:"error"`
-	Message       string                 `json:"message"`
-	Value         any                    `json:"value,omitempty"`
-	Attribute     string                 `json:"attribute,omitempty"`
-	ValueType     string                 `json:"value_type,omitempty"`
-	AttributePath string                 `json:"attribute_path,omitempty"`
-	ExpectedType  string                 `json:"expected_type,omitempty"`
-	Constraint    map[string]interface{} `json:"constraint,omitempty"`
-	ObjectName    string                 `json:"object_name,omitempty"`
+	Error         string         `json:"error"`
+	Message       string         `json:"message"`
+	Value         any            `json:"value,omitempty"`
+	Attribute     string         `json:"attribute,omitempty"`
+	ValueType     string         `json:"value_type,omitempty"`
+	AttributePath string         `json:"attribute_path,omitempty"`
+	ExpectedType  string         `json:"expected_type,omitempty"`
+	Constraint    map[string]any `json:"constraint,omitempty"`
+	ObjectName    string         `json:"object_name,omitempty"`
 }
 
-// ValidationResponse represents the response from the validator API
+// ValidationResponse represents the response from the validator API.
 type ValidationResponse struct {
 	Warnings     []ValidationError `json:"warnings"`
 	Errors       []ValidationError `json:"errors"`
@@ -51,13 +54,13 @@ func New() (*Validator, error) {
 	return &Validator{
 		schemas: schemas,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: defaultHTTPTimeoutSeconds * time.Second,
 		},
 	}, nil
 }
 
 // ValidateRecord validates a record against a specified schema URL or its embedded schema version.
-func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (bool, []string, error) {
+func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct, options ...Option) (bool, []string, error) {
 	// Apply options with defaults
 	opts := &option{
 		strict: true,
@@ -68,21 +71,23 @@ func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (
 
 	// Validate against schema URL if provided
 	if opts.schemaURL != "" {
-		errorMessages, warningMessages, err := v.validateWithSchemaURL(record, opts.schemaURL)
+		errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, opts.schemaURL)
 		if err != nil {
 			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 		}
 
 		// Combine errors and warnings
-		allMessages := append(errorMessages, warningMessages...)
+		errorMessages = append(errorMessages, warningMessages...)
 
 		if opts.strict {
 			// In strict mode, warnings are treated as errors
-			return len(allMessages) == 0, allMessages, nil
+			return len(errorMessages) == 0, errorMessages, nil
 		} else {
 			// In non-strict mode, only errors matter for validation result
-			// but we still return warnings in the messages list
-			return len(errorMessages) == 0, allMessages, nil
+			// but we still return warnings in the messages list (excluding appended warnings from error count)
+			originalErrorCount := len(errorMessages) - len(warningMessages)
+
+			return originalErrorCount == 0, errorMessages, nil
 		}
 	}
 
@@ -95,7 +100,7 @@ func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (
 	// Find schema for given version
 	schema, schemaExists := v.schemas[schemaVersion]
 	if !schemaExists {
-		var availableVersions []string
+		availableVersions := make([]string, 0, len(v.schemas))
 		for version := range v.schemas {
 			availableVersions = append(availableVersions, version)
 		}
@@ -115,6 +120,7 @@ func (v *Validator) ValidateRecord(record *structpb.Struct, options ...Option) (
 func (v *Validator) validateWithJSONSchema(record *structpb.Struct, schema *gojsonschema.Schema) ([]string, error) {
 	// Validate JSON against schema
 	documentLoader := gojsonschema.NewGoLoader(record)
+
 	result, err := schema.Validate(documentLoader)
 	if err != nil {
 		return nil, fmt.Errorf("schema validation error: %w", err)
@@ -123,15 +129,16 @@ func (v *Validator) validateWithJSONSchema(record *structpb.Struct, schema *gojs
 	// Collect validation errors
 	var errors []string
 	if !result.Valid() {
+		errors = make([]string, 0, len(result.Errors()))
 		for _, desc := range result.Errors() {
-			errors = append(errors, fmt.Sprintf("JSON Schema: %s", desc.String()))
+			errors = append(errors, "JSON Schema: "+desc.String())
 		}
 	}
 
 	return errors, nil
 }
 
-func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL string) ([]string, []string, error) {
+func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.Struct, schemaURL string) ([]string, []string, error) {
 	// Get schema version from the record
 	schemaVersion, err := decoder.GetRecordSchemaVersion(record)
 	if err != nil {
@@ -148,10 +155,11 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 	}
 
 	// Create POST request
-	req, err := http.NewRequest("POST", validationURL, bytes.NewBuffer(recordJSON))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, validationURL, bytes.NewBuffer(recordJSON))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create POST request to %s: %w", validationURL, err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send request
@@ -167,15 +175,16 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 
 	// Parse response
 	var validationResp ValidationResponse
+
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&validationResp); err != nil {
 		return nil, nil, fmt.Errorf("failed to decode validation response from URL %s: %w", validationURL, err)
 	}
 
 	// Convert errors to string format
-	var errorMessages []string
+	errorMessages := make([]string, 0, len(validationResp.Errors))
 	for _, err := range validationResp.Errors {
-		errorMsg := fmt.Sprintf("Validation Error: %s", err.Message)
+		errorMsg := "Validation Error: " + err.Message
 		if err.AttributePath != "" {
 			errorMsg = fmt.Sprintf("Validation Error at %s: %s", err.AttributePath, err.Message)
 		}
@@ -192,19 +201,20 @@ func (v *Validator) validateWithSchemaURL(record *structpb.Struct, schemaURL str
 	}
 
 	// Convert warnings to string format
-	var warningMessages []string
+	warningMessages := make([]string, 0, len(validationResp.Warnings))
 	for _, warning := range validationResp.Warnings {
-		warningMsg := fmt.Sprintf("Validation Warning: %s", warning.Message)
+		warningMsg := "Validation Warning: " + warning.Message
 		if warning.AttributePath != "" {
 			warningMsg = fmt.Sprintf("Validation Warning at %s: %s", warning.AttributePath, warning.Message)
 		}
+
 		warningMessages = append(warningMessages, warningMsg)
 	}
 
 	return errorMessages, warningMessages, nil
 }
 
-// constructValidationURL builds the full validation URL from a base URL and schema version
+// constructValidationURL builds the full validation URL from a base URL and schema version.
 func constructValidationURL(baseURL, schemaVersion string) string {
 	// Normalize the base URL (remove trailing slash if present)
 	normalizedURL := strings.TrimSuffix(baseURL, "/")
