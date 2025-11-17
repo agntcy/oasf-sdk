@@ -5,6 +5,10 @@ version: "3"
 
 vars:
   BIN_DIR: "{{ .ROOT_DIR }}/bin"
+  GO_MOD_DIR:
+    sh: find . -name go.mod -exec dirname {} \;
+  HELM_CHART_OCI_REGISTRY: "oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
+
   PROTOC_VERSION: "27.1"
   PROTOC_BIN: "{{ .BIN_DIR }}/protoc-{{.PROTOC_VERSION}}"
   BUFBUILD_VERSION: "1.50.1"
@@ -17,9 +21,6 @@ vars:
   GOLANGCI_LINT_BIN: "{{ .BIN_DIR }}/golangci-lint-{{.GOLANGCI_LINT_VERSION}}"
   HELM_VERSION: "3.16.3"
   HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
-
-  GO_MOD_DIR:
-    sh: find . -name go.mod -exec dirname {} \;
 
 includes:
   e2e:
@@ -158,7 +159,7 @@ tasks:
       VERSION: '{{ .VERSION | default "0.0.1-dev" }}'
     cmds:
       - cmd: echo "Packaging Helm chart version {{.VERSION}}"
-      - cmd: "{{ .HELM_BIN }} package helm/oasf-sdk --dependency-update --version {{.VERSION}}"
+      - cmd: "{{ .HELM_BIN }} package helm/oasf-sdk --dependency-update --version {{ .VERSION }}"
       - cmd: echo "Chart packaged successfully as oasf-sdk-{{.VERSION}}.tgz"
 
   helm:push:
@@ -171,9 +172,9 @@ tasks:
       - sh: test -f oasf-sdk-{{.VERSION}}.tgz
         msg: "Chart package oasf-sdk-{{.VERSION}}.tgz not found. Run 'task helm:package VERSION={{.VERSION}}' first."
     cmds:
-      - cmd: echo "🚧 Pushing oasf-sdk-{{.VERSION}}.tgz to oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
-      - cmd: "{{ .HELM_BIN }} push oasf-sdk-{{.VERSION}}.tgz oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
-      - cmd: echo "✅ Chart pushed successfully to oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
+      - cmd: echo "Pushing oasf-sdk-{{.VERSION}}.tgz to {{ .HELM_CHART_OCI_REGISTRY }}"
+      - cmd: "{{ .HELM_BIN }} push oasf-sdk-{{.VERSION}}.tgz {{ .HELM_CHART_OCI_REGISTRY }}"
+      - cmd: echo "Chart pushed successfully to {{ .HELM_CHART_OCI_REGISTRY }}"
 
   ##
   ## License
