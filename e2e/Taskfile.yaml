@@ -9,8 +9,6 @@ vars:
   KUBECTL_VERSION: '1.31.3'
   KUBECTL_BIN: '{{ .BIN_DIR }}/kubectl-{{.KUBECTL_VERSION}}'
   CLUSTER_NAME: "oasf-sdk-test"
-  HELM_VERSION: "3.16.3"
-  HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
 
 tasks:
   ##
@@ -21,7 +19,7 @@ tasks:
     deps:
       - deps:kubectl
       - deps:kind
-      - deps:helm
+      - :deps:helm
     cmds:
       - echo "Building local Docker image with latest changes..."
       - task: :build
@@ -76,18 +74,3 @@ tasks:
       - mv {{.BIN_DIR}}/kind {{.KIND_BIN}}
     status:
       - test -x {{.KIND_BIN}}
-
-  deps:helm:
-    desc: Ensure supported Helm version is installed
-    internal: true
-    deps:
-      - :deps:bin-dir
-    preconditions:
-      - which curl
-      - which tar
-    cmds:
-      - echo "Downloading Helm v{{.HELM_VERSION}}..."
-      - curl -sSfL 'https://get.helm.sh/helm-v{{.HELM_VERSION}}-{{OS}}-{{ARCH}}.tar.gz' --output - | tar xzvOf - '{{OS}}-{{ARCH}}/helm' > {{.HELM_BIN}}
-      - chmod +x {{.HELM_BIN}}
-    status:
-      - test -x {{.HELM_BIN}}

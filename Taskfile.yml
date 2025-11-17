@@ -15,6 +15,8 @@ vars:
   MULTIMOD_BIN: "{{ .BIN_DIR }}/multimod-{{.MULTIMOD_VERSION}}"
   GOLANGCI_LINT_VERSION: "2.6.1"
   GOLANGCI_LINT_BIN: "{{ .BIN_DIR }}/golangci-lint-{{.GOLANGCI_LINT_VERSION}}"
+  HELM_VERSION: "3.16.3"
+  HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
 
   GO_MOD_DIR:
     sh: find . -name go.mod -exec dirname {} \;
@@ -128,6 +130,50 @@ tasks:
     cmds:
       - "{{ .MULTIMOD_BIN }} prerelease --all-module-sets --skip-go-mod-tidy=true --commit-to-different-branch=false"
       - git commit --amend --signoff --no-edit
+
+  ##
+  ## Helm
+  ##
+  helm:dependency-update:
+    desc: Update Helm chart dependencies
+    deps:
+      - task: deps:helm
+    cmds:
+      - cmd: echo "Updating Helm chart dependencies..."
+      - cmd: "{{ .HELM_BIN }} dependency update helm/oasf-sdk"
+
+  helm:lint:
+    desc: Lint Helm chart
+    deps:
+      - task: deps:helm
+    cmds:
+      - cmd: echo "Linting Helm chart..."
+      - cmd: "{{ .HELM_BIN }} lint helm/oasf-sdk --with-subcharts"
+
+  helm:package:
+    desc: Package Helm chart
+    deps:
+      - task: deps:helm
+    vars:
+      VERSION: '{{ .VERSION | default "0.0.1-dev" }}'
+    cmds:
+      - cmd: echo "Packaging Helm chart version {{.VERSION}}"
+      - cmd: "{{ .HELM_BIN }} package helm/oasf-sdk --dependency-update --version {{.VERSION}}"
+      - cmd: echo "Chart packaged successfully as oasf-sdk-{{.VERSION}}.tgz"
+
+  helm:push:
+    desc: Push Helm chart to OCI registry
+    deps:
+      - task: deps:helm
+    vars:
+      VERSION: '{{ .VERSION | default "0.0.1-dev" }}'
+    preconditions:
+      - sh: test -f oasf-sdk-{{.VERSION}}.tgz
+        msg: "Chart package oasf-sdk-{{.VERSION}}.tgz not found. Run 'task helm:package VERSION={{.VERSION}}' first."
+    cmds:
+      - cmd: echo "🚧 Pushing oasf-sdk-{{.VERSION}}.tgz to oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
+      - cmd: "{{ .HELM_BIN }} push oasf-sdk-{{.VERSION}}.tgz oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
+      - cmd: echo "✅ Chart pushed successfully to oci://ghcr.io/agntcy/oasf-sdk/helm-charts"
 
   ##
   ## License
@@ -260,3 +306,18 @@ tasks:
       - chmod +x {{.GOLANGCI_LINT_BIN}}
     status:
       - test -x {{.GOLANGCI_LINT_BIN}}
+
+  deps:helm:
+    desc: Ensure supported Helm version is installed
+    internal: true
+    deps:
+      - deps:bin-dir
+    preconditions:
+      - which curl
+      - which tar
+    cmds:
+      - echo "Downloading Helm v{{.HELM_VERSION}}..."
+      - curl -sSfL 'https://get.helm.sh/helm-v{{.HELM_VERSION}}-{{OS}}-{{ARCH}}.tar.gz' --output - | tar xzvOf - '{{OS}}-{{ARCH}}/helm' > {{.HELM_BIN}}
+      - chmod +x {{.HELM_BIN}}
+    status:
+      - test -x {{.HELM_BIN}}
