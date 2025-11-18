@@ -66,10 +66,8 @@ git push origin v1.0.0
 
 Please note that the release tag is not necessarily associated with the "release: prepare version v1.0.0" commit. For example, if any bug fixes were required after this commit, they can be merged and included in the release.
 
-## 4. Publish release
+## 4. Verify release
 
 * Wait until the release workflow is completed successfully.
 
-* Navigate to the [Releases page](https://github.com/agntcy/dir/releases) and verify the draft release description as well as the assets listed.
-
-* Once the draft release has been verified, click on `Edit` release and then on `Publish Release`.
+* Navigate to the [Releases page](https://github.com/agntcy/oasf-sdk/releases) and verify the release description as well as the assets listed.
