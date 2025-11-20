@@ -224,6 +224,13 @@ func constructValidationURL(baseURL, schemaVersion string) string {
 		normalizedURL = "http://" + normalizedURL
 	}
 
+	// Determine the object type based on schema version
+	// Version 0.3.1 uses "agent", while later versions use "record"
+	objectType := "record"
+	if schemaVersion == "0.3.1" || schemaVersion == "v0.3.1" {
+		objectType = "agent"
+	}
+
 	// Construct the full validation URL
-	return fmt.Sprintf("%s/api/%s/validate/object/record", normalizedURL, schemaVersion)
+	return fmt.Sprintf("%s/api/%s/validate/object/%s", normalizedURL, schemaVersion, objectType)
 }
