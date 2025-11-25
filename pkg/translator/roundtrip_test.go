@@ -41,10 +41,25 @@ func TestA2ARoundtripPreservesFields(t *testing.T) {
 			],
 			"provider": {
 				"name": "Test Provider",
-				"url": "https://provider.example.com"
+				"url": "https://provider.example.com",
+				"organization": "Test Org",
+				"extensions": [
+					{
+						"uri": "https://extension.example.com/v1",
+						"description": "Test extension",
+						"required": true
+					}
+				]
 			},
+			"supported_interfaces": [
+				{
+					"url": "https://api.example.com/a2a",
+					"protocol_binding": "GRPC"
+				}
+			],
 			"documentation_url": "https://docs.example.com",
-			"icon_url": "https://icon.example.com/icon.png"
+			"icon_url": "https://icon.example.com/icon.png",
+			"supports_authenticated_extended_card": true
 		}
 	}`
 
@@ -93,6 +108,42 @@ func TestA2ARoundtripPreservesFields(t *testing.T) {
 
 	// Verify all original fields are present
 	verifyFieldsPresent(t, originalMap, extractedMap, "")
+
+	// Verify annotations were created
+	recordJSON, _ := protojson.Marshal(record)
+
+	var recordMap map[string]any
+	if err := json.Unmarshal(recordJSON, &recordMap); err != nil {
+		t.Fatalf("Failed to unmarshal record JSON: %v", err)
+	}
+
+	annotations, ok := recordMap["annotations"].(map[string]any)
+	if !ok {
+		t.Fatal("Expected annotations in record")
+	}
+
+	// Verify specific annotations exist
+	expectedAnnotations := []string{
+		"a2a.url",
+		"a2a.interface.0.url",
+		"a2a.interface.0.protocol_binding",
+		"a2a.provider.url",
+		"a2a.provider.organization",
+		"a2a.provider.extension.0.uri",
+		"a2a.provider.extension.0.description",
+		"a2a.provider.extension.0.required",
+		"a2a.documentation_url",
+		"a2a.icon_url",
+		"a2a.supports_authenticated_extended_card",
+	}
+
+	for _, key := range expectedAnnotations {
+		if _, exists := annotations[key]; !exists {
+			t.Errorf("Expected annotation %s not found in record", key)
+		}
+	}
+
+	t.Logf("All %d expected annotations found in record", len(expectedAnnotations))
 }
 
 // verifyFieldsPresent recursively checks that all fields in original are present in extracted.

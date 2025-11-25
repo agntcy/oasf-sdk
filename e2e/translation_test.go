@@ -158,6 +158,18 @@ var _ = Describe("Translation Service E2E", func() {
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
+			// created_at is dynamically generated, so verify it exists and is valid RFC3339, then exclude from comparison
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			// Remove dynamic fields from comparison
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at") // Remove comment field
+
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
 		})
@@ -193,6 +205,18 @@ var _ = Describe("Translation Service E2E", func() {
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
+			// created_at is dynamically generated, so verify it exists and is valid RFC3339, then exclude from comparison
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			// Remove dynamic fields from comparison
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at") // Remove comment field
+
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
 		})
@@ -225,6 +249,18 @@ var _ = Describe("Translation Service E2E", func() {
 			var actualOutput map[string]any
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// created_at is dynamically generated, so verify it exists and is valid RFC3339, then exclude from comparison
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			// Remove dynamic fields from comparison
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at") // Remove comment field
 
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "Minimal local OASF record should match expected output")
@@ -259,6 +295,18 @@ var _ = Describe("Translation Service E2E", func() {
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
+			// created_at is dynamically generated, so verify it exists and is valid RFC3339, then exclude from comparison
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			// Remove dynamic fields from comparison
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at") // Remove comment field
+
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "HTTP headers OASF record should match expected output")
 		})
@@ -291,6 +339,18 @@ var _ = Describe("Translation Service E2E", func() {
 			var actualOutput map[string]any
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// created_at is dynamically generated, so verify it exists and is valid RFC3339, then exclude from comparison
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			// Remove dynamic fields from comparison
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at") // Remove comment field
 
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "SSE minimal OASF record should match expected output")
