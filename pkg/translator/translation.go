@@ -164,6 +164,9 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 		}
 	}
 
+	// Collect A2A URLs in annotations since they don't map cleanly to OASF locators
+	annotations := extractA2AAnnotations(cardMap)
+
 	// Create A2A data structure conforming to OASF v0.8.0 A2A data schema
 	A2AModuleData := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
@@ -295,28 +298,6 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 					},
 				},
 			},
-			"locators": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"type": {
-												Kind: &structpb.Value_StringValue{StringValue: "source_code"},
-											},
-											"url": {
-												Kind: &structpb.Value_StringValue{StringValue: "https://example.com/mcp-server.git"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
 			"domains": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
@@ -343,6 +324,22 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) {
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
 			},
 		},
+	}
+
+	// Add annotations if any exist
+	if len(annotations) > 0 {
+		annotationFields := make(map[string]*structpb.Value)
+		for k, v := range annotations {
+			annotationFields[k] = &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: v},
+			}
+		}
+
+		record.Fields["annotations"] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{
+				StructValue: &structpb.Struct{Fields: annotationFields},
+			},
+		}
 	}
 
 	return record, nil
@@ -995,4 +992,55 @@ func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, 
 	}
 
 	return false, nil
+}
+
+// extractA2AAnnotations extracts A2A card URLs and metadata into annotations.
+// These don't map cleanly to OASF locators, so we store them as annotations.
+func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:gocognit,nestif,cyclop
+	annotations := make(map[string]string)
+
+	// Store deprecated URL field if present
+	if url, ok := cardMap["url"]; ok {
+		if urlStr, ok := url.(string); ok && urlStr != "" {
+			annotations["a2a.url"] = urlStr
+		}
+	}
+
+	// Store supported_interfaces URLs
+	if interfaces, ok := cardMap["supported_interfaces"].([]any); ok { //nolint:nestif
+		for i, iface := range interfaces {
+			if ifaceMap, ok := iface.(map[string]any); ok {
+				if url, ok := ifaceMap["url"].(string); ok && url != "" {
+					annotations[fmt.Sprintf("a2a.interface.%d.url", i)] = url
+				}
+
+				if protocol, ok := ifaceMap["protocol_binding"].(string); ok && protocol != "" {
+					annotations[fmt.Sprintf("a2a.interface.%d.protocol_binding", i)] = protocol
+				}
+			}
+		}
+	}
+
+	// Store provider information
+	if provider, ok := cardMap["provider"].(map[string]any); ok {
+		if providerURL, ok := provider["url"].(string); ok && providerURL != "" {
+			annotations["a2a.provider.url"] = providerURL
+		}
+
+		if org, ok := provider["organization"].(string); ok && org != "" {
+			annotations["a2a.provider.organization"] = org
+		}
+	}
+
+	// Store documentation URL
+	if docURL, ok := cardMap["documentation_url"].(string); ok && docURL != "" {
+		annotations["a2a.documentation_url"] = docURL
+	}
+
+	// Store icon URL if present
+	if iconURL, ok := cardMap["icon_url"].(string); ok && iconURL != "" {
+		annotations["a2a.icon_url"] = iconURL
+	}
+
+	return annotations
 }
