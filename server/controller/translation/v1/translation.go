@@ -44,7 +44,8 @@ func (t *translationCtrl) RecordToA2A(_ context.Context, req *translationv1.Reco
 		return nil, fmt.Errorf("failed to generate A2A card from record: %w", err)
 	}
 
-	data, err := decoder.StructToProto(map[string]any{"a2aCard": result})
+	// Wrap the A2A card data in the expected structure
+	data, err := decoder.StructToProto(map[string]any{"a2aCard": result.AsMap()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert result to proto struct: %w", err)
 	}

@@ -4,7 +4,6 @@
 package translator
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -112,26 +111,25 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 	}, nil
 }
 
-// RecordToA2A translates a record into an A2ACard structure.
-func RecordToA2A(record *structpb.Struct) (*A2ACard, error) {
+// RecordToA2A translates a record into an A2A card structure.
+// Returns the A2A card data as a structpb.Struct, preserving all fields
+// from the A2A protocol definition to prevent schema drift.
+func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 	// Get A2A module - use suffix matching
 	found, a2aModule := getModuleDataFromRecord(record, "a2a")
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
 
-	// Process A2A module
-	jsonBytes, err := json.Marshal(a2aModule)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal A2A data to JSON: %w", err)
+	if cardDataVal, ok := a2aModule.GetFields()["card_data"]; ok {
+		cardData := cardDataVal.GetStructValue()
+		if cardData != nil {
+			return cardData, nil
+		}
 	}
 
-	var card A2ACard
-	if err := json.Unmarshal(jsonBytes, &card); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal A2A data into A2ACard: %w", err)
-	}
-
-	return &card, nil
+	// Fallback: return the module data directly (for records where card data is at the top level)
+	return a2aModule, nil
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
