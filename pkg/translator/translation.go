@@ -41,8 +41,12 @@ const (
 
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
 func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
-	// Get MCP module - use suffix matching
-	found, mcpModule := getModuleDataFromRecord(record, "mcp")
+	// Get MCP module - try 0.8.0 name first, then fall back to 0.7.0 for backward compatibility
+	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName) // "integration/mcp"
+	if !found {
+		found, mcpModule = getModuleDataFromRecord(record, "runtime/mcp") // 0.7.0 compatibility
+	}
+
 	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
@@ -118,8 +122,12 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 // Returns the A2A card data as a structpb.Struct, preserving all fields
 // from the A2A protocol definition to prevent schema drift.
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
-	// Get A2A module - use suffix matching
-	found, a2aModule := getModuleDataFromRecord(record, "a2a")
+	// Get A2A module - try 0.8.0 name first, then fall back to 0.7.0 for backward compatibility
+	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName) // "integration/a2a"
+	if !found {
+		found, a2aModule = getModuleDataFromRecord(record, "runtime/a2a") // 0.7.0 compatibility
+	}
+
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
@@ -1020,15 +1028,26 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 }
 
 func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
-	// Find module by name
+	// Find module by exact name match
 	modules, ok := record.GetFields()["modules"]
 	if !ok {
 		return false, nil
 	}
 
 	for _, module := range modules.GetListValue().GetValues() {
-		if strings.HasSuffix(module.GetStructValue().GetFields()["name"].GetStringValue(), moduleName) {
-			return true, module.GetStructValue().GetFields()["data"].GetStructValue()
+		moduleStruct := module.GetStructValue()
+		if moduleStruct == nil {
+			continue
+		}
+
+		nameField := moduleStruct.GetFields()["name"]
+		if nameField == nil {
+			continue
+		}
+
+		// Exact match required (e.g., "integration/a2a")
+		if nameField.GetStringValue() == moduleName {
+			return true, moduleStruct.GetFields()["data"].GetStructValue()
 		}
 	}
 
