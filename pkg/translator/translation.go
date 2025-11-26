@@ -23,6 +23,7 @@ const (
 	packageTypeOCI   = "oci"
 	packageTypeNuGet = "nuget"
 	packageTypeMCPB  = "mcpb"
+	defaultVersion   = "v1.0.0"
 )
 
 // OASF schema domain and skill IDs.
@@ -153,7 +154,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 	// Extract name and description from A2A card for record metadata
 	cardName := "generated-agent"
 	cardDescription := "Agent generated from A2A card"
-	cardVersion := "v1.0.0"
+	cardVersion := defaultVersion
 
 	if name, ok := cardMap["name"]; ok {
 		if nameStr, ok := name.(string); ok {
@@ -186,8 +187,17 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 	// Note: For consistent test results, this could be overridden in test fixtures
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
-	// Collect A2A URLs in annotations since they don't map cleanly to OASF locators
+	// Collect A2A URLs and other metadata in annotations
 	annotations := extractA2AAnnotations(cardMap)
+
+	// Extract protocol version from card (with fallback)
+	// A2A proto uses "protocol_version" but JSON serialization may use "protocolVersion" (camelCase)
+	protocolVersion := defaultVersion
+	if pv, ok := cardMap["protocolVersion"].(string); ok && pv != "" {
+		protocolVersion = pv
+	} else if pv, ok := cardMap["protocol_version"].(string); ok && pv != "" {
+		protocolVersion = pv
+	}
 
 	// Create A2A data structure conforming to OASF v0.8.0 A2A data schema
 	A2AModuleData := &structpb.Struct{
@@ -196,7 +206,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 				Kind: &structpb.Value_StructValue{StructValue: A2ACardStruct},
 			},
 			"protocol_version": {
-				Kind: &structpb.Value_StringValue{StringValue: "v1.0.0"},
+				Kind: &structpb.Value_StringValue{StringValue: protocolVersion},
 			},
 			"capabilities": {
 				Kind: &structpb.Value_ListValue{
@@ -1030,11 +1040,6 @@ func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, 
 func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:gocognit,nestif,cyclop,gocyclo
 	annotations := make(map[string]string)
 
-	// Store protocol version for easy access
-	if protocolVersion, ok := cardMap["protocol_version"].(string); ok && protocolVersion != "" {
-		annotations["a2a.protocol_version"] = protocolVersion
-	}
-
 	// Store deprecated URL field if present
 	if url, ok := cardMap["url"]; ok {
 		if urlStr, ok := url.(string); ok && urlStr != "" {
@@ -1043,15 +1048,31 @@ func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:
 	}
 
 	// Store supported_interfaces URLs
-	if interfaces, ok := cardMap["supported_interfaces"].([]any); ok { //nolint:nestif
+	// Note: A2A proto uses "supported_interfaces" but JSON may use "supportedInterfaces"
+	var interfaces []any
+	if ifaces, ok := cardMap["supportedInterfaces"].([]any); ok {
+		interfaces = ifaces
+	} else if ifaces, ok := cardMap["supported_interfaces"].([]any); ok {
+		interfaces = ifaces
+	}
+
+	if len(interfaces) > 0 { //nolint:nestif
 		for i, iface := range interfaces {
 			if ifaceMap, ok := iface.(map[string]any); ok {
 				if url, ok := ifaceMap["url"].(string); ok && url != "" {
 					annotations[fmt.Sprintf("a2a.interface.%d.url", i)] = url
 				}
 
-				if protocol, ok := ifaceMap["protocol_binding"].(string); ok && protocol != "" {
-					annotations[fmt.Sprintf("a2a.interface.%d.protocol_binding", i)] = protocol
+				// Check both camelCase and snake_case for protocol_binding
+				var protocolBinding string
+				if pb, ok := ifaceMap["protocolBinding"].(string); ok && pb != "" {
+					protocolBinding = pb
+				} else if pb, ok := ifaceMap["protocol_binding"].(string); ok && pb != "" {
+					protocolBinding = pb
+				}
+
+				if protocolBinding != "" {
+					annotations[fmt.Sprintf("a2a.interface.%d.protocol_binding", i)] = protocolBinding
 				}
 			}
 		}
@@ -1088,17 +1109,46 @@ func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:
 	}
 
 	// Store documentation URL
-	if docURL, ok := cardMap["documentation_url"].(string); ok && docURL != "" {
+	// Note: A2A proto uses "documentation_url" but JSON may use "documentationUrl"
+	var docURL string
+	if url, ok := cardMap["documentationUrl"].(string); ok && url != "" {
+		docURL = url
+	} else if url, ok := cardMap["documentation_url"].(string); ok && url != "" {
+		docURL = url
+	}
+
+	if docURL != "" {
 		annotations["a2a.documentation_url"] = docURL
 	}
 
 	// Store icon URL if present
-	if iconURL, ok := cardMap["icon_url"].(string); ok && iconURL != "" {
+	// Note: A2A proto uses "icon_url" but JSON may use "iconUrl"
+	var iconURL string
+	if url, ok := cardMap["iconUrl"].(string); ok && url != "" {
+		iconURL = url
+	} else if url, ok := cardMap["icon_url"].(string); ok && url != "" {
+		iconURL = url
+	}
+
+	if iconURL != "" {
 		annotations["a2a.icon_url"] = iconURL
 	}
 
 	// Store authenticated extended card support flag
-	if supportsAuth, ok := cardMap["supports_authenticated_extended_card"].(bool); ok {
+	// Note: A2A proto uses "supports_authenticated_extended_card" but JSON may use "supportsAuthenticatedExtendedCard"
+	var supportsAuth bool
+
+	var hasAuthFlag bool
+
+	if auth, ok := cardMap["supportsAuthenticatedExtendedCard"].(bool); ok {
+		supportsAuth = auth
+		hasAuthFlag = true
+	} else if auth, ok := cardMap["supports_authenticated_extended_card"].(bool); ok {
+		supportsAuth = auth
+		hasAuthFlag = true
+	}
+
+	if hasAuthFlag {
 		annotations["a2a.supports_authenticated_extended_card"] = strconv.FormatBool(supportsAuth)
 	}
 
