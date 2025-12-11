@@ -7,15 +7,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/translation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
+	"github.com/agntcy/oasf-sdk/pkg/translator"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"sigs.k8s.io/yaml"
 )
 
 var _ = Describe("Translation Service E2E", func() {
@@ -356,4 +360,81 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "SSE minimal OASF record should match expected output")
 		})
 	})
+
+	Context("Record to Kagenti Agent Spec Translation", func() {
+		It("should convert OASF 0.8.0 record to Kagenti Agent CRD for weather service", func() {
+			encodedRecord, err := decoder.JsonToProto(weatherServiceRecord)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal weather service record")
+
+			// Call translator directly (no gRPC service for this yet)
+			agent, err := translator.RecordToKagentiAgentSpec(encodedRecord)
+			Expect(err).NotTo(HaveOccurred(), "RecordToKagentiAgentSpec should not fail")
+			Expect(agent).NotTo(BeNil(), "Expected Agent CRD in response")
+
+			// Convert agent to YAML for comparison
+			actualYAML, err := yaml.Marshal(agent)
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal agent to YAML")
+
+			// Normalize YAML by removing Kubernetes-managed fields and zero values
+			// This removes: creationTimestamp: null, status: {}, targetPort: 0
+			normalizedActual := normalizeK8sYAML(string(actualYAML))
+			normalizedExpected := normalizeK8sYAML(string(weatherServiceOutputYAML))
+
+			// Compare normalized YAML output
+			Expect(normalizedActual).To(Equal(normalizedExpected), "Generated YAML should match expected output")
+		})
+
+		It("should fail when docker_image locator is missing", func() {
+			invalidRecordJSON := `{
+				"name": "test-agent",
+				"schema_version": "0.8.0",
+				"version": "v1.0.0",
+				"description": "Test agent",
+				"locators": []
+			}`
+
+			encodedRecord, err := decoder.JsonToProto([]byte(invalidRecordJSON))
+			Expect(err).NotTo(HaveOccurred(), "Failed to parse record JSON")
+
+			agent, err := translator.RecordToKagentiAgentSpec(encodedRecord)
+			Expect(err).To(HaveOccurred(), "Should fail when docker_image locator is missing")
+			Expect(agent).To(BeNil(), "Agent should be nil on error")
+			Expect(err.Error()).To(ContainSubstring("docker_image"), "Error should mention missing locator")
+		})
+	})
 })
+
+// normalizeK8sYAML removes Kubernetes-managed fields from YAML that shouldn't be in applied resources
+func normalizeK8sYAML(yamlStr string) string {
+	// Remove creationTimestamp: null lines (with proper indentation)
+	re := regexp.MustCompile(`(?m)^(\s+)creationTimestamp:\s+null\s*$`)
+	yamlStr = re.ReplaceAllString(yamlStr, "")
+
+	// Remove status: {} lines
+	re = regexp.MustCompile(`(?m)^status:\s*\{\}\s*$`)
+	yamlStr = re.ReplaceAllString(yamlStr, "")
+
+	// Remove targetPort: 0 lines (zero value when targetPort is omitted)
+	re = regexp.MustCompile(`(?m)^(\s+)targetPort:\s+0\s*$\n?`)
+	yamlStr = re.ReplaceAllString(yamlStr, "")
+
+	// Remove empty metadata blocks (metadata: followed by empty line, then next field)
+	// This handles cases like "metadata:\n\n  labels:" or "metadata:\n    spec:"
+	re = regexp.MustCompile(`(?m)^(\s+)metadata:\s*$\n\s*$\n(\s+)(labels|name|spec)`)
+	yamlStr = re.ReplaceAllString(yamlStr, "$1$3")
+
+	// Remove empty lines (more than one consecutive) - do this multiple times to catch all cases
+	for {
+		oldStr := yamlStr
+		re = regexp.MustCompile(`\n\n\n+`)
+		yamlStr = re.ReplaceAllString(yamlStr, "\n\n")
+		if yamlStr == oldStr {
+			break
+		}
+	}
+
+	// Trim leading/trailing whitespace
+	yamlStr = strings.TrimSpace(yamlStr)
+
+	return yamlStr
+}
