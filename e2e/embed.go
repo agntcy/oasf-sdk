@@ -56,6 +56,12 @@ var translationMCPRegistry []byte
 //go:embed fixtures/expected_mcptorecord_output.json
 var expectedMCPToRecordOutput []byte
 
+//go:embed fixtures/weather_service_0.8.0_record.json
+var weatherServiceRecord []byte
+
+//go:embed fixtures/weather_service_output.yaml
+var weatherServiceOutputYAML []byte
+
 //go:embed fixtures/translation_mcp_minimal_local.json
 var translationMCPMinimalLocal []byte
 

@@ -11,6 +11,10 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	agentv1alpha1 "github.com/kagenti/operator/api/v1alpha1"
 )
 
 // Constants for repeated strings.
@@ -1172,4 +1176,445 @@ func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:
 	}
 
 	return annotations
+}
+
+// RecordToKagentiAgentSpec translates an OASF record into a Kubernetes Agent CRD structure for kagenti-operator.
+// The record must have a locator of type "docker_image" for this to work.
+// The exposed port can be specified via locator annotations (e.g., "kagenti.io/port" or "port")
+// or will default to 8080 if not specified.
+func RecordToKagentiAgentSpec(record *structpb.Struct) (*agentv1alpha1.Agent, error) {
+	// Extract basic record metadata
+	recordName := "agent"
+	if nameVal, ok := record.GetFields()["name"]; ok {
+		recordName = nameVal.GetStringValue()
+	}
+
+	description := ""
+	if descVal, ok := record.GetFields()["description"]; ok {
+		description = descVal.GetStringValue()
+	}
+
+	version := defaultVersion
+	if versionVal, ok := record.GetFields()["version"]; ok {
+		version = versionVal.GetStringValue()
+	}
+
+	// Extract env_vars from record annotations (for agent container)
+	// Since env_vars is not a top-level field in OASF 0.8.0 schema, we use annotations
+	// Format: kagenti.io/env-var.<name> = <value>
+	var recordEnvVars []corev1.EnvVar
+	if annotationsVal, ok := record.GetFields()["annotations"]; ok {
+		annotationsStruct := annotationsVal.GetStructValue()
+		if annotationsStruct != nil {
+			envVarPrefix := "kagenti.io/env-var."
+			for key, val := range annotationsStruct.GetFields() {
+				if strings.HasPrefix(key, envVarPrefix) {
+					envName := strings.TrimPrefix(key, envVarPrefix)
+					envValue := val.GetStringValue()
+					if envName != "" {
+						recordEnvVars = append(recordEnvVars, corev1.EnvVar{
+							Name:  envName,
+							Value: envValue,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// Extract docker-image locator
+	locatorsVal, ok := record.GetFields()["locators"]
+	if !ok {
+		return nil, errors.New("record does not contain 'locators' field")
+	}
+
+	locatorsList := locatorsVal.GetListValue()
+	if locatorsList == nil {
+		return nil, errors.New("'locators' is not a list")
+	}
+
+	var dockerImageLocator *structpb.Struct
+	for _, locatorVal := range locatorsList.GetValues() {
+		locatorStruct := locatorVal.GetStructValue()
+		if locatorStruct == nil {
+			continue
+		}
+
+		typeVal, ok := locatorStruct.GetFields()["type"]
+		if !ok {
+			continue
+		}
+
+		if typeVal.GetStringValue() == "docker_image" {
+			dockerImageLocator = locatorStruct
+			break
+		}
+	}
+
+	if dockerImageLocator == nil {
+		return nil, errors.New("no locator of type 'docker_image' found in record")
+	}
+
+	// Extract image URL from docker_image locator
+	urlVal, ok := dockerImageLocator.GetFields()["url"]
+	if !ok {
+		return nil, errors.New("docker_image locator missing 'url' field")
+	}
+
+	imageName := urlVal.GetStringValue()
+	if imageName == "" {
+		return nil, errors.New("docker_image locator 'url' is empty")
+	}
+
+	// Extract port from locator annotations or use default
+	port := int32(8080) // default port
+	locatorAnnotations := dockerImageLocator.GetFields()["annotations"]
+	if locatorAnnotations != nil {
+		locatorAnnotationsStruct := locatorAnnotations.GetStructValue()
+		if locatorAnnotationsStruct != nil {
+			// Try kagenti.io/port first
+			if portVal, ok := locatorAnnotationsStruct.GetFields()["kagenti.io/port"]; ok {
+				if portStr := portVal.GetStringValue(); portStr != "" {
+					if parsedPort, err := strconv.ParseInt(portStr, 10, 32); err == nil {
+						port = int32(parsedPort)
+					}
+				}
+			} else if portVal, ok := locatorAnnotationsStruct.GetFields()["port"]; ok {
+				// Fallback to "port" annotation
+				if portStr := portVal.GetStringValue(); portStr != "" {
+					if parsedPort, err := strconv.ParseInt(portStr, 10, 32); err == nil {
+						port = int32(parsedPort)
+					}
+				}
+			}
+		}
+	}
+
+	// Try to extract port from A2A module transport URL if port not found in annotations
+	if port == 8080 {
+		_, a2aModule := getModuleDataFromRecord(record, A2AModuleName)
+		if a2aModule == nil {
+			_, a2aModule = getModuleDataFromRecord(record, "runtime/a2a")
+		}
+		if a2aModule != nil {
+			// Check for transport URL in A2A module
+			// A2A modules may have transport information with URLs like "http://host:port"
+			transportsVal, ok := a2aModule.GetFields()["transports"]
+			if ok {
+				transportsList := transportsVal.GetListValue()
+				if transportsList != nil {
+					for _, transportVal := range transportsList.GetValues() {
+						transportStr := transportVal.GetStringValue()
+						// Try to parse URL to extract port
+						// Format: "http://host:port" or "https://host:port"
+						if strings.HasPrefix(transportStr, "http://") || strings.HasPrefix(transportStr, "https://") {
+							// Extract port from URL if present
+							parts := strings.Split(transportStr, ":")
+							if len(parts) >= 3 {
+								// Last part might be port or path
+								portPart := parts[len(parts)-1]
+								// Remove any path after port
+								portPart = strings.Split(portPart, "/")[0]
+								if parsedPort, err := strconv.ParseInt(portPart, 10, 32); err == nil {
+									port = int32(parsedPort)
+									break
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Replicas is a runtime configuration, not static OASF data
+	// Leave it empty so it can be set when deployed
+	var replicas *int32 // nil means use default from CRD (which is 1)
+
+	// Namespace is a runtime configuration, not static OASF data
+	// Leave it blank so it can be set when deployed
+	namespace := ""
+
+	// Build labels
+	labels := make(map[string]string)
+	labels["app.kubernetes.io/name"] = recordName
+	labels["kagenti.io/type"] = "agent"
+	if version != "" {
+		labels["app.kubernetes.io/version"] = version
+	}
+
+	// Extract protocol from A2A module if present
+	_, a2aModule := getModuleDataFromRecord(record, A2AModuleName)
+	if a2aModule == nil {
+		_, a2aModule = getModuleDataFromRecord(record, "runtime/a2a")
+	}
+	if a2aModule != nil {
+		labels["kagenti.io/agent-protocol"] = "a2a"
+	}
+
+	// Build annotations from record annotations
+	// Exclude kagenti.io/env-var.* annotations as they're only used to extract env vars
+	recordAnnotations := make(map[string]string)
+	if recordAnnotsVal, ok := record.GetFields()["annotations"]; ok {
+		recordAnnotsStruct := recordAnnotsVal.GetStructValue()
+		if recordAnnotsStruct != nil {
+			envVarPrefix := "kagenti.io/env-var."
+			for k, v := range recordAnnotsStruct.GetFields() {
+				// Skip env-var annotations - they're only used to extract env vars, not for CRD metadata
+				if !strings.HasPrefix(k, envVarPrefix) {
+					recordAnnotations[k] = v.GetStringValue()
+				}
+			}
+		}
+	}
+
+	// Check for MCP module to determine if we need a tool sidecar container
+	var toolImage string
+	var toolPort int32
+	var mcpServerEnvVars []corev1.EnvVar
+	hasMCPModule := false
+	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName)
+	if found && mcpModule != nil {
+		hasMCPModule = true
+		// Extract tool container image and port from MCP module annotations
+		// Check module-level annotations first
+		modulesVal, ok := record.GetFields()["modules"]
+		if ok {
+			modulesList := modulesVal.GetListValue()
+			if modulesList != nil {
+				for _, moduleVal := range modulesList.GetValues() {
+					moduleStruct := moduleVal.GetStructValue()
+					if moduleStruct == nil {
+						continue
+					}
+					nameField := moduleStruct.GetFields()["name"]
+					if nameField != nil && nameField.GetStringValue() == MCPModuleName {
+						// Found the MCP module, check its annotations
+						moduleAnnotsVal, ok := moduleStruct.GetFields()["annotations"]
+						if ok {
+							moduleAnnotsStruct := moduleAnnotsVal.GetStructValue()
+							if moduleAnnotsStruct != nil {
+								// Extract tool image
+								if toolImageVal, ok := moduleAnnotsStruct.GetFields()["kagenti.io/tool-image"]; ok {
+									toolImage = toolImageVal.GetStringValue()
+								} else if toolImageVal, ok := moduleAnnotsStruct.GetFields()["tool-image"]; ok {
+									toolImage = toolImageVal.GetStringValue()
+								}
+								// Extract tool port
+								if toolPortVal, ok := moduleAnnotsStruct.GetFields()["kagenti.io/tool-port"]; ok {
+									if toolPortStr := toolPortVal.GetStringValue(); toolPortStr != "" {
+										if parsedPort, err := strconv.ParseInt(toolPortStr, 10, 32); err == nil {
+											toolPort = int32(parsedPort)
+										}
+									}
+								} else if toolPortVal, ok := moduleAnnotsStruct.GetFields()["tool-port"]; ok {
+									if toolPortStr := toolPortVal.GetStringValue(); toolPortStr != "" {
+										if parsedPort, err := strconv.ParseInt(toolPortStr, 10, 32); err == nil {
+											toolPort = int32(parsedPort)
+										}
+									}
+								}
+							}
+						}
+
+						// Extract env_vars from MCP servers
+						// MCP module data contains servers array
+						serversVal, ok := mcpModule.GetFields()["servers"]
+						if ok {
+							serversList := serversVal.GetListValue()
+							if serversList != nil {
+								for _, serverVal := range serversList.GetValues() {
+									serverStruct := serverVal.GetStructValue()
+									if serverStruct == nil {
+										continue
+									}
+									// Extract env_vars from this server
+									envVarsVal, ok := serverStruct.GetFields()["env_vars"]
+									if ok {
+										envVarsList := envVarsVal.GetListValue()
+										if envVarsList != nil {
+											for _, envVarVal := range envVarsList.GetValues() {
+												envVarStruct := envVarVal.GetStructValue()
+												if envVarStruct == nil {
+													continue
+												}
+												// Extract name and default_value from env_var
+												var envName, envValue string
+												if nameVal, ok := envVarStruct.GetFields()["name"]; ok {
+													envName = nameVal.GetStringValue()
+												}
+												if defaultValueVal, ok := envVarStruct.GetFields()["default_value"]; ok {
+													envValue = defaultValueVal.GetStringValue()
+												}
+												if envName != "" {
+													// Add all env_vars from MCP servers to tool container
+													mcpServerEnvVars = append(mcpServerEnvVars, corev1.EnvVar{
+														Name:  envName,
+														Value: envValue,
+													})
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Build containers list
+	containers := []corev1.Container{
+		{
+			Name:  "agent",
+			Image: imageName,
+			Ports: []corev1.ContainerPort{
+				{
+					Name:          "http",
+					ContainerPort: port,
+					Protocol:      corev1.ProtocolTCP,
+				},
+			},
+		},
+	}
+
+	// Add volume mounts and env vars to agent container if MCP module is present
+	if hasMCPModule && toolImage != "" && toolPort > 0 {
+		containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "tmp",
+				MountPath: "/tmp",
+			},
+		}
+		// Set MCP_URL environment variable for agent container
+		// Use value from record env_vars if present, otherwise construct default
+		mcpURL := ""
+		// Check if MCP_URL is in record env_vars
+		for _, envVar := range recordEnvVars {
+			if envVar.Name == "MCP_URL" {
+				mcpURL = envVar.Value
+				break
+			}
+		}
+		// Default if not found in record env_vars
+		if mcpURL == "" {
+			// Default format: http://<service-name>:<port>/mcp
+			// The service name is the Agent CRD name (recordName)
+			mcpURL = fmt.Sprintf("http://%s:%d/mcp", recordName, toolPort)
+		}
+		// Add all record env_vars to agent container, ensuring MCP_URL is set
+		agentEnvVars := make([]corev1.EnvVar, 0, len(recordEnvVars)+1)
+		agentEnvVars = append(agentEnvVars, recordEnvVars...)
+		// Add MCP_URL if not already present
+		hasMCPURL := false
+		for _, envVar := range agentEnvVars {
+			if envVar.Name == "MCP_URL" {
+				hasMCPURL = true
+				break
+			}
+		}
+		if !hasMCPURL {
+			agentEnvVars = append(agentEnvVars, corev1.EnvVar{
+				Name:  "MCP_URL",
+				Value: mcpURL,
+			})
+		}
+		containers[0].Env = agentEnvVars
+	} else if len(recordEnvVars) > 0 {
+		// Add record env_vars even if no MCP module
+		containers[0].Env = recordEnvVars
+	}
+
+	// Add tool container if MCP module with tool image is present
+	var volumes []corev1.Volume
+	if hasMCPModule && toolImage != "" {
+		// Add tool container with env vars from MCP server
+		toolContainer := corev1.Container{
+			Name:  "tool",
+			Image: toolImage,
+			Ports: []corev1.ContainerPort{
+				{
+					Name:          "http",
+					ContainerPort: toolPort,
+					Protocol:      corev1.ProtocolTCP,
+				},
+			},
+			Env: mcpServerEnvVars, // Add env vars from MCP server objects
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "tmp",
+					MountPath: "/tmp",
+				},
+			},
+		}
+		containers = append(containers, toolContainer)
+
+		// Add shared volume
+		volumes = []corev1.Volume{
+			{
+				Name: "tmp",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+		}
+	}
+
+	// Build service ports
+	// targetPort can be omitted - Kubernetes will default to the same value as port
+	servicePorts := []corev1.ServicePort{
+		{
+			Name:     "agent",
+			Port:     port,
+			Protocol: corev1.ProtocolTCP,
+		},
+	}
+
+	// Add tool service port if tool container is present
+	if hasMCPModule && toolImage != "" && toolPort > 0 {
+		servicePorts = append(servicePorts, corev1.ServicePort{
+			Name:     "tool",
+			Port:     toolPort,
+			Protocol: corev1.ProtocolTCP,
+		})
+	}
+
+	// Create Agent structure using kagenti-operator types
+	agent := &agentv1alpha1.Agent{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "agent.kagenti.dev/v1alpha1",
+			Kind:       "Agent",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        recordName,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: recordAnnotations,
+		},
+		Spec: agentv1alpha1.AgentSpec{
+			Description: description,
+			Replicas:    replicas, // nil means use CRD default
+			ImageSource: agentv1alpha1.ImageSource{
+				Image: &imageName,
+			},
+			ServicePorts: servicePorts,
+			MetadataSpec: agentv1alpha1.MetadataSpec{
+				Labels:      labels,
+				Annotations: recordAnnotations,
+			},
+			// PodTemplateSpec is required but can be minimal - will be populated by the operator
+			// Note: The CRD doesn't support metadata.name or metadata.labels in PodTemplateSpec
+			PodTemplateSpec: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: containers,
+					Volumes:    volumes,
+				},
+			},
+		},
+	}
+
+	return agent, nil
 }

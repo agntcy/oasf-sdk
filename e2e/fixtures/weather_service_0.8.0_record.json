@@ -1,0 +1,107 @@
+{
+	"name": "weather-service",
+	"schema_version": "0.8.0",
+	"version": "v0.0.1",
+	"description": "Simple ollama-based Langgraph agent with MCP tool calling for weather information",
+	"authors": [
+		"Paolo Dettori"
+	],
+	"created_at": "2025-01-15T10:00:00Z",
+	"skills": [
+		{
+			"name": "natural_language_processing/natural_language_understanding",
+			"id": 101
+		},
+		{
+			"name": "natural_language_processing/information_retrieval_synthesis",
+			"id": 103
+		},
+		{
+			"name": "tool_interaction/tool_use_planning",
+			"id": 1403
+		}
+	],
+	"domains": [
+		{
+			"name": "environmental_science/environmental_monitoring",
+			"id": 1704
+		}
+	],
+	"annotations": {
+		"kagenti.io/env-var.MCP_URL": "http://weather-service:8001/mcp"
+	},
+	"locators": [
+		{
+			"type": "docker_image",
+			"url": "ghcr.io/arpad-csepi/kagenti/weather-service:v0.0.5",
+			"annotations": {
+				"kagenti.io/port": "8000"
+			}
+		}
+	],
+	"modules": [
+		{
+			"name": "integration/a2a",
+			"data": {
+				"card_data": {
+					"name": "Weather Assistant",
+					"description": "This agent provides a simple weather information assistance.",
+					"url": "http://localhost:8000/",
+					"capabilities": {
+						"streaming": true,
+						"pushNotifications": false
+					},
+					"defaultInputModes": [
+						"text"
+					],
+					"defaultOutputModes": [
+						"text"
+					],
+					"skills": [
+						{
+							"id": "weather_assistant",
+							"name": "Weather Assistant",
+							"description": "Personalized assistant for weather info.",
+							"tags": ["weather"]
+						}
+					]
+				},
+				"protocol_version": "1.0",
+				"transports": [
+					"http"
+				],
+				"input_modes": [
+					"text/plain",
+					"application/json"
+				],
+				"output_modes": [
+					"text/html",
+					"application/json"
+				],
+				"capabilities": [
+					"streaming"
+				],
+				"security_schemes": [
+					"none"
+				]
+			}
+		},
+		{
+			"name": "integration/mcp",
+			"annotations": {
+				"kagenti.io/tool-image": "ghcr.io/arpad-csepi/kagenti/weather-tool:v0.0.5",
+				"kagenti.io/tool-port": "8001"
+			},
+			"data": {
+				"servers": [
+					{
+						"name": "weather-tool",
+						"type": "http",
+						"capabilities": [],
+						"url": "http://localhost:8001"
+					}
+				]
+			}
+		}
+	]
+}

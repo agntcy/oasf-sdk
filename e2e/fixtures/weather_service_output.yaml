@@ -1,0 +1,57 @@
+apiVersion: agent.kagenti.dev/v1alpha1
+kind: Agent
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/name: weather-service
+    app.kubernetes.io/version: v0.0.1
+    kagenti.io/agent-protocol: a2a
+    kagenti.io/type: agent
+  name: weather-service
+spec:
+  description: Simple ollama-based Langgraph agent with MCP tool calling for weather
+    information
+  imageSource:
+    image: ghcr.io/arpad-csepi/kagenti/weather-service:v0.0.5
+  labels:
+    app.kubernetes.io/name: weather-service
+    app.kubernetes.io/version: v0.0.1
+    kagenti.io/agent-protocol: a2a
+    kagenti.io/type: agent
+  podTemplateSpec:
+    spec:
+      containers:
+      - env:
+        - name: MCP_URL
+          value: http://weather-service:8001/mcp
+        image: ghcr.io/arpad-csepi/kagenti/weather-service:v0.0.5
+        name: agent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      - image: ghcr.io/arpad-csepi/kagenti/weather-tool:v0.0.5
+        name: tool
+        ports:
+        - containerPort: 8001
+          name: http
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /tmp
+          name: tmp
+      volumes:
+      - emptyDir: {}
+        name: tmp
+  servicePorts:
+  - name: agent
+    port: 8000
+    protocol: TCP
+  - name: tool
+    port: 8001
+    protocol: TCP
+status: {}
