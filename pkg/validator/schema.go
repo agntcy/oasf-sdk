@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -33,7 +33,7 @@ func loadEmbeddedSchemas() (map[string]*gojsonschema.Schema, error) {
 		filename := entry.Name()
 		version := strings.TrimSuffix(filename, ".json")
 
-		schemaPath := filepath.Join("schemas", filename)
+		schemaPath := path.Join("schemas", filename)
 
 		schemaData, err := embeddedSchemas.ReadFile(schemaPath)
 		if err != nil {
@@ -61,7 +61,7 @@ func loadEmbeddedSchemas() (map[string]*gojsonschema.Schema, error) {
 // Returns an error if the version is not found or if there's an issue reading the schema.
 func GetSchemaContent(version string) ([]byte, error) {
 	filename := version + ".json"
-	schemaPath := filepath.Join("schemas", filename)
+	schemaPath := path.Join("schemas", filename)
 
 	schemaData, err := embeddedSchemas.ReadFile(schemaPath)
 	if err != nil {
