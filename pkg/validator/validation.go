@@ -13,14 +13,12 @@ import (
 	"time"
 
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
-	"github.com/xeipuuv/gojsonschema"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const defaultHTTPTimeoutSeconds = 30
 
 type Validator struct {
-	schemas    map[string]*gojsonschema.Schema
 	httpClient *http.Client
 }
 
@@ -46,20 +44,15 @@ type ValidationResponse struct {
 }
 
 func New() (*Validator, error) {
-	schemas, err := loadEmbeddedSchemas()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load embedded schemas: %w", err)
-	}
-
 	return &Validator{
-		schemas: schemas,
 		httpClient: &http.Client{
 			Timeout: defaultHTTPTimeoutSeconds * time.Second,
 		},
 	}, nil
 }
 
-// ValidateRecord validates a record against a specified schema URL or its embedded schema version.
+// ValidateRecord validates a record against a specified schema URL.
+// A schema URL must be provided via the WithSchemaURL option.
 func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct, options ...Option) (bool, []string, error) {
 	// Apply options with defaults
 	opts := &option{
@@ -69,73 +62,30 @@ func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct,
 		o(opts)
 	}
 
-	// Validate against schema URL if provided
-	if opts.schemaURL != "" {
-		errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, opts.schemaURL)
-		if err != nil {
-			return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
-		}
-
-		// Combine errors and warnings
-		errorMessages = append(errorMessages, warningMessages...)
-
-		if opts.strict {
-			// In strict mode, warnings are treated as errors
-			return len(errorMessages) == 0, errorMessages, nil
-		} else {
-			// In non-strict mode, only errors matter for validation result
-			// but we still return warnings in the messages list (excluding appended warnings from error count)
-			originalErrorCount := len(errorMessages) - len(warningMessages)
-
-			return originalErrorCount == 0, errorMessages, nil
-		}
+	// Schema URL is required
+	if opts.schemaURL == "" {
+		return false, nil, fmt.Errorf("schema URL is required, use WithSchemaURL option")
 	}
 
-	// Get schema version
-	schemaVersion, err := decoder.GetRecordSchemaVersion(record)
+	// Validate against schema URL
+	errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, opts.schemaURL)
 	if err != nil {
-		return false, nil, fmt.Errorf("failed to get schema version: %w", err)
+		return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
 	}
 
-	// Find schema for given version
-	schema, schemaExists := v.schemas[schemaVersion]
-	if !schemaExists {
-		availableVersions := make([]string, 0, len(v.schemas))
-		for version := range v.schemas {
-			availableVersions = append(availableVersions, version)
-		}
+	// Combine errors and warnings
+	errorMessages = append(errorMessages, warningMessages...)
 
-		return false, nil, fmt.Errorf("no schema found for version %s. Available versions: %v", schemaVersion, availableVersions)
+	if opts.strict {
+		// In strict mode, warnings are treated as errors
+		return len(errorMessages) == 0, errorMessages, nil
+	} else {
+		// In non-strict mode, only errors matter for validation result
+		// but we still return warnings in the messages list (excluding appended warnings from error count)
+		originalErrorCount := len(errorMessages) - len(warningMessages)
+
+		return originalErrorCount == 0, errorMessages, nil
 	}
-
-	// Validate against embedded schema
-	schemaErrors, err := v.validateWithJSONSchema(record, schema)
-	if err != nil {
-		return false, nil, fmt.Errorf("JSON schema validation failed: %w", err)
-	}
-
-	return len(schemaErrors) == 0, schemaErrors, nil
-}
-
-func (v *Validator) validateWithJSONSchema(record *structpb.Struct, schema *gojsonschema.Schema) ([]string, error) {
-	// Validate JSON against schema
-	documentLoader := gojsonschema.NewGoLoader(record)
-
-	result, err := schema.Validate(documentLoader)
-	if err != nil {
-		return nil, fmt.Errorf("schema validation error: %w", err)
-	}
-
-	// Collect validation errors
-	var errors []string
-	if !result.Valid() {
-		errors = make([]string, 0, len(result.Errors()))
-		for _, desc := range result.Errors() {
-			errors = append(errors, "JSON Schema: "+desc.String())
-		}
-	}
-
-	return errors, nil
 }
 
 func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.Struct, schemaURL string) ([]string, []string, error) {

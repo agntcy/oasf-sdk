@@ -168,19 +168,12 @@ Output:
 
 # Validation Service
 
-The OASF SDK Validation Service validates OASF Records against [JSON Schema v0.7](https://json-schema.org/draft-07).
-It supports two validation modes:
-- **Embedded schemas** - Uses JSON schemas built into the binary (default)
-- **Schema URL** - Uses the API validator of the given OASF schema server
+The OASF SDK Validation Service validates OASF Records using the API validator of the specified OASF schema server via a schema URL.
+The validation is performed by the OASF schema server using its own validation logic.
 
 ## gRPC API example
 
-**Using embedded schemas (default):**
-```bash
-cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
-```
-
-**Using explicit schema URL:**
+**Using schema URL (required):**
 ```bash
 cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
@@ -198,6 +191,7 @@ Package based usage:
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -206,7 +200,7 @@ import (
 )
 
 func main() {
-	// Create a new validator instance with embedded schemas
+	// Create a new validator instance
 	v, err := validator.New()
 	if err != nil {
 		log.Fatalf("Failed to create validator: %v", err)
@@ -246,8 +240,13 @@ func main() {
 		log.Fatalf("Failed to convert struct to proto: %v", err)
 	}
 
-	// Validate using embedded schemas (default behavior)
-	isValid, errors, err := v.ValidateRecord(recordStruct)
+	// Validate using schema URL (required)
+	ctx := context.Background()
+	isValid, errors, err := v.ValidateRecord(
+		ctx,
+		recordStruct,
+		validator.WithSchemaURL("https://schema.oasf.outshift.com"),
+	)
 	if err != nil {
 		log.Fatalf("Validation failed: %v", err)
 	}
@@ -260,23 +259,6 @@ func main() {
 		}
 	} else {
 		fmt.Println("No validation errors found!")
-	}
-
-	// Optional: Validate against a specific schema URL
-	isValidURL, errorsURL, err := v.ValidateRecord(
-		recordStruct,
-		validator.WithSchemaURL("https://schema.oasf.outshift.com"),
-	)
-	if err != nil {
-		log.Fatalf("URL validation failed: %v", err)
-	}
-
-	fmt.Printf("Record is valid (URL schema): %t\n", isValidURL)
-	if len(errorsURL) > 0 {
-		fmt.Println("URL validation errors:")
-		for _, errMsg := range errorsURL {
-			fmt.Printf("  - %s\n", errMsg)
-		}
 	}
 }
 ```
@@ -351,8 +333,8 @@ func main() {
 	// Create validation request
 	req := &validationv1.ValidateRecordRequest{
 		Record:    recordProto,
-		// Optional: specify schema URL to validate against
-		// SchemaUrl: "https://schema.oasf.outshift.com",
+		// Schema URL is required
+		SchemaUrl: "https://schema.oasf.outshift.com",
 	}
 
 	// Call validation service
@@ -428,8 +410,8 @@ def validate_record():
 
         # Create validation request
         request = ValidateRecordRequest(
-            record=record_struct
-            # schema_url="https://schema.oasf.outshift.com"  # Optional
+            record=record_struct,
+            schema_url="https://schema.oasf.outshift.com"  # Required
         )
 
         try:
@@ -507,7 +489,8 @@ async function validateRecord() {
     // Create validation request
     const request = new ValidateRecordRequest();
     request.setRecord(recordStruct);
-    // Optional: request.setSchemaUrl("https://schema.oasf.outshift.com");
+    // Schema URL is required
+    request.setSchemaUrl("https://schema.oasf.outshift.com");
 
     return new Promise((resolve, reject) => {
         client.validateRecord(request, (error, response) => {

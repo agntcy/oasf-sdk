@@ -33,7 +33,11 @@ func New() (validationv1grpc.ValidationServiceServer, error) {
 func (v validationCtrl) ValidateRecord(ctx context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
 	slog.Info("Received ValidateRecord request", "request", req)
 
-	isValid, errors, err := v.validator.ValidateRecord(ctx, req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+	opts := []validator.Option{
+		validator.WithSchemaURL(req.GetSchemaUrl()),
+	}
+
+	isValid, errors, err := v.validator.ValidateRecord(ctx, req.GetRecord(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
@@ -57,7 +61,11 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 			return fmt.Errorf("failed to receive record: %w", err)
 		}
 
-		isValid, errors, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+		opts := []validator.Option{
+			validator.WithSchemaURL(req.GetSchemaUrl()),
+		}
+
+		isValid, errors, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), opts...)
 		if err != nil {
 			return fmt.Errorf("failed to validate record: %w", err)
 		}
