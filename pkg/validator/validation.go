@@ -53,39 +53,29 @@ func New() (*Validator, error) {
 
 // ValidateRecord validates a record against a specified schema URL.
 // A schema URL must be provided via the WithSchemaURL option.
-func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct, options ...Option) (bool, []string, error) {
-	// Apply options with defaults
-	opts := &option{
-		strict: true,
-	}
+// Returns: isValid (bool), errors ([]string), warnings ([]string), error
+func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct, options ...Option) (bool, []string, []string, error) {
+	// Apply options
+	opts := &option{}
 	for _, o := range options {
 		o(opts)
 	}
 
 	// Schema URL is required
 	if opts.schemaURL == "" {
-		return false, nil, fmt.Errorf("schema URL is required, use WithSchemaURL option")
+		return false, nil, nil, fmt.Errorf("schema URL is required, use WithSchemaURL option")
 	}
 
 	// Validate against schema URL
 	errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, opts.schemaURL)
 	if err != nil {
-		return false, nil, fmt.Errorf("schema URL validation failed: %w", err)
+		return false, nil, nil, fmt.Errorf("schema URL validation failed: %w", err)
 	}
 
-	// Combine errors and warnings
-	errorMessages = append(errorMessages, warningMessages...)
+	// Record is valid if there are no errors (warnings don't affect validity)
+	isValid := len(errorMessages) == 0
 
-	if opts.strict {
-		// In strict mode, warnings are treated as errors
-		return len(errorMessages) == 0, errorMessages, nil
-	} else {
-		// In non-strict mode, only errors matter for validation result
-		// but we still return warnings in the messages list (excluding appended warnings from error count)
-		originalErrorCount := len(errorMessages) - len(warningMessages)
-
-		return originalErrorCount == 0, errorMessages, nil
-	}
+	return isValid, errorMessages, warningMessages, nil
 }
 
 func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.Struct, schemaURL string) ([]string, []string, error) {
@@ -136,7 +126,7 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 	for _, err := range validationResp.Errors {
 		errorMsg := "Validation Error: " + err.Message
 		if err.AttributePath != "" {
-			errorMsg = fmt.Sprintf("Validation Error at %s: %s", err.AttributePath, err.Message)
+			errorMsg = fmt.Sprintf("%s Attribute path: %s.", err.Message, err.AttributePath)
 		}
 
 		// Add constraint information if this is a constraint_failed error
@@ -153,9 +143,9 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 	// Convert warnings to string format
 	warningMessages := make([]string, 0, len(validationResp.Warnings))
 	for _, warning := range validationResp.Warnings {
-		warningMsg := "Validation Warning: " + warning.Message
+		warningMsg := warning.Message
 		if warning.AttributePath != "" {
-			warningMsg = fmt.Sprintf("Validation Warning at %s: %s", warning.AttributePath, warning.Message)
+			warningMsg = fmt.Sprintf("%s Attribute path: %s.", warning.Message, warning.AttributePath)
 		}
 
 		warningMessages = append(warningMessages, warningMsg)
@@ -182,5 +172,5 @@ func constructValidationURL(baseURL, schemaVersion string) string {
 	}
 
 	// Construct the full validation URL
-	return fmt.Sprintf("%s/api/%s/validate/object/%s", normalizedURL, schemaVersion, objectType)
+	return fmt.Sprintf("%s/api/%s/validate/object/%s?missing_recommended=true", normalizedURL, schemaVersion, objectType)
 }

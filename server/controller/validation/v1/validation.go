@@ -37,14 +37,15 @@ func (v validationCtrl) ValidateRecord(ctx context.Context, req *validationv1.Va
 		validator.WithSchemaURL(req.GetSchemaUrl()),
 	}
 
-	isValid, errors, err := v.validator.ValidateRecord(ctx, req.GetRecord(), opts...)
+	isValid, errors, warnings, err := v.validator.ValidateRecord(ctx, req.GetRecord(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
 
 	return &validationv1.ValidateRecordResponse{
 		IsValid: isValid,
-		Errors:  errors,
+		Errors:   errors,
+		Warnings: warnings,
 	}, nil
 }
 
@@ -65,14 +66,15 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 			validator.WithSchemaURL(req.GetSchemaUrl()),
 		}
 
-		isValid, errors, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), opts...)
+		isValid, errors, warnings, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), opts...)
 		if err != nil {
 			return fmt.Errorf("failed to validate record: %w", err)
 		}
 
 		response := &validationv1.ValidateRecordStreamResponse{
 			IsValid: isValid,
-			Errors:  errors,
+			Errors:   errors,
+			Warnings: warnings,
 		}
 
 		if err := stream.Send(response); err != nil {

@@ -242,7 +242,7 @@ func main() {
 
 	// Validate using schema URL (required)
 	ctx := context.Background()
-	isValid, errors, err := v.ValidateRecord(
+	isValid, errors, warnings, err := v.ValidateRecord(
 		ctx,
 		recordStruct,
 		validator.WithSchemaURL("https://schema.oasf.outshift.com"),
@@ -259,6 +259,12 @@ func main() {
 		}
 	} else {
 		fmt.Println("No validation errors found!")
+	}
+	if len(warnings) > 0 {
+		fmt.Println("Validation warnings:")
+		for _, warnMsg := range warnings {
+			fmt.Printf("  - %s\n", warnMsg)
+		}
 	}
 }
 ```
@@ -354,6 +360,12 @@ func main() {
 			fmt.Printf("  - %s\n", err)
 		}
 	}
+	if len(resp.Warnings) > 0 {
+		fmt.Printf("Warnings:\n")
+		for _, warn := range resp.Warnings {
+			fmt.Printf("  - %s\n", warn)
+		}
+	}
 }
 ```
 
@@ -426,6 +438,10 @@ def validate_record():
                     print(f"  - {error}")
             else:
                 print("No validation errors found!")
+            if response.warnings:
+                print("Warnings:")
+                for warning in response.warnings:
+                    print(f"  - {warning}")
 
         except grpc.RpcError as e:
             print(f"gRPC error: {e.code()}: {e.details()}")
@@ -510,6 +526,13 @@ async function validateRecord() {
                 });
             } else {
                 console.log('No validation errors found!');
+            }
+            const warnings = response.getWarningsList();
+            if (warnings && warnings.length > 0) {
+                console.log('Warnings:');
+                warnings.forEach(warn => {
+                    console.log(`  - ${warn}`);
+                });
             }
 
             resolve(response);

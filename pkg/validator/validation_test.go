@@ -13,32 +13,31 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// TestValidateWithSchemaURL_StrictMode tests the strict mode validation behavior.
-func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
+// TestValidateWithSchemaURL tests validation behavior with errors and warnings.
+func TestValidateWithSchemaURL(t *testing.T) {
 	tests := []struct {
-		name             string
-		strict           bool
-		mockResponse     ValidationResponse
-		expectedValid    bool
-		expectedMsgCount int
-		expectError      bool
+		name                string
+		mockResponse        ValidationResponse
+		expectedValid       bool
+		expectedErrorCount  int
+		expectedWarningCount int
+		expectError         bool
 	}{
 		{
-			name:   "strict mode - no errors or warnings",
-			strict: true,
+			name: "no errors or warnings",
 			mockResponse: ValidationResponse{
 				Warnings:     []ValidationError{},
 				Errors:       []ValidationError{},
 				ErrorCount:   0,
 				WarningCount: 0,
 			},
-			expectedValid:    true,
-			expectedMsgCount: 0,
-			expectError:      false,
+			expectedValid:        true,
+			expectedErrorCount:    0,
+			expectedWarningCount:  0,
+			expectError:          false,
 		},
 		{
-			name:   "strict mode - only errors",
-			strict: true,
+			name: "only errors",
 			mockResponse: ValidationResponse{
 				Warnings: []ValidationError{},
 				Errors: []ValidationError{
@@ -51,13 +50,13 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 				ErrorCount:   1,
 				WarningCount: 0,
 			},
-			expectedValid:    false,
-			expectedMsgCount: 1,
-			expectError:      false,
+			expectedValid:        false,
+			expectedErrorCount:    1,
+			expectedWarningCount:  0,
+			expectError:          false,
 		},
 		{
-			name:   "strict mode - only warnings (should fail)",
-			strict: true,
+			name: "only warnings",
 			mockResponse: ValidationResponse{
 				Warnings: []ValidationError{
 					{
@@ -70,13 +69,13 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 				ErrorCount:   0,
 				WarningCount: 1,
 			},
-			expectedValid:    false, // Strict mode treats warnings as errors
-			expectedMsgCount: 1,
-			expectError:      false,
+			expectedValid:        true, // Warnings don't affect validity
+			expectedErrorCount:    0,
+			expectedWarningCount:  1,
+			expectError:          false,
 		},
 		{
-			name:   "strict mode - errors and warnings",
-			strict: true,
+			name: "errors and warnings",
 			mockResponse: ValidationResponse{
 				Warnings: []ValidationError{
 					{
@@ -95,85 +94,10 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 				ErrorCount:   1,
 				WarningCount: 1,
 			},
-			expectedValid:    false,
-			expectedMsgCount: 2,
-			expectError:      false,
-		},
-		{
-			name:   "non-strict mode - no errors or warnings",
-			strict: false,
-			mockResponse: ValidationResponse{
-				Warnings:     []ValidationError{},
-				Errors:       []ValidationError{},
-				ErrorCount:   0,
-				WarningCount: 0,
-			},
-			expectedValid:    true,
-			expectedMsgCount: 0,
-			expectError:      false,
-		},
-		{
-			name:   "non-strict mode - only errors",
-			strict: false,
-			mockResponse: ValidationResponse{
-				Warnings: []ValidationError{},
-				Errors: []ValidationError{
-					{
-						Error:         "attribute_required_missing",
-						Message:       "Required attribute is missing",
-						AttributePath: "data.name",
-					},
-				},
-				ErrorCount:   1,
-				WarningCount: 0,
-			},
-			expectedValid:    false,
-			expectedMsgCount: 1,
-			expectError:      false,
-		},
-		{
-			name:   "non-strict mode - only warnings (should pass)",
-			strict: false,
-			mockResponse: ValidationResponse{
-				Warnings: []ValidationError{
-					{
-						Error:         "deprecated_attribute",
-						Message:       "Attribute is deprecated",
-						AttributePath: "data.old_field",
-					},
-				},
-				Errors:       []ValidationError{},
-				ErrorCount:   0,
-				WarningCount: 1,
-			},
-			expectedValid:    true, // Non-strict mode ignores warnings for validation result
-			expectedMsgCount: 1,    // But warnings are still included in messages
-			expectError:      false,
-		},
-		{
-			name:   "non-strict mode - errors and warnings",
-			strict: false,
-			mockResponse: ValidationResponse{
-				Warnings: []ValidationError{
-					{
-						Error:         "deprecated_attribute",
-						Message:       "Attribute is deprecated",
-						AttributePath: "data.old_field",
-					},
-				},
-				Errors: []ValidationError{
-					{
-						Error:         "attribute_required_missing",
-						Message:       "Required attribute is missing",
-						AttributePath: "data.name",
-					},
-				},
-				ErrorCount:   1,
-				WarningCount: 1,
-			},
-			expectedValid:    false, // Still fails because of errors
-			expectedMsgCount: 2,
-			expectError:      false,
+			expectedValid:        false, // Fails because of errors
+			expectedErrorCount:    1,
+			expectedWarningCount:  1,
+			expectError:          false,
 		},
 	}
 
@@ -208,14 +132,7 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 			}
 
 			// Validate with the mock server URL
-			var valid bool
-
-			var messages []string
-			if tt.strict {
-				valid, messages, err = validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL), WithStrict(true))
-			} else {
-				valid, messages, err = validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL), WithStrict(false))
-			}
+			valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
 
 			if tt.expectError {
 				if err == nil {
@@ -235,8 +152,12 @@ func TestValidateWithSchemaURL_StrictMode(t *testing.T) { //nolint:gocognit
 				t.Errorf("Expected valid=%v, got valid=%v", tt.expectedValid, valid)
 			}
 
-			if len(messages) != tt.expectedMsgCount {
-				t.Errorf("Expected %d messages, got %d messages: %v", tt.expectedMsgCount, len(messages), messages)
+			if len(errors) != tt.expectedErrorCount {
+				t.Errorf("Expected %d errors, got %d errors: %v", tt.expectedErrorCount, len(errors), errors)
+			}
+
+			if len(warnings) != tt.expectedWarningCount {
+				t.Errorf("Expected %d warnings, got %d warnings: %v", tt.expectedWarningCount, len(warnings), warnings)
 			}
 		})
 	}
@@ -293,7 +214,7 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 
 	// Validate with the mock server URL
-	valid, messages, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
+	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -302,12 +223,16 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 		t.Error("Expected validation to fail")
 	}
 
-	if len(messages) != 1 {
-		t.Fatalf("Expected 1 error message, got %d", len(messages))
+	if len(errors) != 1 {
+		t.Fatalf("Expected 1 error message, got %d", len(errors))
+	}
+
+	if len(warnings) != 0 {
+		t.Fatalf("Expected 0 warnings, got %d", len(warnings))
 	}
 
 	// Check that the error message includes constraint information
-	errorMsg := messages[0]
+	errorMsg := errors[0]
 	expectedConstraintJSON := `{"at_least_one":["url","command"]}`
 
 	if !contains(errorMsg, "Constraint:") {
@@ -319,8 +244,8 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 }
 
-// TestValidateWithSchemaURL_DefaultStrictMode tests that strict mode is enabled by default.
-func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
+// TestValidateWithSchemaURL_WarningsOnly tests that warnings don't affect validity.
+func TestValidateWithSchemaURL_WarningsOnly(t *testing.T) {
 	// Create a mock response with only warnings
 	mockResponse := ValidationResponse{
 		Warnings: []ValidationError{
@@ -363,19 +288,23 @@ func TestValidateWithSchemaURL_DefaultStrictMode(t *testing.T) {
 		t.Fatalf("Failed to create test record: %v", err)
 	}
 
-	// Validate WITHOUT specifying WithStrict - should default to strict=true
-	valid, messages, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
+	// Validate with the mock server URL
+	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	// In default strict mode, warnings should cause validation to fail
-	if valid {
-		t.Error("Expected validation to fail in default strict mode with warnings")
+	// Warnings don't affect validity, so it should be valid
+	if !valid {
+		t.Error("Expected validation to pass with only warnings")
 	}
 
-	if len(messages) != 1 {
-		t.Errorf("Expected 1 warning message, got %d", len(messages))
+	if len(errors) != 0 {
+		t.Errorf("Expected 0 errors, got %d", len(errors))
+	}
+
+	if len(warnings) != 1 {
+		t.Errorf("Expected 1 warning, got %d", len(warnings))
 	}
 }
 
