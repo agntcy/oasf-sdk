@@ -165,6 +165,10 @@ func constructValidationURL(baseURL, schemaVersion string) string {
 		objectType = "agent"
 	}
 
+	if schemaVersion == "v0.3.1" {
+		schemaVersion = "0.3.1"
+	}
+
 	// Construct the full validation URL
 	return fmt.Sprintf("%s/api/%s/validate/object/%s?missing_recommended=true", normalizedURL, schemaVersion, objectType)
 }
