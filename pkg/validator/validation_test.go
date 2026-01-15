@@ -16,12 +16,12 @@ import (
 // TestValidateWithSchemaURL tests validation behavior with errors and warnings.
 func TestValidateWithSchemaURL(t *testing.T) {
 	tests := []struct {
-		name                string
-		mockResponse        ValidationResponse
-		expectedValid       bool
-		expectedErrorCount  int
+		name                 string
+		mockResponse         ValidationResponse
+		expectedValid        bool
+		expectedErrorCount   int
 		expectedWarningCount int
-		expectError         bool
+		expectError          bool
 	}{
 		{
 			name: "no errors or warnings",
@@ -32,8 +32,8 @@ func TestValidateWithSchemaURL(t *testing.T) {
 				WarningCount: 0,
 			},
 			expectedValid:        true,
-			expectedErrorCount:    0,
-			expectedWarningCount:  0,
+			expectedErrorCount:   0,
+			expectedWarningCount: 0,
 			expectError:          false,
 		},
 		{
@@ -51,8 +51,8 @@ func TestValidateWithSchemaURL(t *testing.T) {
 				WarningCount: 0,
 			},
 			expectedValid:        false,
-			expectedErrorCount:    1,
-			expectedWarningCount:  0,
+			expectedErrorCount:   1,
+			expectedWarningCount: 0,
 			expectError:          false,
 		},
 		{
@@ -70,8 +70,8 @@ func TestValidateWithSchemaURL(t *testing.T) {
 				WarningCount: 1,
 			},
 			expectedValid:        true, // Warnings don't affect validity
-			expectedErrorCount:    0,
-			expectedWarningCount:  1,
+			expectedErrorCount:   0,
+			expectedWarningCount: 1,
 			expectError:          false,
 		},
 		{
@@ -95,8 +95,8 @@ func TestValidateWithSchemaURL(t *testing.T) {
 				WarningCount: 1,
 			},
 			expectedValid:        false, // Fails because of errors
-			expectedErrorCount:    1,
-			expectedWarningCount:  1,
+			expectedErrorCount:   1,
+			expectedWarningCount: 1,
 			expectError:          false,
 		},
 	}

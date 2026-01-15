@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -46,7 +47,7 @@ type ValidationResponse struct {
 
 func New(schemaURL string) (*Validator, error) {
 	if schemaURL == "" {
-		return nil, fmt.Errorf("schema URL is required")
+		return nil, errors.New("schema URL is required")
 	}
 
 	return &Validator{
@@ -58,7 +59,6 @@ func New(schemaURL string) (*Validator, error) {
 }
 
 // ValidateRecord validates a record against the configured schema URL.
-// Returns: isValid (bool), errors ([]string), warnings ([]string), error
 func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct) (bool, []string, []string, error) {
 	// Validate against schema URL
 	errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, v.schemaURL)
