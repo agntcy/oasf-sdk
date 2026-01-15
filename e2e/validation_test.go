@@ -32,6 +32,7 @@ var _ = Describe("Validation Service E2E", func() {
 		{
 			name:       "valid_record_0.8.0.json",
 			jsonData:   validV080Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
 			shouldPass: true,
 		},
 		{
@@ -41,12 +42,14 @@ var _ = Describe("Validation Service E2E", func() {
 			shouldPass: true,
 		},
 		{
-			name:     "invalid_record_0.8.0.json",
-			jsonData: invalidV080Record,
+			name:      "invalid_record_0.8.0.json",
+			jsonData:  invalidV080Record,
+			schemaURL: "https://schema.oasf.outshift.com",
 		},
 		{
 			name:       "valid_record_0.7.0.json",
 			jsonData:   validV070Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
 			shouldPass: true,
 		},
 		{
@@ -56,22 +59,26 @@ var _ = Describe("Validation Service E2E", func() {
 			shouldPass: true,
 		},
 		{
-			name:     "invalid_record_0.7.0.json",
-			jsonData: invalidV070Record,
+			name:      "invalid_record_0.7.0.json",
+			jsonData:  invalidV070Record,
+			schemaURL: "https://schema.oasf.outshift.com",
 		},
 		{
 			name:       "valid_record_v0.3.1.json",
 			jsonData:   validV031Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
 			shouldPass: true,
 		},
 		{
 			name:       "valid_record_0.3.1.json",
 			jsonData:   valid031Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
 			shouldPass: true,
 		},
 		{
-			name:     "invalid_record_v0.3.1.json",
-			jsonData: invalidV031Record,
+			name:      "invalid_record_v0.3.1.json",
+			jsonData:  invalidV031Record,
+			schemaURL: "https://schema.oasf.outshift.com",
 		},
 	}
 

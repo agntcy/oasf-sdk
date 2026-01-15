@@ -15,32 +15,29 @@ import (
 	"github.com/agntcy/oasf-sdk/pkg/validator"
 )
 
-type validationCtrl struct {
-	validator *validator.Validator
-}
+type validationCtrl struct{}
 
 func New() (validationv1grpc.ValidationServiceServer, error) {
-	v, err := validator.New()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create validation service: %w", err)
-	}
-
-	return &validationCtrl{
-		validator: v,
-	}, nil
+	return &validationCtrl{}, nil
 }
 
 func (v validationCtrl) ValidateRecord(ctx context.Context, req *validationv1.ValidateRecordRequest) (*validationv1.ValidateRecordResponse, error) {
 	slog.Info("Received ValidateRecord request", "request", req)
 
-	isValid, errors, err := v.validator.ValidateRecord(ctx, req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+	validatorInstance, err := validator.New(req.GetSchemaUrl())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create validator: %w", err)
+	}
+
+	isValid, errors, warnings, err := validatorInstance.ValidateRecord(ctx, req.GetRecord())
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate record: %w", err)
 	}
 
 	return &validationv1.ValidateRecordResponse{
-		IsValid: isValid,
-		Errors:  errors,
+		IsValid:  isValid,
+		Errors:   errors,
+		Warnings: warnings,
 	}, nil
 }
 
@@ -57,14 +54,20 @@ func (v validationCtrl) ValidateRecordStream(stream validationv1grpc.ValidationS
 			return fmt.Errorf("failed to receive record: %w", err)
 		}
 
-		isValid, errors, err := v.validator.ValidateRecord(stream.Context(), req.GetRecord(), validator.WithSchemaURL(req.GetSchemaUrl()))
+		validatorInstance, err := validator.New(req.GetSchemaUrl())
+		if err != nil {
+			return fmt.Errorf("failed to create validator: %w", err)
+		}
+
+		isValid, errors, warnings, err := validatorInstance.ValidateRecord(stream.Context(), req.GetRecord())
 		if err != nil {
 			return fmt.Errorf("failed to validate record: %w", err)
 		}
 
 		response := &validationv1.ValidateRecordStreamResponse{
-			IsValid: isValid,
-			Errors:  errors,
+			IsValid:  isValid,
+			Errors:   errors,
+			Warnings: warnings,
 		}
 
 		if err := stream.Send(response); err != nil {
