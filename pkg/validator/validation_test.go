@@ -114,8 +114,8 @@ func TestValidateWithSchemaURL(t *testing.T) {
 			}))
 			defer server.Close()
 
-			// Create a validator
-			validator, err := New()
+			// Create a validator with the mock server URL
+			validator, err := New(server.URL)
 			if err != nil {
 				t.Fatalf("Failed to create validator: %v", err)
 			}
@@ -132,7 +132,7 @@ func TestValidateWithSchemaURL(t *testing.T) {
 			}
 
 			// Validate with the mock server URL
-			valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
+			valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record)
 
 			if tt.expectError {
 				if err == nil {
@@ -194,8 +194,8 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a validator
-	validator, err := New()
+	// Create a validator with the mock server URL
+	validator, err := New(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create validator: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 	}
 
 	// Validate with the mock server URL
-	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
+	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -271,8 +271,8 @@ func TestValidateWithSchemaURL_WarningsOnly(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create a validator
-	validator, err := New()
+	// Create a validator with the mock server URL
+	validator, err := New(server.URL)
 	if err != nil {
 		t.Fatalf("Failed to create validator: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestValidateWithSchemaURL_WarningsOnly(t *testing.T) {
 	}
 
 	// Validate with the mock server URL
-	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record, WithSchemaURL(server.URL))
+	valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

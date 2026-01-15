@@ -200,8 +200,8 @@ import (
 )
 
 func main() {
-	// Create a new validator instance
-	v, err := validator.New()
+	// Create a new validator instance with schema URL
+	v, err := validator.New("https://schema.oasf.outshift.com")
 	if err != nil {
 		log.Fatalf("Failed to create validator: %v", err)
 	}
@@ -240,13 +240,9 @@ func main() {
 		log.Fatalf("Failed to convert struct to proto: %v", err)
 	}
 
-	// Validate using schema URL (required)
+	// Validate the record
 	ctx := context.Background()
-	isValid, errors, warnings, err := v.ValidateRecord(
-		ctx,
-		recordStruct,
-		validator.WithSchemaURL("https://schema.oasf.outshift.com"),
-	)
+	isValid, errors, warnings, err := v.ValidateRecord(ctx, recordStruct)
 	if err != nil {
 		log.Fatalf("Validation failed: %v", err)
 	}

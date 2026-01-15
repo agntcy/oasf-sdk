@@ -19,6 +19,7 @@ import (
 const defaultHTTPTimeoutSeconds = 30
 
 type Validator struct {
+	schemaURL  string
 	httpClient *http.Client
 }
 
@@ -43,31 +44,24 @@ type ValidationResponse struct {
 	WarningCount int               `json:"warning_count"`
 }
 
-func New() (*Validator, error) {
+func New(schemaURL string) (*Validator, error) {
+	if schemaURL == "" {
+		return nil, fmt.Errorf("schema URL is required")
+	}
+
 	return &Validator{
+		schemaURL: schemaURL,
 		httpClient: &http.Client{
 			Timeout: defaultHTTPTimeoutSeconds * time.Second,
 		},
 	}, nil
 }
 
-// ValidateRecord validates a record against a specified schema URL.
-// A schema URL must be provided via the WithSchemaURL option.
+// ValidateRecord validates a record against the configured schema URL.
 // Returns: isValid (bool), errors ([]string), warnings ([]string), error
-func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct, options ...Option) (bool, []string, []string, error) {
-	// Apply options
-	opts := &option{}
-	for _, o := range options {
-		o(opts)
-	}
-
-	// Schema URL is required
-	if opts.schemaURL == "" {
-		return false, nil, nil, fmt.Errorf("schema URL is required, use WithSchemaURL option")
-	}
-
+func (v *Validator) ValidateRecord(ctx context.Context, record *structpb.Struct) (bool, []string, []string, error) {
 	// Validate against schema URL
-	errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, opts.schemaURL)
+	errorMessages, warningMessages, err := v.validateWithSchemaURL(ctx, record, v.schemaURL)
 	if err != nil {
 		return false, nil, nil, fmt.Errorf("schema URL validation failed: %w", err)
 	}

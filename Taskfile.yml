@@ -81,7 +81,7 @@ tasks:
     desc: Build image for multiple platforms
     cmds:
       - docker buildx bake
-  
+
   ##
   ## Linting
   ##
