@@ -33,6 +33,9 @@ message ValidateRecordResponse {
 
   // A list of validation errors, if any.
   repeated string errors = 2;
+
+  // A list of validation warnings, if any.
+  repeated string warnings = 3;
 }
 
 message ValidateRecordStreamRequest {
@@ -51,4 +54,7 @@ message ValidateRecordStreamResponse {
 
   // A list of validation errors, if any.
   repeated string errors = 2;
+
+  // A list of validation warnings, if any.
+  repeated string warnings = 3;
 }
