@@ -166,6 +166,126 @@ Output:
 }
 ```
 
+# Schema Service
+
+The OASF SDK Schema Service provides access to OASF schema definitions, allowing you to fetch schema content and extract specific sections like skills, domains, and modules from the schema.
+
+## Golang example
+
+```bash
+go get github.com/agntcy/oasf-sdk/pkg@v0.0.9
+```
+
+Package based usage:
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/agntcy/oasf-sdk/pkg/schema"
+)
+
+func main() {
+	// Create a new schema instance with schema URL
+	s, err := schema.New("https://schema.oasf.outshift.com")
+	if err != nil {
+		log.Fatalf("Failed to create schema instance: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Get available schema versions
+	versions := schema.GetAvailableSchemaVersions()
+	fmt.Printf("Available schema versions: %v\n", versions)
+
+	// Get full schema content for version 0.8.0
+	schemaContent, err := s.GetRecordSchemaContent(ctx, "0.8.0")
+	if err != nil {
+		log.Fatalf("Failed to get schema content: %v", err)
+	}
+
+	var schemaMap map[string]interface{}
+	if err := json.Unmarshal(schemaContent, &schemaMap); err != nil {
+		log.Fatalf("Failed to parse schema: %v", err)
+	}
+	fmt.Printf("Schema version 0.8.0 loaded successfully\n")
+
+	// Get skills from schema
+	skillsData, err := s.GetSchemaSkills(ctx, "0.8.0")
+	if err != nil {
+		log.Fatalf("Failed to get skills: %v", err)
+	}
+
+	var skillsMap map[string]interface{}
+	if err := json.Unmarshal(skillsData, &skillsMap); err != nil {
+		log.Fatalf("Failed to parse skills: %v", err)
+	}
+	fmt.Printf("Found %d skills in schema\n", len(skillsMap))
+
+	// Get domains from schema
+	domainsData, err := s.GetSchemaDomains(ctx, "0.8.0")
+	if err != nil {
+		log.Fatalf("Failed to get domains: %v", err)
+	}
+
+	var domainsMap map[string]interface{}
+	if err := json.Unmarshal(domainsData, &domainsMap); err != nil {
+		log.Fatalf("Failed to parse domains: %v", err)
+	}
+	fmt.Printf("Found %d domains in schema\n", len(domainsMap))
+
+	// Get a specific $defs key (e.g., modules)
+	modulesData, err := s.GetSchemaKey(ctx, "0.8.0", "modules")
+	if err != nil {
+		log.Fatalf("Failed to get modules: %v", err)
+	}
+
+	var modulesMap map[string]interface{}
+	if err := json.Unmarshal(modulesData, &modulesMap); err != nil {
+		log.Fatalf("Failed to parse modules: %v", err)
+	}
+	fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+}
+```
+
+## Supported Schema Versions
+
+The schema package supports the following versions:
+- `0.3.1` - Uses `/schema/0.3.1/objects/agent` endpoint
+- `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
+- `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
+
+You can get the list of supported versions programmatically:
+```go
+versions := schema.GetAvailableSchemaVersions()
+// Returns: []string{"0.3.1", "0.7.0", "0.8.0"}
+```
+
+## API Methods
+
+### GetRecordSchemaContent
+Fetches the complete JSON schema for a given version:
+```go
+schemaContent, err := s.GetRecordSchemaContent(ctx, "0.8.0")
+```
+
+### GetSchemaKey
+Extracts a specific `$defs` category from the schema:
+```go
+skillsData, err := s.GetSchemaKey(ctx, "0.8.0", "skills")
+domainsData, err := s.GetSchemaKey(ctx, "0.8.0", "domains")
+modulesData, err := s.GetSchemaKey(ctx, "0.8.0", "modules")
+```
+
+### Convenience Methods
+- `GetSchemaSkills(ctx, version)` - Extracts skills definitions
+- `GetSchemaDomains(ctx, version)` - Extracts domains definitions
+- `GetSchemaModules(ctx, version)` - Extracts modules definitions
+
 # Validation Service
 
 The OASF SDK Validation Service validates OASF Records using the API validator of the specified OASF schema server via a schema URL.

@@ -1,0 +1,626 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+package schema
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+const testSchemaVersion = "0.7.0"
+
+// mockSchemaResponse returns a mock schema JSON response with $defs section.
+func mockSchemaResponse() map[string]any {
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-07/schema#",
+		"type":    "object",
+		"$defs": map[string]any{
+			"skills": map[string]any{
+				"text_classification": map[string]any{
+					"id":   10001,
+					"name": "text_classification",
+				},
+				"natural_language_processing": map[string]any{
+					"id":   10002,
+					"name": "natural_language_processing",
+				},
+			},
+			"domains": map[string]any{
+				"lean_manufacturing": map[string]any{
+					"id":   20001,
+					"name": "lean_manufacturing",
+				},
+				"artificial_intelligence": map[string]any{
+					"id":   20002,
+					"name": "artificial_intelligence",
+				},
+			},
+			"objects": map[string]any{
+				"record": map[string]any{
+					"type": "object",
+				},
+			},
+			"modules": map[string]any{
+				"mcp_server": map[string]any{
+					"type": "object",
+				},
+			},
+		},
+	}
+}
+
+// createMockServer creates a mock HTTP server for schema tests.
+func createMockServer(t *testing.T, version string, expectError bool) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("Expected GET request, got %s", r.Method)
+		}
+
+		// Verify the URL path matches expected pattern
+		var expectedPath string
+		if version == schemaVersion031 {
+			expectedPath = "/schema/0.3.1/objects/agent"
+		} else {
+			expectedPath = "/schema/" + version + "/objects/record"
+		}
+
+		if !contains(r.URL.Path, expectedPath) {
+			t.Errorf("Expected URL path to contain %s, got %s", expectedPath, r.URL.Path)
+		}
+
+		if expectError {
+			w.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		mockSchema := mockSchemaResponse()
+		if err := json.NewEncoder(w).Encode(mockSchema); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+}
+
+// validateSchemaContent validates that schema content is valid JSON.
+func validateSchemaContent(t *testing.T, content []byte) {
+	t.Helper()
+
+	if len(content) == 0 {
+		t.Errorf("GetRecordSchemaContent() returned empty content")
+	}
+
+	var jsonMap map[string]any
+	if err := json.Unmarshal(content, &jsonMap); err != nil {
+		t.Errorf("GetRecordSchemaContent() returned invalid JSON: %v", err)
+	}
+}
+
+func TestGetRecordSchemaContent(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		expectError bool
+	}{
+		{
+			name:        "valid version 0.7.0",
+			version:     "0.7.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 0.8.0",
+			version:     "0.8.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 0.3.1",
+			version:     "0.3.1",
+			expectError: false,
+		},
+		{
+			name:        "invalid version",
+			version:     "99.99.99",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := createMockServer(t, tt.version, tt.expectError)
+			defer server.Close()
+
+			schema, err := New(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to create schema: %v", err)
+			}
+
+			content, err := schema.GetRecordSchemaContent(context.Background(), tt.version)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("GetRecordSchemaContent() expected error but got none")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("GetRecordSchemaContent() unexpected error: %v", err)
+			}
+
+			validateSchemaContent(t, content)
+		})
+	}
+}
+
+// createSimpleMockServer creates a simple mock HTTP server that returns schema JSON.
+func createSimpleMockServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		mockSchema := mockSchemaResponse()
+		if err := json.NewEncoder(w).Encode(mockSchema); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+}
+
+// validateSchemaKeyResult validates the result from GetSchemaKey.
+func validateSchemaKeyResult(t *testing.T, result []byte, expectEmpty bool) {
+	t.Helper()
+
+	if expectEmpty {
+		if len(result) > 2 { // More than just {}
+			t.Errorf("GetSchemaKey() expected empty result but got data")
+		}
+
+		return
+	}
+
+	if len(result) == 0 {
+		t.Errorf("GetSchemaKey() returned empty result")
+	}
+
+	var jsonMap map[string]any
+	if err := json.Unmarshal(result, &jsonMap); err != nil {
+		t.Errorf("GetSchemaKey() returned invalid JSON: %v", err)
+	}
+}
+
+func TestGetSchemaKey(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		defsKey     string
+		expectError bool
+		expectEmpty bool
+	}{
+		{
+			name:        "valid skills key",
+			version:     "0.7.0",
+			defsKey:     "skills",
+			expectError: false,
+			expectEmpty: false,
+		},
+		{
+			name:        "valid domains key",
+			version:     "0.7.0",
+			defsKey:     "domains",
+			expectError: false,
+			expectEmpty: false,
+		},
+		{
+			name:        "valid objects key",
+			version:     "0.7.0",
+			defsKey:     "objects",
+			expectError: false,
+			expectEmpty: false,
+		},
+		{
+			name:        "invalid key",
+			version:     "0.7.0",
+			defsKey:     "nonexistent",
+			expectError: true,
+		},
+		{
+			name:        "invalid version",
+			version:     "99.99.99",
+			defsKey:     "skills",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := createSimpleMockServer(t)
+			defer server.Close()
+
+			schema, err := New(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to create schema: %v", err)
+			}
+
+			result, err := schema.GetSchemaKey(context.Background(), tt.version, tt.defsKey)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("GetSchemaKey() expected error but got none")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("GetSchemaKey() unexpected error: %v", err)
+
+				return
+			}
+
+			validateSchemaKeyResult(t, result, tt.expectEmpty)
+		})
+	}
+}
+
+// validateSkillsResult validates the result from GetSchemaSkills.
+func validateSkillsResult(t *testing.T, skills []byte, version string) {
+	t.Helper()
+
+	if len(skills) == 0 {
+		t.Errorf("GetSchemaSkills() returned empty skills")
+	}
+
+	var skillsMap map[string]any
+	if err := json.Unmarshal(skills, &skillsMap); err != nil {
+		t.Errorf("GetSchemaSkills() returned invalid JSON: %v", err)
+	}
+
+	if len(skillsMap) == 0 {
+		t.Errorf("GetSchemaSkills() returned empty skills map")
+	}
+
+	if _, ok := skillsMap["text_classification"]; !ok && (version == schemaVersion031) {
+		t.Logf("Warning: Expected skill 'text_classification' not found in version %s", version)
+	}
+}
+
+func TestGetSchemaSkills(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		expectError bool
+	}{
+		{
+			name:        "valid version 0.7.0",
+			version:     "0.7.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 0.8.0",
+			version:     "0.8.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 0.3.1",
+			version:     "0.3.1",
+			expectError: false,
+		},
+		{
+			name:        "invalid version",
+			version:     "99.99.99",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := createSimpleMockServer(t)
+			defer server.Close()
+
+			schema, err := New(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to create schema: %v", err)
+			}
+
+			skills, err := schema.GetSchemaSkills(context.Background(), tt.version)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("GetSchemaSkills() expected error but got none")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("GetSchemaSkills() unexpected error: %v", err)
+			}
+
+			validateSkillsResult(t, skills, tt.version)
+		})
+	}
+}
+
+// validateDomainsResult validates the result from GetSchemaDomains.
+func validateDomainsResult(t *testing.T, domains []byte, version string) {
+	t.Helper()
+
+	var domainsMap map[string]any
+	if err := json.Unmarshal(domains, &domainsMap); err != nil {
+		t.Errorf("GetSchemaDomains() returned invalid JSON: %v", err)
+	}
+
+	if version == testSchemaVersion {
+		if len(domainsMap) == 0 {
+			t.Errorf("GetSchemaDomains() returned empty domains map for version %s", version)
+		}
+
+		if _, ok := domainsMap["lean_manufacturing"]; !ok {
+			t.Logf("Warning: Expected domain 'lean_manufacturing' not found in version %s", version)
+		}
+	}
+}
+
+func TestGetSchemaDomains(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		expectError bool
+	}{
+		{
+			name:        "valid version 0.7.0",
+			version:     "0.7.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 0.8.0",
+			version:     "0.8.0",
+			expectError: false,
+		},
+		{
+			name:        "invalid version",
+			version:     "99.99.99",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := createSimpleMockServer(t)
+			defer server.Close()
+
+			schema, err := New(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to create schema: %v", err)
+			}
+
+			domains, err := schema.GetSchemaDomains(context.Background(), tt.version)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("GetSchemaDomains() expected error but got none")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("GetSchemaDomains() unexpected error: %v", err)
+			}
+
+			validateDomainsResult(t, domains, tt.version)
+		})
+	}
+}
+
+func TestGetAvailableSchemaVersions(t *testing.T) {
+	versions := GetAvailableSchemaVersions()
+
+	if len(versions) == 0 {
+		t.Error("GetAvailableSchemaVersions() returned no versions")
+	}
+
+	// Check that expected versions are present
+	expectedVersions := map[string]bool{
+		"0.3.1": true,
+		"0.7.0": true,
+		"0.8.0": true,
+	}
+
+	foundVersions := make(map[string]bool)
+	for _, v := range versions {
+		foundVersions[v] = true
+	}
+
+	for expected := range expectedVersions {
+		if !foundVersions[expected] {
+			t.Errorf("Expected version %s not found in available versions", expected)
+		}
+	}
+}
+
+// Helper function to compare schema section counts between dedicated getter and full schema.
+func compareSchemaSection(t *testing.T, schema *Schema, version string, sectionName string, getSection func(context.Context, string) ([]byte, error)) {
+	t.Helper()
+
+	fullSchema, err := schema.GetRecordSchemaContent(context.Background(), version)
+	if err != nil {
+		t.Fatalf("Failed to get full schema: %v", err)
+	}
+
+	var fullSchemaMap map[string]any
+	if err := json.Unmarshal(fullSchema, &fullSchemaMap); err != nil {
+		t.Fatalf("Failed to parse full schema: %v", err)
+	}
+
+	sectionData, err := getSection(context.Background(), version)
+	if err != nil {
+		t.Fatalf("Failed to get %s: %v", sectionName, err)
+	}
+
+	var sectionMap map[string]any
+	if err := json.Unmarshal(sectionData, &sectionMap); err != nil {
+		t.Fatalf("Failed to parse %s: %v", sectionName, err)
+	}
+
+	// Extract section from full schema
+	defs, ok := fullSchemaMap["$defs"].(map[string]any)
+	if !ok {
+		t.Fatalf("Expected $defs to be map[string]any")
+	}
+
+	fullSchemaSection, ok := defs[sectionName].(map[string]any)
+	if !ok {
+		t.Fatalf("Expected %s to be map[string]any", sectionName)
+	}
+
+	// Compare the number of items
+	if len(sectionMap) != len(fullSchemaSection) {
+		t.Errorf("%s count mismatch: getter returned %d items, full schema has %d items",
+			sectionName, len(sectionMap), len(fullSchemaSection))
+	}
+}
+
+func TestGetSchemaSkillsVsFullSchema(t *testing.T) {
+	// Create a mock HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		mockSchema := mockSchemaResponse()
+		if err := json.NewEncoder(w).Encode(mockSchema); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	// Create a schema instance with the mock server URL
+	schema, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	// This test ensures that GetSchemaSkills returns the same skills
+	// section as in the full schema
+	compareSchemaSection(t, schema, testSchemaVersion, "skills", schema.GetSchemaSkills)
+}
+
+func TestGetSchemaDomainsVsFullSchema(t *testing.T) {
+	// Create a mock HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		mockSchema := mockSchemaResponse()
+		if err := json.NewEncoder(w).Encode(mockSchema); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	// Create a schema instance with the mock server URL
+	schema, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	// This test ensures that GetSchemaDomains returns the same domains
+	// section as in the full schema
+	compareSchemaSection(t, schema, testSchemaVersion, "domains", schema.GetSchemaDomains)
+}
+
+func TestGetSchemaModules(t *testing.T) {
+	// Create a mock HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		mockSchema := mockSchemaResponse()
+		if err := json.NewEncoder(w).Encode(mockSchema); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	// Create a schema instance with the mock server URL
+	schema, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	// Note: modules may not exist in all schema versions
+	_, err = schema.GetSchemaModules(context.Background(), "0.7.0")
+	// We don't assert on error since modules might not exist
+	// This test mainly ensures the function doesn't panic
+	_ = err
+}
+
+func TestNew(t *testing.T) {
+	tests := []struct {
+		name        string
+		schemaURL   string
+		expectError bool
+	}{
+		{
+			name:        "valid URL",
+			schemaURL:   "https://schema.oasf.outshift.com",
+			expectError: false,
+		},
+		{
+			name:        "empty URL",
+			schemaURL:   "",
+			expectError: true,
+		},
+		{
+			name:        "URL without protocol",
+			schemaURL:   "schema.oasf.outshift.com",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schema, err := New(tt.schemaURL)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("New() expected error but got none")
+				}
+
+				if schema != nil {
+					t.Errorf("New() expected nil schema but got %v", schema)
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("New() unexpected error: %v", err)
+			}
+
+			if schema == nil {
+				t.Errorf("New() expected schema but got nil")
+			}
+		})
+	}
+}
+
+// Helper function to check if a string contains a substring.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+
+	return false
+}
