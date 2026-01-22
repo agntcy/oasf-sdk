@@ -33,6 +33,20 @@ type VersionsResponse struct {
 // SchemaOption is a function that configures schema options.
 type SchemaOption func(*schemaOptions)
 
+// SchemaType represents the type of schema to fetch.
+type SchemaType string
+
+const (
+	// SchemaTypeObjects represents object schemas (agent, record).
+	SchemaTypeObjects SchemaType = "objects"
+	// SchemaTypeModules represents module schemas.
+	SchemaTypeModules SchemaType = "modules"
+	// SchemaTypeSkills represents skill schemas.
+	SchemaTypeSkills SchemaType = "skills"
+	// SchemaTypeDomains represents domain schemas.
+	SchemaTypeDomains SchemaType = "domains"
+)
+
 // schemaOptions holds the options for schema operations.
 type schemaOptions struct {
 	version string
@@ -154,25 +168,19 @@ func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, erro
 	return versions, nil
 }
 
-// constructRecordSchemaURL builds the full schema URL from a base URL and schema version.
-// Note: We don't validate version here anymore since versions are fetched dynamically.
-// The API will return an error if the version is not supported.
-func (s *Schema) constructRecordSchemaURL(schemaVersion string) string {
-	// Determine the object type based on schema version
-	// Version 0.3.1 uses "agent", while later versions use "record"
-	objectType := "record"
-	if schemaVersion == schemaVersion031 {
-		objectType = "agent"
-	}
-
+// constructSchemaURL builds the full schema URL from options.
+// Format: /schema/<version>/<type>/<name>.
+func (s *Schema) constructSchemaURL(version string, schemaType SchemaType, name string) string {
 	// Construct the full schema URL (schemaURL is already normalized)
-	return fmt.Sprintf("%s/schema/%s/objects/%s", s.schemaURL, schemaVersion, objectType)
+	return fmt.Sprintf("%s/schema/%s/%s/%s", s.schemaURL, version, schemaType, name)
 }
 
-// GetRecordSchemaContent returns the raw JSON schema content for a given version.
-// If no version is provided via options, the default version from the server is used.
-// Returns an error if the version is not found or if there's an issue fetching the schema.
-func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+// GetSchema is a generic function to fetch schema content from the OASF API.
+// It constructs the URL as /schema/<version>/<type>/<name>.
+// schemaType must be one of: objects, modules, skills, or domains.
+// name specifies the specific schema name (e.g., "agent", "record", or specific module/skill/domain name).
+// If no version is provided via options, the default version is used.
+func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name string, opts ...SchemaOption) ([]byte, error) {
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -189,7 +197,7 @@ func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOptio
 		}
 	}
 
-	schemaURL := s.constructRecordSchemaURL(version)
+	schemaURL := s.constructSchemaURL(version, schemaType, name)
 
 	// Create GET request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
@@ -219,6 +227,47 @@ func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOptio
 	}
 
 	return schemaData, nil
+}
+
+// GetRecordSchemaContent returns the raw JSON schema content for a given version.
+// If no version is provided via options, the default version from the server is used.
+// For version 0.3.1, it fetches the "agent" object schema.
+// For later versions, it fetches the "record" object schema.
+// Returns an error if the version is not found or if there's an issue fetching the schema.
+func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	// Parse options to get version if provided (needed to determine object name)
+	options := &schemaOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Determine the object name based on schema version
+	// Version 0.3.1 uses "agent", while later versions use "record"
+	objectName := "record"
+	version := options.version
+
+	if version == "" {
+		// If no version provided, fetch default to determine object name
+		var err error
+
+		version, err = s.GetDefaultVersion(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get default version: %w", err)
+		}
+	}
+
+	if version == schemaVersion031 {
+		objectName = "agent"
+	}
+
+	// Use the generic GetSchema function (pass version via options if we fetched it)
+	if options.version == "" {
+		// We fetched the default version, so pass it via WithVersion
+		return s.GetSchema(ctx, SchemaTypeObjects, objectName, WithVersion(version))
+	}
+
+	// Version was already in options, just pass opts through
+	return s.GetSchema(ctx, SchemaTypeObjects, objectName, opts...)
 }
 
 // GetSchemaKey is a generic function to extract any $defs category from a schema.

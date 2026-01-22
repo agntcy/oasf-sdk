@@ -193,6 +193,92 @@ func TestGetRecordSchemaContent(t *testing.T) {
 	}
 }
 
+func TestGetSchema(t *testing.T) {
+	tests := []struct {
+		name        string
+		version     string
+		typ         SchemaType
+		schemaName  string
+		expectError bool
+	}{
+		{
+			name:        "valid objects/record for 0.8.0",
+			version:     "0.8.0",
+			typ:         SchemaTypeObjects,
+			schemaName:  "record",
+			expectError: false,
+		},
+		{
+			name:        "valid objects/agent for 0.3.1",
+			version:     "0.3.1",
+			typ:         SchemaTypeObjects,
+			schemaName:  "agent",
+			expectError: false,
+		},
+		{
+			name:        "valid modules",
+			version:     "0.8.0",
+			typ:         SchemaTypeModules,
+			schemaName:  "integration/mcp",
+			expectError: false,
+		},
+		{
+			name:        "valid skills",
+			version:     "0.8.0",
+			typ:         SchemaTypeSkills,
+			schemaName:  "natural_language_processing",
+			expectError: false,
+		},
+		{
+			name:        "valid domains",
+			version:     "0.8.0",
+			typ:         SchemaTypeDomains,
+			schemaName:  "artificial_intelligence",
+			expectError: false,
+		},
+		{
+			name:        "invalid version",
+			version:     invalidVersion,
+			typ:         SchemaTypeObjects,
+			schemaName:  "record",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
+			defer server.Close()
+
+			schema, err := New(server.URL)
+			if err != nil {
+				t.Fatalf("Failed to create schema: %v", err)
+			}
+
+			var opts []SchemaOption
+
+			if tt.version != "" {
+				opts = append(opts, WithVersion(tt.version))
+			}
+
+			content, err := schema.GetSchema(context.Background(), tt.typ, tt.schemaName, opts...)
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("GetSchema() expected error but got none")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Errorf("GetSchema() unexpected error: %v", err)
+			}
+
+			validateSchemaContent(t, content)
+		})
+	}
+}
+
 // createMockServerWithVersionCheck creates a mock server that validates versions.
 func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest.Server {
 	t.Helper()
@@ -240,6 +326,16 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 
 					return
 				}
+			}
+		}
+
+		// Validate URL format: /schema/<version>/<type>/<name>
+		if strings.Contains(r.URL.Path, "/schema/") {
+			pathParts := strings.Split(r.URL.Path, "/")
+			if len(pathParts) < 5 {
+				w.WriteHeader(http.StatusBadRequest)
+
+				return
 			}
 		}
 
