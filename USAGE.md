@@ -205,8 +205,15 @@ func main() {
 	}
 	fmt.Printf("Available schema versions: %v\n", versions)
 
-	// Get full schema content for version 0.8.0
-	schemaContent, err := s.GetRecordSchemaContent(ctx, "0.8.0")
+	// Get the default schema version (cached after first fetch)
+	defaultVersion, err := s.GetDefaultVersion(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get default version: %v", err)
+	}
+	fmt.Printf("Default schema version: %s\n", defaultVersion)
+
+	// Get full schema content for version 0.8.0 (using WithVersion option)
+	schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
 	if err != nil {
 		log.Fatalf("Failed to get schema content: %v", err)
 	}
@@ -217,8 +224,8 @@ func main() {
 	}
 	fmt.Printf("Schema version 0.8.0 loaded successfully\n")
 
-	// Get skills from schema
-	skillsData, err := s.GetSchemaSkills(ctx, "0.8.0")
+	// Get skills from schema (using default version - no option needed)
+	skillsData, err := s.GetSchemaSkills(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get skills: %v", err)
 	}
@@ -229,8 +236,8 @@ func main() {
 	}
 	fmt.Printf("Found %d skills in schema\n", len(skillsMap))
 
-	// Get domains from schema
-	domainsData, err := s.GetSchemaDomains(ctx, "0.8.0")
+	// Get domains from schema (using specific version)
+	domainsData, err := s.GetSchemaDomains(ctx, schema.WithVersion("0.8.0"))
 	if err != nil {
 		log.Fatalf("Failed to get domains: %v", err)
 	}
@@ -241,8 +248,8 @@ func main() {
 	}
 	fmt.Printf("Found %d domains in schema\n", len(domainsMap))
 
-	// Get a specific $defs key (e.g., modules)
-	modulesData, err := s.GetSchemaKey(ctx, "0.8.0", "modules")
+	// Get a specific $defs key (e.g., modules) using default version
+	modulesData, err := s.GetSchemaKey(ctx, "modules")
 	if err != nil {
 		log.Fatalf("Failed to get modules: %v", err)
 	}
@@ -278,24 +285,48 @@ if err != nil {
 
 ## API Methods
 
-### GetRecordSchemaContent
-Fetches the complete JSON schema for a given version:
+### GetDefaultVersion
+Returns the default schema version from the server. The version is cached after the first fetch:
 ```go
-schemaContent, err := s.GetRecordSchemaContent(ctx, "0.8.0")
+defaultVersion, err := s.GetDefaultVersion(ctx)
+```
+
+### GetRecordSchemaContent
+Fetches the complete JSON schema. If no version is provided via `WithVersion()`, the default version from the server is used:
+```go
+// Using default version
+schemaContent, err := s.GetRecordSchemaContent(ctx)
+
+// Using specific version
+schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
 ```
 
 ### GetSchemaKey
-Extracts a specific `$defs` category from the schema:
+Extracts a specific `$defs` category from the schema. If no version is provided, the default version is used:
 ```go
-skillsData, err := s.GetSchemaKey(ctx, "0.8.0", "skills")
-domainsData, err := s.GetSchemaKey(ctx, "0.8.0", "domains")
-modulesData, err := s.GetSchemaKey(ctx, "0.8.0", "modules")
+// Using default version
+skillsData, err := s.GetSchemaKey(ctx, "skills")
+
+// Using specific version
+skillsData, err := s.GetSchemaKey(ctx, "skills", schema.WithVersion("0.8.0"))
+domainsData, err := s.GetSchemaKey(ctx, "domains", schema.WithVersion("0.8.0"))
+modulesData, err := s.GetSchemaKey(ctx, "modules", schema.WithVersion("0.8.0"))
 ```
 
 ### Convenience Methods
-- `GetSchemaSkills(ctx, version)` - Extracts skills definitions
-- `GetSchemaDomains(ctx, version)` - Extracts domains definitions
-- `GetSchemaModules(ctx, version)` - Extracts modules definitions
+All convenience methods accept optional `WithVersion()` option. If omitted, the default version is used:
+- `GetSchemaSkills(ctx, ...SchemaOption)` - Extracts skills definitions
+- `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
+- `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
+
+Example:
+```go
+// Using default version
+skills, err := s.GetSchemaSkills(ctx)
+
+// Using specific version
+skills, err := s.GetSchemaSkills(ctx, schema.WithVersion("0.7.0"))
+```
 
 # Validation Service
 

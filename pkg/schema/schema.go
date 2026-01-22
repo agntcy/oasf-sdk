@@ -30,10 +30,26 @@ type VersionsResponse struct {
 	} `json:"versions"`
 }
 
+// SchemaOption is a function that configures schema options.
+type SchemaOption func(*schemaOptions)
+
+// schemaOptions holds the options for schema operations.
+type schemaOptions struct {
+	version string
+}
+
+// WithVersion sets the schema version to use.
+func WithVersion(version string) SchemaOption {
+	return func(opts *schemaOptions) {
+		opts.version = version
+	}
+}
+
 // Schema provides access to OASF schema definitions via API.
 type Schema struct {
-	schemaURL  string // Normalized schema URL
-	httpClient *http.Client
+	schemaURL      string // Normalized schema URL
+	httpClient     *http.Client
+	defaultVersion string // Cached default version
 }
 
 // normalizeURL normalizes a schema URL by removing trailing slashes and adding protocol if missing.
@@ -65,11 +81,12 @@ func New(schemaURL string) (*Schema, error) {
 	}, nil
 }
 
-// GetAvailableSchemaVersions returns a list of all supported schema versions from the OASF server.
-// It fetches the versions from the api/versions endpoint.
-func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, error) {
+const apiVersionsPath = "/api/versions"
+
+// getVersionsResponse fetches the versions response from the server.
+func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, error) {
 	// Construct the versions endpoint URL
-	versionsURL := s.schemaURL + "/api/versions"
+	versionsURL := s.schemaURL + apiVersionsPath
 
 	// Create GET request with context
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, versionsURL, nil)
@@ -100,6 +117,34 @@ func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, erro
 		return nil, fmt.Errorf("failed to decode versions response from URL %s: %w", versionsURL, err)
 	}
 
+	return &versionsResp, nil
+}
+
+// GetDefaultVersion returns the default schema version, caching it after first fetch.
+// The default version is fetched from the server's api/versions endpoint.
+func (s *Schema) GetDefaultVersion(ctx context.Context) (string, error) {
+	if s.defaultVersion != "" {
+		return s.defaultVersion, nil
+	}
+
+	versionsResp, err := s.getVersionsResponse(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	s.defaultVersion = versionsResp.Default.Version
+
+	return s.defaultVersion, nil
+}
+
+// GetAvailableSchemaVersions returns a list of all supported schema versions from the OASF server.
+// It fetches the versions from the api/versions endpoint.
+func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, error) {
+	versionsResp, err := s.getVersionsResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// Extract version strings from the response
 	versions := make([]string, 0, len(versionsResp.Versions))
 	for _, v := range versionsResp.Versions {
@@ -125,8 +170,25 @@ func (s *Schema) constructRecordSchemaURL(schemaVersion string) string {
 }
 
 // GetRecordSchemaContent returns the raw JSON schema content for a given version.
+// If no version is provided via options, the default version from the server is used.
 // Returns an error if the version is not found or if there's an issue fetching the schema.
-func (s *Schema) GetRecordSchemaContent(ctx context.Context, version string) ([]byte, error) {
+func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	options := &schemaOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Use provided version or fetch default
+	version := options.version
+	if version == "" {
+		var err error
+
+		version, err = s.GetDefaultVersion(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get default version: %w", err)
+		}
+	}
+
 	schemaURL := s.constructRecordSchemaURL(version)
 
 	// Create GET request
@@ -161,9 +223,10 @@ func (s *Schema) GetRecordSchemaContent(ctx context.Context, version string) ([]
 
 // GetSchemaKey is a generic function to extract any $defs category from a schema.
 // For example, extracting skills, domains, modules, or any other $defs key.
+// If no version is provided via options, the default version from the server is used.
 // Returns the category definitions as JSON bytes, or an error if not found.
-func (s *Schema) GetSchemaKey(ctx context.Context, version, defsKey string) ([]byte, error) {
-	schemaData, err := s.GetRecordSchemaContent(ctx, version)
+func (s *Schema) GetSchemaKey(ctx context.Context, defsKey string, opts ...SchemaOption) ([]byte, error) {
+	schemaData, err := s.GetRecordSchemaContent(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,19 +255,22 @@ func (s *Schema) GetSchemaKey(ctx context.Context, version, defsKey string) ([]b
 }
 
 // GetSchemaSkills is a convenience function to extract skills from a schema.
+// If no version is provided via options, the default version from the server is used.
 // Returns the skills as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaSkills(ctx context.Context, version string) ([]byte, error) {
-	return s.GetSchemaKey(ctx, version, "skills")
+func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	return s.GetSchemaKey(ctx, "skills", opts...)
 }
 
 // GetSchemaDomains is a convenience function to extract domains from a schema.
+// If no version is provided via options, the default version from the server is used.
 // Returns the domains as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaDomains(ctx context.Context, version string) ([]byte, error) {
-	return s.GetSchemaKey(ctx, version, "domains")
+func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	return s.GetSchemaKey(ctx, "domains", opts...)
 }
 
 // GetSchemaModules is a convenience function to extract modules from a schema.
+// If no version is provided via options, the default version from the server is used.
 // Returns the modules as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaModules(ctx context.Context, version string) ([]byte, error) {
-	return s.GetSchemaKey(ctx, version, "modules")
+func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	return s.GetSchemaKey(ctx, "modules", opts...)
 }
