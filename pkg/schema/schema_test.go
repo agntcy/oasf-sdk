@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 const testSchemaVersion = "0.7.0"
+
+const invalidVersion = "99.99.99"
 
 // mockSchemaResponse returns a mock schema JSON response with $defs section.
 func mockSchemaResponse() map[string]any {
@@ -127,7 +130,7 @@ func TestGetRecordSchemaContent(t *testing.T) {
 		},
 		{
 			name:        "invalid version",
-			version:     "99.99.99",
+			version:     invalidVersion,
 			expectError: true,
 		},
 	}
@@ -160,11 +163,26 @@ func TestGetRecordSchemaContent(t *testing.T) {
 	}
 }
 
-// createSimpleMockServer creates a simple mock HTTP server that returns schema JSON.
-func createSimpleMockServer(t *testing.T) *httptest.Server {
+// createMockServerWithVersionCheck creates a mock server that validates versions.
+func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if this is a schema request with invalid version
+		if checkVersion && strings.Contains(r.URL.Path, "/schema/") {
+			// Extract version from path (e.g., /schema/99.99.99/objects/record)
+			pathParts := strings.Split(r.URL.Path, "/")
+			if len(pathParts) >= 3 {
+				version := pathParts[2]
+				// Check if version is invalid
+				if version == invalidVersion {
+					w.WriteHeader(http.StatusNotFound)
+
+					return
+				}
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
@@ -234,7 +252,7 @@ func TestGetSchemaKey(t *testing.T) {
 		},
 		{
 			name:        "invalid version",
-			version:     "99.99.99",
+			version:     invalidVersion,
 			defsKey:     "skills",
 			expectError: true,
 		},
@@ -242,7 +260,7 @@ func TestGetSchemaKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := createSimpleMockServer(t)
+			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
 			defer server.Close()
 
 			schema, err := New(server.URL)
@@ -315,14 +333,14 @@ func TestGetSchemaSkills(t *testing.T) {
 		},
 		{
 			name:        "invalid version",
-			version:     "99.99.99",
+			version:     invalidVersion,
 			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := createSimpleMockServer(t)
+			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
 			defer server.Close()
 
 			schema, err := New(server.URL)
@@ -386,14 +404,14 @@ func TestGetSchemaDomains(t *testing.T) {
 		},
 		{
 			name:        "invalid version",
-			version:     "99.99.99",
+			version:     invalidVersion,
 			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := createSimpleMockServer(t)
+			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
 			defer server.Close()
 
 			schema, err := New(server.URL)
@@ -419,14 +437,32 @@ func TestGetSchemaDomains(t *testing.T) {
 	}
 }
 
-func TestGetAvailableSchemaVersions(t *testing.T) {
-	versions := GetAvailableSchemaVersions()
+// createVersionsMockServer creates a mock server for versions endpoint.
+func createVersionsMockServer(t *testing.T, mockResponse VersionsResponse) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/versions" {
+			t.Errorf("Expected path /api/versions, got %s", r.URL.Path)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+}
+
+// validateVersionsResult validates the versions returned from GetAvailableSchemaVersions.
+func validateVersionsResult(t *testing.T, versions []string) {
+	t.Helper()
 
 	if len(versions) == 0 {
 		t.Error("GetAvailableSchemaVersions() returned no versions")
 	}
 
-	// Check that expected versions are present
 	expectedVersions := map[string]bool{
 		"0.3.1": true,
 		"0.7.0": true,
@@ -443,6 +479,50 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 			t.Errorf("Expected version %s not found in available versions", expected)
 		}
 	}
+}
+
+func TestGetAvailableSchemaVersions(t *testing.T) {
+	mockResponse := VersionsResponse{
+		Default: struct {
+			Version string `json:"version"`
+			URL     string `json:"url"`
+		}{
+			Version: "0.8.0",
+			URL:     "http://schema.oasf.outshift.com:8000/api/0.8.0",
+		},
+		Versions: []struct {
+			Version string `json:"version"`
+			URL     string `json:"url"`
+		}{
+			{Version: "0.3.1", URL: "http://schema.oasf.outshift.com:8000/0.3.1/api"},
+			{Version: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
+			{Version: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
+		},
+	}
+
+	t.Run("valid versions response", func(t *testing.T) {
+		server := createVersionsMockServer(t, mockResponse)
+		defer server.Close()
+
+		schema, err := New(server.URL)
+		if err != nil {
+			t.Fatalf("Failed to create schema: %v", err)
+		}
+
+		versions, err := schema.GetAvailableSchemaVersions(context.Background())
+		if err != nil {
+			t.Errorf("GetAvailableSchemaVersions() unexpected error: %v", err)
+		}
+
+		validateVersionsResult(t, versions)
+	})
+
+	t.Run("empty URL", func(t *testing.T) {
+		_, err := New("")
+		if err == nil {
+			t.Errorf("New() expected error but got none")
+		}
+	})
 }
 
 // Helper function to compare schema section counts between dedicated getter and full schema.

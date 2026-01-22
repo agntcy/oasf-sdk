@@ -198,8 +198,11 @@ func main() {
 
 	ctx := context.Background()
 
-	// Get available schema versions
-	versions := schema.GetAvailableSchemaVersions()
+	// Get available schema versions from the server
+	versions, err := s.GetAvailableSchemaVersions(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get available schema versions: %v", err)
+	}
 	fmt.Printf("Available schema versions: %v\n", versions)
 
 	// Get full schema content for version 0.8.0
@@ -259,10 +262,18 @@ The schema package supports the following versions:
 - `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
 - `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
 
-You can get the list of supported versions programmatically:
+You can get the list of supported versions programmatically by fetching from the server:
 ```go
-versions := schema.GetAvailableSchemaVersions()
-// Returns: []string{"0.3.1", "0.7.0", "0.8.0"}
+s, err := schema.New("https://schema.oasf.outshift.com")
+if err != nil {
+	log.Fatalf("Failed to create schema: %v", err)
+}
+
+versions, err := s.GetAvailableSchemaVersions(ctx)
+if err != nil {
+	log.Fatalf("Failed to get versions: %v", err)
+}
+// Returns: []string{"0.3.1", "0.7.0", "0.8.0", ...} (fetched from server)
 ```
 
 ## API Methods

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 )
@@ -19,50 +18,101 @@ const defaultHTTPTimeoutSeconds = 30
 
 const schemaVersion031 = "0.3.1"
 
-// Supported schema versions.
-var supportedVersions = []string{"0.3.1", "0.7.0", "0.8.0"}
+// VersionsResponse represents the response from the api/versions endpoint.
+type VersionsResponse struct {
+	Default struct {
+		Version string `json:"version"`
+		URL     string `json:"url"`
+	} `json:"default"`
+	Versions []struct {
+		Version string `json:"version"`
+		URL     string `json:"url"`
+	} `json:"versions"`
+}
 
 // Schema provides access to OASF schema definitions via API.
 type Schema struct {
-	schemaURL  string
+	schemaURL  string // Normalized schema URL
 	httpClient *http.Client
 }
 
-// New creates a new Schema instance with the given schema base URL.
-// The base URL should point to the OASF schema API endpoint (e.g., https://schema.oasf.outshift.com).
-func New(schemaURL string) (*Schema, error) {
-	if schemaURL == "" {
-		return nil, errors.New("schema URL is required")
-	}
-
-	return &Schema{
-		schemaURL: schemaURL,
-		httpClient: &http.Client{
-			Timeout: defaultHTTPTimeoutSeconds * time.Second,
-		},
-	}, nil
-}
-
-// GetAvailableSchemaVersions returns a list of all supported schema versions.
-func GetAvailableSchemaVersions() []string {
-	return supportedVersions
-}
-
-// constructRecordSchemaURL builds the full schema URL from a base URL and schema version.
-func (s *Schema) constructRecordSchemaURL(schemaVersion string) (string, error) {
-	// Check if version is supported (check both original and normalized)
-	if !slices.Contains(supportedVersions, schemaVersion) {
-		return "", fmt.Errorf("unsupported schema version: %s", schemaVersion)
-	}
-
+// normalizeURL normalizes a schema URL by removing trailing slashes and adding protocol if missing.
+func normalizeURL(schemaURL string) string {
 	// Normalize the base URL (remove trailing slash if present)
-	normalizedURL := strings.TrimSuffix(s.schemaURL, "/")
+	normalizedURL := strings.TrimSuffix(schemaURL, "/")
 
 	// Add protocol if missing (default to http:// for localhost or IP addresses)
 	if !strings.HasPrefix(normalizedURL, "http://") && !strings.HasPrefix(normalizedURL, "https://") {
 		normalizedURL = "http://" + normalizedURL
 	}
 
+	return normalizedURL
+}
+
+// New creates a new Schema instance with the given schema base URL.
+// The base URL should point to the OASF schema API endpoint (e.g., https://schema.oasf.outshift.com).
+// The URL will be normalized (trailing slashes removed, protocol added if missing).
+func New(schemaURL string) (*Schema, error) {
+	if schemaURL == "" {
+		return nil, errors.New("schema URL is required")
+	}
+
+	return &Schema{
+		schemaURL: normalizeURL(schemaURL),
+		httpClient: &http.Client{
+			Timeout: defaultHTTPTimeoutSeconds * time.Second,
+		},
+	}, nil
+}
+
+// GetAvailableSchemaVersions returns a list of all supported schema versions from the OASF server.
+// It fetches the versions from the api/versions endpoint.
+func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, error) {
+	// Construct the versions endpoint URL
+	versionsURL := s.schemaURL + "/api/versions"
+
+	// Create GET request with context
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, versionsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET request to %s: %w", versionsURL, err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	// Send request
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send GET request to %s: %w", versionsURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("failed to fetch versions from URL %s: HTTP %d, body: %s", versionsURL, resp.StatusCode, string(body))
+	}
+
+	// Read and parse response
+	var versionsResp VersionsResponse
+
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&versionsResp); err != nil {
+		return nil, fmt.Errorf("failed to decode versions response from URL %s: %w", versionsURL, err)
+	}
+
+	// Extract version strings from the response
+	versions := make([]string, 0, len(versionsResp.Versions))
+	for _, v := range versionsResp.Versions {
+		versions = append(versions, v.Version)
+	}
+
+	return versions, nil
+}
+
+// constructRecordSchemaURL builds the full schema URL from a base URL and schema version.
+// Note: We don't validate version here anymore since versions are fetched dynamically.
+// The API will return an error if the version is not supported.
+func (s *Schema) constructRecordSchemaURL(schemaVersion string) string {
 	// Determine the object type based on schema version
 	// Version 0.3.1 uses "agent", while later versions use "record"
 	objectType := "record"
@@ -70,17 +120,14 @@ func (s *Schema) constructRecordSchemaURL(schemaVersion string) (string, error) 
 		objectType = "agent"
 	}
 
-	// Construct the full schema URL
-	return fmt.Sprintf("%s/schema/%s/objects/%s", normalizedURL, schemaVersion, objectType), nil
+	// Construct the full schema URL (schemaURL is already normalized)
+	return fmt.Sprintf("%s/schema/%s/objects/%s", s.schemaURL, schemaVersion, objectType)
 }
 
 // GetRecordSchemaContent returns the raw JSON schema content for a given version.
 // Returns an error if the version is not found or if there's an issue fetching the schema.
 func (s *Schema) GetRecordSchemaContent(ctx context.Context, version string) ([]byte, error) {
-	schemaURL, err := s.constructRecordSchemaURL(version)
-	if err != nil {
-		return nil, err
-	}
+	schemaURL := s.constructRecordSchemaURL(version)
 
 	// Create GET request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
