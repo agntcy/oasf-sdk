@@ -166,6 +166,168 @@ Output:
 }
 ```
 
+# Schema Service
+
+The OASF SDK Schema Service provides access to OASF schema definitions, allowing you to fetch schema content and extract specific sections like skills, domains, and modules from the schema.
+
+## Golang example
+
+```bash
+go get github.com/agntcy/oasf-sdk/pkg@v0.0.9
+```
+
+Package based usage:
+```go
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/agntcy/oasf-sdk/pkg/schema"
+)
+
+func main() {
+	// Create a new schema instance with schema URL
+	s, err := schema.New("https://schema.oasf.outshift.com")
+	if err != nil {
+		log.Fatalf("Failed to create schema instance: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Get available schema versions from the server
+	versions, err := s.GetAvailableSchemaVersions(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get available schema versions: %v", err)
+	}
+	fmt.Printf("Available schema versions: %v\n", versions)
+
+	// Get the default schema version (cached after first fetch)
+	defaultVersion, err := s.GetDefaultVersion(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get default version: %v", err)
+	}
+	fmt.Printf("Default schema version: %s\n", defaultVersion)
+
+	// Get full schema content for version 0.8.0 (using WithVersion option)
+	schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
+	if err != nil {
+		log.Fatalf("Failed to get schema content: %v", err)
+	}
+
+	var schemaMap map[string]interface{}
+	if err := json.Unmarshal(schemaContent, &schemaMap); err != nil {
+		log.Fatalf("Failed to parse schema: %v", err)
+	}
+	fmt.Printf("Schema version 0.8.0 loaded successfully\n")
+
+	// Get skills from schema (using default version - no option needed)
+	skillsData, err := s.GetSchemaSkills(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get skills: %v", err)
+	}
+
+	var skillsMap map[string]interface{}
+	if err := json.Unmarshal(skillsData, &skillsMap); err != nil {
+		log.Fatalf("Failed to parse skills: %v", err)
+	}
+	fmt.Printf("Found %d skills in schema\n", len(skillsMap))
+
+	// Get domains from schema (using specific version)
+	domainsData, err := s.GetSchemaDomains(ctx, schema.WithVersion("0.8.0"))
+	if err != nil {
+		log.Fatalf("Failed to get domains: %v", err)
+	}
+
+	var domainsMap map[string]interface{}
+	if err := json.Unmarshal(domainsData, &domainsMap); err != nil {
+		log.Fatalf("Failed to parse domains: %v", err)
+	}
+	fmt.Printf("Found %d domains in schema\n", len(domainsMap))
+
+	// Get a specific $defs key (e.g., modules) using default version
+	modulesData, err := s.GetSchemaKey(ctx, "modules")
+	if err != nil {
+		log.Fatalf("Failed to get modules: %v", err)
+	}
+
+	var modulesMap map[string]interface{}
+	if err := json.Unmarshal(modulesData, &modulesMap); err != nil {
+		log.Fatalf("Failed to parse modules: %v", err)
+	}
+	fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+}
+```
+
+## Supported Schema Versions
+
+The schema package supports the following versions:
+- `0.3.1` - Uses `/schema/0.3.1/objects/agent` endpoint
+- `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
+- `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
+
+You can get the list of supported versions programmatically by fetching from the server:
+```go
+s, err := schema.New("https://schema.oasf.outshift.com")
+if err != nil {
+	log.Fatalf("Failed to create schema: %v", err)
+}
+
+versions, err := s.GetAvailableSchemaVersions(ctx)
+if err != nil {
+	log.Fatalf("Failed to get versions: %v", err)
+}
+// Returns: []string{"0.3.1", "0.7.0", "0.8.0", ...} (fetched from server)
+```
+
+## API Methods
+
+### GetDefaultVersion
+Returns the default schema version from the server. The version is cached after the first fetch:
+```go
+defaultVersion, err := s.GetDefaultVersion(ctx)
+```
+
+### GetRecordSchemaContent
+Fetches the complete JSON schema. If no version is provided via `WithVersion()`, the default version from the server is used:
+```go
+// Using default version
+schemaContent, err := s.GetRecordSchemaContent(ctx)
+
+// Using specific version
+schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
+```
+
+### GetSchemaKey
+Extracts a specific `$defs` category from the schema. If no version is provided, the default version is used:
+```go
+// Using default version
+skillsData, err := s.GetSchemaKey(ctx, "skills")
+
+// Using specific version
+skillsData, err := s.GetSchemaKey(ctx, "skills", schema.WithVersion("0.8.0"))
+domainsData, err := s.GetSchemaKey(ctx, "domains", schema.WithVersion("0.8.0"))
+modulesData, err := s.GetSchemaKey(ctx, "modules", schema.WithVersion("0.8.0"))
+```
+
+### Convenience Methods
+All convenience methods accept optional `WithVersion()` option. If omitted, the default version is used:
+- `GetSchemaSkills(ctx, ...SchemaOption)` - Extracts skills definitions
+- `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
+- `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
+
+Example:
+```go
+// Using default version
+skills, err := s.GetSchemaSkills(ctx)
+
+// Using specific version
+skills, err := s.GetSchemaSkills(ctx, schema.WithVersion("0.7.0"))
+```
+
 # Validation Service
 
 The OASF SDK Validation Service validates OASF Records using the API validator of the specified OASF schema server via a schema URL.
