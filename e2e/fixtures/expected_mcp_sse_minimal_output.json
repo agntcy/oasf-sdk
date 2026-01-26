@@ -4,12 +4,7 @@
     "gomarble"
   ],
   "description": "GoMarble MCP API Server",
-  "domains": [
-    {
-      "id": 10204,
-      "name": "technology/software_engineering/apis_integration"
-    }
-  ],
+  "domains": [],
   "locators": [
     {
       "type": "source_code",
@@ -34,11 +29,6 @@
   ],
   "name": "ai.gomarble/mcp-api",
   "schema_version": "0.8.0",
-  "skills": [
-    {
-      "id": 703,
-      "name": "multi_modal/any_to_any"
-    }
-  ],
+  "skills": [],
   "version": "1.0.0"
 }

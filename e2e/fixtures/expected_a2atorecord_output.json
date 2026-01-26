@@ -8,12 +8,7 @@
   "_comment_created_at": "NOTE: This timestamp is dynamically generated. Test should be flexible about this field.",
   "created_at": "2025-01-01T00:00:00Z",
   "description": "An agent that performs web searches and extracts information.",
-  "domains": [
-    {
-      "id": 10204,
-      "name": "technology/software_engineering/apis_integration"
-    }
-  ],
+  "domains": [],
   "modules": [
     {
       "data": {
@@ -63,11 +58,6 @@
   ],
   "name": "example-agent",
   "schema_version": "0.8.0",
-  "skills": [
-    {
-      "id": 1004,
-      "name": "agent_orchestration/agent_coordination"
-    }
-  ],
+  "skills": [],
   "version": "v1.0.0"
 }
