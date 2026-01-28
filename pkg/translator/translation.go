@@ -26,13 +26,6 @@ const (
 	defaultVersion   = "v1.0.0"
 )
 
-// OASF schema domain and skill IDs.
-const (
-	domainAgentOrchestration = 1004  // agent_orchestration/agent_coordination
-	domainMultiModal         = 703   // multi_modal/any_to_any
-	skillAPIIntegration      = 10204 // technology/software_engineering/apis_integration
-)
-
 const (
 	MCPModuleName = "integration/mcp"
 	A2AModuleName = "integration/a2a"
@@ -324,44 +317,14 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 			"skills": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: domainAgentOrchestration},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "agent_orchestration/agent_coordination"},
-											},
-										},
-									},
-								},
-							},
-						},
+						Values: []*structpb.Value{},
 					},
 				},
 			},
 			"domains": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: skillAPIIntegration},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
-											},
-										},
-									},
-								},
-							},
-						},
+						Values: []*structpb.Value{},
 					},
 				},
 			},
@@ -939,22 +902,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 			"skills": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: domainMultiModal},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "multi_modal/any_to_any"},
-											},
-										},
-									},
-								},
-							},
-						},
+						Values: []*structpb.Value{},
 					},
 				},
 			},
@@ -983,22 +931,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 			"domains": {
 				Kind: &structpb.Value_ListValue{
 					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{
-								Kind: &structpb.Value_StructValue{
-									StructValue: &structpb.Struct{
-										Fields: map[string]*structpb.Value{
-											"id": {
-												Kind: &structpb.Value_NumberValue{NumberValue: skillAPIIntegration},
-											},
-											"name": {
-												Kind: &structpb.Value_StringValue{StringValue: "technology/software_engineering/apis_integration"},
-											},
-										},
-									},
-								},
-							},
-						},
+						Values: []*structpb.Value{},
 					},
 				},
 			},

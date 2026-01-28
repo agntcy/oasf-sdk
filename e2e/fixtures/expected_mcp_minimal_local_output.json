@@ -9,12 +9,7 @@
     "mcpcap"
   ],
   "description": "An MCP server for analyzing PCAP files.",
-  "domains": [
-    {
-      "id": 10204,
-      "name": "technology/software_engineering/apis_integration"
-    }
-  ],
+  "domains": [],
   "locators": [
     {
       "type": "source_code",
@@ -25,17 +20,17 @@
     {
       "data": {
         "servers": [
-        {
-          "args": [
-            "-m",
-            "mcpcap"
-          ],
-          "capabilities": [],
-          "command": "python",
-          "description": "An MCP server for analyzing PCAP files.",
-          "name": "ai.mcpcap/mcpcap",
-          "type": "local"
-        }
+          {
+            "args": [
+              "-m",
+              "mcpcap"
+            ],
+            "capabilities": [],
+            "command": "python",
+            "description": "An MCP server for analyzing PCAP files.",
+            "name": "ai.mcpcap/mcpcap",
+            "type": "local"
+          }
         ]
       },
       "name": "integration/mcp"
@@ -43,11 +38,6 @@
   ],
   "name": "ai.mcpcap/mcpcap",
   "schema_version": "0.8.0",
-  "skills": [
-    {
-      "id": 703,
-      "name": "multi_modal/any_to_any"
-    }
-  ],
+  "skills": [],
   "version": "0.6.0"
 }

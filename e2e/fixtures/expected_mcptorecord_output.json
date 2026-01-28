@@ -8,12 +8,7 @@
     "modelcontextprotocol"
   ],
   "description": "Secure file system operations through MCP",
-  "domains": [
-    {
-      "id": 10204,
-      "name": "technology/software_engineering/apis_integration"
-    }
-  ],
+  "domains": [],
   "locators": [
     {
       "type": "source_code",
@@ -50,11 +45,6 @@
   ],
   "name": "io.github.modelcontextprotocol/filesystem",
   "schema_version": "0.8.0",
-  "skills": [
-    {
-      "id": 703,
-      "name": "multi_modal/any_to_any"
-    }
-  ],
+  "skills": [],
   "version": "1.0.0"
 }
