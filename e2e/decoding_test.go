@@ -24,57 +24,6 @@ var _ = Describe("Decoding Service E2E", func() {
 
 	client := decodingv1grpc.NewDecodingServiceClient(conn)
 
-	Context("V0.3.1 Record Decoding", func() {
-		It("should decode v0.3.1 record to v1alpha0 format matching expected output", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			// Convert JSON to protobuf format
-			encodedRecord, err := decoder.JsonToProto(validV031Record)
-			Expect(err).NotTo(HaveOccurred(), "Failed to encode v0.3.1 record to protobuf")
-
-			req := &decodingv1.DecodeRecordRequest{
-				Record: encodedRecord,
-			}
-
-			resp, err := client.DecodeRecord(ctx, req)
-			Expect(err).NotTo(HaveOccurred(), "DecodeRecord should not fail for v0.3.1 record")
-			Expect(resp).NotTo(BeNil(), "Response should not be nil")
-
-			// Verify the response contains v1alpha0 record
-			Expect(resp.GetV1Alpha0()).NotTo(BeNil(), "Should return v1alpha0 record for v0.3.1 schema")
-			Expect(resp.GetV1Alpha1()).To(BeNil(), "Should not return v1alpha1 record for v0.3.1 schema")
-
-			// Convert the decoded response to JSON for comparison
-			v1alpha0Record := resp.GetV1Alpha0()
-			actualJSON, err := json.MarshalIndent(v1alpha0Record, "", "  ")
-			Expect(err).NotTo(HaveOccurred(), "Failed to marshal decoded record to JSON")
-
-			// Parse expected output
-			var expectedRecord map[string]any
-			err = json.Unmarshal(expectedV031Decoded, &expectedRecord)
-			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected decoded output")
-
-			// Parse actual output for comparison
-			var actualRecord map[string]any
-			err = json.Unmarshal(actualJSON, &actualRecord)
-			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual decoded output")
-
-			// Compare core fields that should match exactly
-			Expect(actualRecord["name"]).To(Equal(expectedRecord["name"]))
-			Expect(actualRecord["schema_version"]).To(Equal(expectedRecord["schema_version"]))
-			Expect(actualRecord["version"]).To(Equal(expectedRecord["version"]))
-			Expect(actualRecord["description"]).To(Equal(expectedRecord["description"]))
-			Expect(actualRecord["authors"]).To(Equal(expectedRecord["authors"]))
-
-			// Verify structure exists (content may vary due to protobuf transformations)
-			Expect(actualRecord["skills"]).NotTo(BeNil())
-			Expect(actualRecord["locators"]).NotTo(BeNil())
-			Expect(actualRecord["signature"]).NotTo(BeNil())
-			Expect(actualRecord["extensions"]).NotTo(BeNil())
-		})
-	})
-
 	Context("0.8.0 Record Decoding", func() {
 		It("should decode 0.8.0 record to v1alpha2 format matching expected output", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -244,42 +193,6 @@ var _ = Describe("Decoding Service E2E", func() {
 	})
 
 	Context("Schema Version Detection", func() {
-		It("should correctly identify v0.3.1 schema version", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			encodedRecord, err := decoder.JsonToProto(validV031Record)
-			Expect(err).NotTo(HaveOccurred())
-
-			req := &decodingv1.DecodeRecordRequest{
-				Record: encodedRecord,
-			}
-
-			resp, err := client.DecodeRecord(ctx, req)
-			Expect(err).NotTo(HaveOccurred())
-
-			// Should map to v1alpha0
-			Expect(resp.GetV1Alpha0()).NotTo(BeNil())
-			Expect(resp.GetV1Alpha0().GetSchemaVersion()).To(Equal("v0.3.1"))
-		})
-
-		It("should correctly identify 0.3.1 schema version", func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			encodedRecord, err := decoder.JsonToProto(valid031Record)
-			Expect(err).NotTo(HaveOccurred())
-
-			req := &decodingv1.DecodeRecordRequest{
-				Record: encodedRecord,
-			}
-
-			resp, err := client.DecodeRecord(ctx, req)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.GetV1Alpha0()).NotTo(BeNil())
-			Expect(resp.GetV1Alpha0().GetSchemaVersion()).To(Equal("0.3.1"))
-		})
-
 		It("should correctly identify 0.7.0 schema version", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()

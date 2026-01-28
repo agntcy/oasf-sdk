@@ -16,8 +16,6 @@ import (
 
 const defaultHTTPTimeoutSeconds = 30
 
-const schemaVersion031 = "0.3.1"
-
 // VersionsResponse represents the response from the api/versions endpoint.
 type VersionsResponse struct {
 	Default struct {
@@ -231,43 +229,17 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 
 // GetRecordSchemaContent returns the raw JSON schema content for a given version.
 // If no version is provided via options, the default version from the server is used.
-// For version 0.3.1, it fetches the "agent" object schema.
-// For later versions, it fetches the "record" object schema.
+// It fetches the "record" object schema.
 // Returns an error if the version is not found or if there's an issue fetching the schema.
 func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	// Parse options to get version if provided (needed to determine object name)
+	// Parse options to get version if provided
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	// Determine the object name based on schema version
-	// Version 0.3.1 uses "agent", while later versions use "record"
-	objectName := "record"
-	version := options.version
-
-	if version == "" {
-		// If no version provided, fetch default to determine object name
-		var err error
-
-		version, err = s.GetDefaultVersion(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get default version: %w", err)
-		}
-	}
-
-	if version == schemaVersion031 {
-		objectName = "agent"
-	}
-
-	// Use the generic GetSchema function (pass version via options if we fetched it)
-	if options.version == "" {
-		// We fetched the default version, so pass it via WithVersion
-		return s.GetSchema(ctx, SchemaTypeObjects, objectName, WithVersion(version))
-	}
-
-	// Version was already in options, just pass opts through
-	return s.GetSchema(ctx, SchemaTypeObjects, objectName, opts...)
+	// Use the generic GetSchema function
+	return s.GetSchema(ctx, SchemaTypeObjects, "record", opts...)
 }
 
 // GetSchemaKey is a generic function to extract any $defs category from a schema.

@@ -265,7 +265,6 @@ func main() {
 ## Supported Schema Versions
 
 The schema package supports the following versions:
-- `0.3.1` - Uses `/schema/0.3.1/objects/agent` endpoint
 - `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
 - `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
 
@@ -280,7 +279,7 @@ versions, err := s.GetAvailableSchemaVersions(ctx)
 if err != nil {
 	log.Fatalf("Failed to get versions: %v", err)
 }
-// Returns: []string{"0.3.1", "0.7.0", "0.8.0", ...} (fetched from server)
+// Returns: []string{"0.7.0", "0.8.0", ...} (fetched from server)
 ```
 
 ## API Methods

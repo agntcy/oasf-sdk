@@ -17,23 +17,11 @@ var validV070Record []byte
 //go:embed fixtures/invalid_0.7.0_record.json
 var invalidV070Record []byte
 
-//go:embed fixtures/valid_v0.3.1_record.json
-var validV031Record []byte
-
-//go:embed fixtures/valid_0.3.1_record.json
-var valid031Record []byte
-
-//go:embed fixtures/invalid_v0.3.1_record.json
-var invalidV031Record []byte
-
 //go:embed fixtures/translation_0.7.0_record.json
 var translationV070Record []byte
 
 //go:embed fixtures/translation_0.8.0_record.json
 var translationV080Record []byte
-
-//go:embed fixtures/expected_v0.3.1_decoded.json
-var expectedV031Decoded []byte
 
 //go:embed fixtures/expected_0.8.0_decoded.json
 var expectedV080Decoded []byte
