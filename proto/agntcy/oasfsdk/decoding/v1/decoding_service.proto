@@ -5,6 +5,7 @@ syntax = "proto3";
 
 package agntcy.oasfsdk.decoding.v1;
 
+import "agntcy/oasf/types/v1/record.proto";
 import "agntcy/oasf/types/v1alpha0/record.proto";
 import "agntcy/oasf/types/v1alpha1/record.proto";
 import "agntcy/oasf/types/v1alpha2/record.proto";
@@ -32,5 +33,6 @@ message DecodeRecordResponse {
     agntcy.oasf.types.v1alpha0.Record v1alpha0 = 1;
     agntcy.oasf.types.v1alpha1.Record v1alpha1 = 2;
     agntcy.oasf.types.v1alpha2.Record v1alpha2 = 3;
+    agntcy.oasf.types.v1.Record v1 = 4;
   }
 }
