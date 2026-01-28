@@ -11,6 +11,12 @@ var validV080Record []byte
 //go:embed fixtures/invalid_0.8.0_record.json
 var invalidV080Record []byte
 
+//go:embed fixtures/valid_1.0.0_record.json
+var validV100Record []byte
+
+//go:embed fixtures/invalid_1.0.0_record.json
+var invalidV100Record []byte
+
 //go:embed fixtures/valid_0.7.0_record.json
 var validV070Record []byte
 
@@ -25,6 +31,9 @@ var translationV080Record []byte
 
 //go:embed fixtures/expected_0.8.0_decoded.json
 var expectedV080Decoded []byte
+
+//go:embed fixtures/expected_1.0.0_decoded.json
+var expectedV100Decoded []byte
 
 //go:embed fixtures/expected_0.7.0_decoded.json
 var expectedV070Decoded []byte

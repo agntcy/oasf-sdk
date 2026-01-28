@@ -1,8 +1,8 @@
-buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1 h1:THc6uLCGTpU393vVD5Eu5JHUdikvaP1+dqAclQe8pOE=
-buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.10-20251029125108-823ea6fabc82.1/go.mod h1:xkbAJMbZuuebIblSFnLrfTpvmfjarhKsIid+Q9snDQ0=
-buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.10-20251022143645-07a420b66e81.1 h1:ZObM/Cdu5dZO4ibBXNRSy+rFwG4oV86mYfKbI0Z7AAI=
-buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.10-20251022143645-07a420b66e81.1/go.mod h1:yJHswa2p3J+WxGLpgzuWNWn3I1CIkxdOu80Y/vN5lbE=
+buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260128161637-a77f334c8c86.1 h1:zAc/7WXMpvrf+5QcPfoI81shUjFaatEFEIVkflk/xvo=
+buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260128161637-a77f334c8c86.1/go.mod h1:EEQp9sY+88ieMjKf9W4Uf9t3X6qV1nHY0DcGOxsMlac=
+buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.11-20260127123814-046ed24ce65a.1 h1:c5Knf+Ki5RRjRAZIK11brQyaI2On4lOvel/cNg4hnJc=
+buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.11-20260127123814-046ed24ce65a.1/go.mod h1:y7UzNChPK2OBXQxpwimQg6fSgSFLC1jZXTk9Y7HFfNc=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-google.golang.org/protobuf v1.36.10 h1:AYd7cD/uASjIL6Q9LiTjz8JLcrh/88q5UObnmY3aOOE=
-google.golang.org/protobuf v1.36.10/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
+google.golang.org/protobuf v1.36.11 h1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=
+google.golang.org/protobuf v1.36.11/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=

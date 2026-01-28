@@ -63,6 +63,23 @@ var _ = Describe("Validation Service E2E", func() {
 			jsonData:  invalidV070Record,
 			schemaURL: "https://schema.oasf.outshift.com",
 		},
+		{
+			name:       "valid_record_1.0.0.json",
+			jsonData:   validV100Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
+			shouldPass: true,
+		},
+		{
+			name:       "valid_record_1.0.0.json with explicit schema URL",
+			jsonData:   validV100Record,
+			schemaURL:  "https://schema.oasf.outshift.com",
+			shouldPass: true,
+		},
+		{
+			name:      "invalid_record_1.0.0.json",
+			jsonData:  invalidV100Record,
+			schemaURL: "https://schema.oasf.outshift.com",
+		},
 	}
 
 	for _, tc := range testCases {

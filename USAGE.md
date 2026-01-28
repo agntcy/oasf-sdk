@@ -117,7 +117,7 @@ Output:
   "record": {
     "name": "io.github.modelcontextprotocol/filesystem",
     "schema_version": "0.8.0",
-    "version": "1.0.0",
+    "version": "1.0.0-rc.1",
     "description": "Secure file system operations through MCP",
     "authors": ["modelcontextprotocol"],
     "created_at": "2025-10-06T00:00:00Z",
@@ -267,6 +267,7 @@ func main() {
 The schema package supports the following versions:
 - `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
 - `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
+- `1.0.0-rc.1` - Uses `/schema/1.0.0-rc.1/objects/record` endpoint
 
 You can get the list of supported versions programmatically by fetching from the server:
 ```go
@@ -279,7 +280,7 @@ versions, err := s.GetAvailableSchemaVersions(ctx)
 if err != nil {
 	log.Fatalf("Failed to get versions: %v", err)
 }
-// Returns: []string{"0.7.0", "0.8.0", ...} (fetched from server)
+// Returns: []string{"0.7.0", "0.8.0", "1.0.0-rc.1", ...} (fetched from server)
 ```
 
 ## API Methods
@@ -371,7 +372,7 @@ func main() {
 	recordData := map[string]interface{}{
 		"name":           "example.org/my-agent",
 		"schema_version": "0.8.0",
-		"version":        "v1.0.0",
+		"version":        "v1.0.0-rc.1",
 		"description":    "An example agent for demonstration",
 		"authors":        []string{"Your Name <your.email@example.com>"},
 		"created_at":     "2025-01-01T00:00:00Z",
@@ -463,7 +464,7 @@ func main() {
 	record := map[string]interface{}{
 		"name":           "example.org/my-agent",
 		"schema_version": "0.8.0",
-		"version":        "v1.0.0",
+		"version":        "v1.0.0-rc.1",
 		"description":    "An example agent for demonstration",
 		"authors":        authorsIface,
 		"created_at":     "2025-01-01T00:00:00Z",
@@ -545,7 +546,7 @@ def validate_record():
     record_data = {
         "name": "example.org/my-agent",
         "schema_version": "0.8.0",
-        "version": "v1.0.0",
+        "version": "v1.0.0-rc.1",
         "description": "An example agent for demonstration",
         "authors": ["Your Name <your.email@example.com>"],
         "created_at": "2025-01-01T00:00:00Z",
@@ -625,7 +626,7 @@ async function validateRecord() {
     const recordData = {
         name: "example.org/my-agent",
         schema_version: "0.8.0",
-        version: "v1.0.0",
+        version: "v1.0.0-rc.1",
         description: "An example agent for demonstration",
         authors: ["Your Name <your.email@example.com>"],
         created_at: "2025-01-01T00:00:00Z",
