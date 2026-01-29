@@ -12,10 +12,269 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// processMCPServer processes a single MCP server struct (0.7.0/0.8.0 format) and extracts its configuration.
+func processMCPServer(serverMap *structpb.Struct, serverName string, inputs *[]MCPInput) (MCPServer, error) {
+	command, ok := serverMap.GetFields()["command"]
+	if !ok {
+		return MCPServer{}, fmt.Errorf("missing 'command' for server '%s'", serverName)
+	}
+
+	args := []string{}
+	env := map[string]string{}
+
+	if argsVal, ok := serverMap.GetFields()["args"]; ok {
+		argsList := argsVal.GetListValue().GetValues()
+
+		rawArgs := make([]string, 0, len(argsList))
+		for _, argVal := range argsList {
+			rawArgs = append(rawArgs, argVal.GetStringValue())
+		}
+
+		// Process args to extract environment variables (e.g., "-e VAR_NAME")
+		for i := 0; i < len(rawArgs); i++ {
+			arg := rawArgs[i]
+			if arg == "-e" && i+1 < len(rawArgs) {
+				// Found environment variable flag
+				envVarName := rawArgs[i+1]
+				// Add env var to env map with input reference
+				env[envVarName] = "${input:" + envVarName + "}"
+
+				// Add input for this environment variable
+				*inputs = append(*inputs, MCPInput{
+					ID:          envVarName,
+					Type:        "promptString",
+					Password:    true,
+					Description: "Secret value for " + envVarName,
+				})
+
+				// Keep both "-e" and the env var name in args (for docker compatibility)
+				args = append(args, arg, envVarName)
+				i++ // Skip the env var name in next iteration
+			} else {
+				args = append(args, arg)
+			}
+		}
+	}
+
+	// Also check for explicit env field (if present)
+	if envVal, ok := serverMap.GetFields()["env"]; ok {
+		envStruct := envVal.GetStructValue()
+		if envStruct != nil {
+			for key, val := range envStruct.GetFields() {
+				value := val.GetStringValue()
+				env[key] = value
+
+				// Only create input if it's an input reference (not a literal value)
+				if after, ok0 := strings.CutPrefix(value, "${input:"); ok0 {
+					id := strings.TrimSuffix(after, "}")
+					addInputIfNotExists(inputs, id)
+				}
+			}
+		}
+	}
+
+	return MCPServer{
+		Command: command.GetStringValue(),
+		Args:    args,
+		Env:     env,
+	}, nil
+}
+
+// addInputIfNotExists adds an input to the inputs slice if it doesn't already exist.
+func addInputIfNotExists(inputs *[]MCPInput, id string) {
+	for _, input := range *inputs {
+		if input.ID == id {
+			return
+		}
+	}
+
+	*inputs = append(*inputs, MCPInput{
+		ID:          id,
+		Type:        "promptString",
+		Password:    true,
+		Description: "Secret value for " + id,
+	})
+}
+
+// processEnvVar processes a single env_var object and adds it to env map and inputs if needed.
+func processEnvVar(envVarMap *structpb.Struct, env map[string]string, inputs *[]MCPInput) {
+	nameVal, ok := envVarMap.GetFields()["name"]
+	if !ok {
+		return
+	}
+
+	envName := nameVal.GetStringValue()
+
+	// Get default_value if present
+	valueVal, hasDefaultValue := envVarMap.GetFields()["default_value"]
+
+	value := ""
+	if hasDefaultValue {
+		value = valueVal.GetStringValue()
+	}
+
+	// If default_value exists and is not empty, use it directly
+	if hasDefaultValue && value != "" {
+		env[envName] = value
+
+		// Only create input if it's an input reference
+		if after, ok0 := strings.CutPrefix(value, "${input:"); ok0 {
+			id := strings.TrimSuffix(after, "}")
+			addInputIfNotExists(inputs, id)
+		}
+	} else {
+		// No default value, create input reference for required env
+		env[envName] = "${input:" + envName + "}"
+		addInputIfNotExists(inputs, envName)
+	}
+}
+
+// processMCPConnection processes a single MCP connection (1.0.0 format) and extracts its configuration.
+func processMCPConnection(connectionMap *structpb.Struct, inputs *[]MCPInput) (MCPServer, error) {
+	commandVal, hasCommand := connectionMap.GetFields()["command"]
+	if !hasCommand {
+		return MCPServer{}, errors.New("missing 'command' in connection")
+	}
+
+	args := []string{}
+
+	if argsVal, ok := connectionMap.GetFields()["args"]; ok {
+		for _, arg := range argsVal.GetListValue().GetValues() {
+			args = append(args, arg.GetStringValue())
+		}
+	}
+
+	env := map[string]string{}
+
+	// In 1.0.0, env_vars is an array of env_var objects, not a map
+	if envVarsVal, ok := connectionMap.GetFields()["env_vars"]; ok {
+		envVarsList := envVarsVal.GetListValue()
+		if envVarsList != nil {
+			for _, envVarVal := range envVarsList.GetValues() {
+				envVarMap := envVarVal.GetStructValue()
+				if envVarMap == nil {
+					continue
+				}
+
+				processEnvVar(envVarMap, env, inputs)
+			}
+		}
+	}
+
+	return MCPServer{
+		Command: commandVal.GetStringValue(),
+		Args:    args,
+		Env:     env,
+	}, nil
+}
+
+// processMCPModule100 processes MCP module data in 1.0.0 format (mcp_data with connections).
+func processMCPModule100(mcpModule *structpb.Struct, servers map[string]MCPServer, inputs *[]MCPInput) error {
+	nameVal, ok := mcpModule.GetFields()["name"]
+	if !ok {
+		return errors.New("missing 'name' in MCP module data (1.0.0 format)")
+	}
+
+	originalName := nameVal.GetStringValue()
+	// Normalize server name for GH Copilot config
+	serverName := normalizeServerName(originalName)
+
+	connectionsVal, ok := mcpModule.GetFields()["connections"]
+	if !ok {
+		return errors.New("invalid or missing 'connections' in MCP module data (1.0.0 format)")
+	}
+
+	connectionsList := connectionsVal.GetListValue()
+	if connectionsList == nil {
+		return errors.New("'connections' must be an array")
+	}
+
+	// Process each connection - for GH Copilot, we only support stdio connections
+	for _, connectionVal := range connectionsList.GetValues() {
+		connectionMap := connectionVal.GetStructValue()
+		if connectionMap == nil {
+			continue
+		}
+
+		// Check connection type - GH Copilot only supports stdio
+		typeVal, ok := connectionMap.GetFields()["type"]
+		if !ok {
+			continue
+		}
+
+		connectionType := typeVal.GetStringValue()
+		if connectionType != "stdio" {
+			// Skip non-stdio connections for GH Copilot
+			continue
+		}
+
+		server, err := processMCPConnection(connectionMap, inputs)
+		if err != nil {
+			return fmt.Errorf("failed to process connection: %w", err)
+		}
+
+		servers[serverName] = server
+		// GH Copilot config only supports one connection per server name
+		break
+	}
+
+	return nil
+}
+
+// normalizeServerName normalizes server names for GH Copilot config (e.g., "github-mcp-server" -> "github").
+func normalizeServerName(name string) string {
+	// Remove common suffixes
+	name = strings.TrimSuffix(name, "-mcp-server")
+	name = strings.TrimSuffix(name, "-server")
+	name = strings.TrimSuffix(name, "-mcp")
+
+	return name
+}
+
+// processMCPModule070080 processes MCP module data in 0.7.0/0.8.0 format (servers array).
+func processMCPModule070080(mcpModule *structpb.Struct, servers map[string]MCPServer, inputs *[]MCPInput) error {
+	serversVal, ok := mcpModule.GetFields()["servers"]
+	if !ok {
+		return errors.New("invalid or missing 'servers' in MCP module data")
+	}
+
+	serversList := serversVal.GetListValue()
+	if serversList == nil {
+		return errors.New("'servers' must be an array")
+	}
+
+	for _, serverVal := range serversList.GetValues() {
+		serverMap := serverVal.GetStructValue()
+		if serverMap == nil {
+			continue
+		}
+
+		// Extract server name
+		nameVal, ok := serverMap.GetFields()["name"]
+		if !ok {
+			continue
+		}
+
+		originalName := nameVal.GetStringValue()
+		// Normalize server name for GH Copilot config
+		serverName := normalizeServerName(originalName)
+
+		server, err := processMCPServer(serverMap, originalName, inputs)
+		if err != nil {
+			return err
+		}
+
+		servers[serverName] = server
+	}
+
+	return nil
+}
+
 // RecordToGHCopilot translates a record into a GHCopilotMCPConfig structure.
-func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
-	// Get MCP module - try 0.8.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName) // "integration/mcp"
+// Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
+func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) { //nolint:gocognit
+	// Get MCP module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
+	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName) // "integration/mcp" (0.8.0, 1.0.0)
 	if !found {
 		found, mcpModule = getModuleDataFromRecord(record, "runtime/mcp") // 0.7.0 compatibility
 	}
@@ -24,65 +283,24 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) {
 		return nil, errors.New("MCP module not found in record")
 	}
 
-	// Process MCP module
-	serversVal, ok := mcpModule.GetFields()["servers"]
-	if !ok {
-		return nil, errors.New("invalid or missing 'servers' in MCP module data")
-	}
-
-	serversStruct := serversVal.GetStructValue()
-	if serversStruct == nil {
-		return nil, errors.New("'servers' is not a struct")
-	}
-
 	servers := make(map[string]MCPServer)
 	inputs := []MCPInput{}
 
-	for serverName, serverVal := range serversStruct.GetFields() {
-		serverMap := serverVal.GetStructValue()
-		if serverMap == nil {
-			continue
+	// Check for 1.0.0 format: mcp_data with connections array
+	if _, ok := mcpModule.GetFields()["name"]; ok { //nolint:nestif
+		// 1.0.0 format: mcp_data object with name and connections
+		err := processMCPModule100(mcpModule, servers, &inputs)
+		if err != nil {
+			return nil, err
 		}
-
-		command, ok := serverMap.GetFields()["command"]
-		if !ok {
-			return nil, fmt.Errorf("missing 'command' for server '%s'", serverName)
+	} else if _, ok := mcpModule.GetFields()["servers"]; ok {
+		// 0.7.0/0.8.0 format: servers array
+		err := processMCPModule070080(mcpModule, servers, &inputs)
+		if err != nil {
+			return nil, err
 		}
-
-		args := []string{}
-
-		if argsVal, ok := serverMap.GetFields()["args"]; ok {
-			for _, arg := range argsVal.GetListValue().GetValues() {
-				args = append(args, arg.GetStringValue())
-			}
-		}
-
-		env := map[string]string{}
-
-		if envVal, ok := serverMap.GetFields()["env"]; ok {
-			envStruct := envVal.GetStructValue()
-			if envStruct != nil {
-				for key, val := range envStruct.GetFields() {
-					env[key] = val.GetStringValue()
-
-					if after, ok0 := strings.CutPrefix(val.GetStringValue(), "${input:"); ok0 {
-						id := strings.TrimSuffix(after, "}")
-						inputs = append(inputs, MCPInput{
-							ID:          id,
-							Type:        "promptString",
-							Password:    true,
-							Description: "Secret value for " + id,
-						})
-					}
-				}
-			}
-		}
-
-		servers[serverName] = MCPServer{
-			Command: command.GetStringValue(),
-			Args:    args,
-			Env:     env,
-		}
+	} else {
+		return nil, errors.New("invalid MCP module data: missing 'servers' (0.7.0/0.8.0) or 'connections' (1.0.0)")
 	}
 
 	return &GHCopilotMCPConfig{

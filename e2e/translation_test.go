@@ -25,6 +25,39 @@ var _ = Describe("Translation Service E2E", func() {
 	client := translationv1grpc.NewTranslationServiceClient(conn)
 
 	Context("GH Copilot config Generation", func() { //nolint:dupl
+		It("should generate github GH Copilot config from 0.7.0 record matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToGHCopilotRequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToGHCopilot(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail for 0.7.0 record")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
+		})
+
 		It("should generate github GH Copilot config from 0.8.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -56,24 +89,35 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
 
-		It("should generate github GH Copilot config from 0.7.0 record (backward compatibility)", func() {
+		It("should generate github GH Copilot config from 1.0.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			encodedRecord, err := decoder.JsonToProto(translationV100Record)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
-			req := &translationv1.RecordToGHCopilotRequest{
-				Record: encodedRecord,
-			}
+			req := &translationv1.RecordToGHCopilotRequest{Record: encodedRecord}
 
 			resp, err := client.RecordToGHCopilot(ctx, req)
-			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail for 0.7.0 record")
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
 			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
 
-			// Verify we got valid MCP config structure
-			mcpConfig := resp.GetData().AsMap()["mcpConfig"]
-			Expect(mcpConfig).NotTo(BeNil(), "Expected mcpConfig in response")
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
 	})
 
