@@ -1,43 +1,60 @@
 {
   "_comment_created_at": "This field is dynamically generated at runtime and excluded from test comparison",
-  "annotations": {
-    "mcp.package.mcpcap.registryType": "pypi",
-    "mcp.package.mcpcap.registryBaseUrl": "https://pypi.org",
-    "mcp.package.mcpcap.version": "0.4.4"
-  },
   "authors": [
     "mcpcap"
   ],
+  "created_at": "2025-01-01T00:00:00Z",
   "description": "An MCP server for analyzing PCAP files.",
   "domains": [],
   "locators": [
     {
       "type": "source_code",
-      "url": "https://github.com/mcpcap/mcpcap"
+      "urls": [
+        "https://github.com/mcpcap/mcpcap"
+      ]
     }
   ],
   "modules": [
     {
       "data": {
-        "servers": [
+        "name": "ai.mcpcap/mcpcap",
+        "description": "An MCP server for analyzing PCAP files.",
+        "connections": [
           {
+            "type": "stdio",
+            "command": "python",
             "args": [
               "-m",
               "mcpcap"
-            ],
-            "capabilities": [],
-            "command": "python",
-            "description": "An MCP server for analyzing PCAP files.",
-            "name": "ai.mcpcap/mcpcap",
-            "type": "local"
+            ]
           }
-        ]
+        ],
+        "mcp_data": {
+          "name": "ai.mcpcap/mcpcap",
+          "description": "An MCP server for analyzing PCAP files.",
+          "repository": {
+            "url": "https://github.com/mcpcap/mcpcap",
+            "source": "github"
+          },
+          "version": "0.6.0",
+          "packages": [
+            {
+              "registryType": "pypi",
+              "registryBaseUrl": "https://pypi.org",
+              "identifier": "mcpcap",
+              "version": "0.4.4",
+              "transport": {
+                "type": "stdio"
+              }
+            }
+          ]
+        }
       },
       "name": "integration/mcp"
     }
   ],
   "name": "ai.mcpcap/mcpcap",
-  "schema_version": "0.8.0",
+  "schema_version": "1.0.0-rc.1",
   "skills": [],
   "version": "0.6.0"
 }

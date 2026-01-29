@@ -3,32 +3,46 @@
   "authors": [
     "gomarble"
   ],
+  "created_at": "2025-01-01T00:00:00Z",
   "description": "GoMarble MCP API Server",
   "domains": [],
   "locators": [
     {
       "type": "source_code",
-      "url": "https://example.com/mcp-server.git"
+      "urls": [
+        "https://example.com/mcp-server.git"
+      ]
     }
   ],
   "modules": [
     {
       "data": {
-        "servers": [
+        "name": "ai.gomarble/mcp-api",
+        "description": "GoMarble MCP API Server",
+        "connections": [
           {
-            "capabilities": [],
-            "description": "GoMarble MCP API Server",
-            "name": "ai.gomarble/mcp-api",
             "type": "sse",
             "url": "https://apps.gomarble.ai/mcp-api/sse"
           }
-        ]
+        ],
+        "mcp_data": {
+          "name": "ai.gomarble/mcp-api",
+          "description": "GoMarble MCP API Server",
+          "repository": {},
+          "version": "1.0.0",
+          "remotes": [
+            {
+              "type": "sse",
+              "url": "https://apps.gomarble.ai/mcp-api/sse"
+            }
+          ]
+        }
       },
       "name": "integration/mcp"
     }
   ],
   "name": "ai.gomarble/mcp-api",
-  "schema_version": "0.8.0",
+  "schema_version": "1.0.0-rc.1",
   "skills": [],
   "version": "1.0.0"
 }

@@ -6,6 +6,7 @@ package translator
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -309,8 +310,350 @@ func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) { /
 	}, nil
 }
 
-// MCPToRecord translates an MCP Registry server.json into an OASF-compliant record format.
-func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:gocognit,gocyclo,cyclop,maintidx
+// processHeaders converts MCP headers array to structpb.Struct.
+func processHeaders(headers []any) *structpb.Struct {
+	headersMap := &structpb.Struct{Fields: map[string]*structpb.Value{}}
+
+	for _, header := range headers {
+		if headerMap, ok := header.(map[string]any); ok {
+			if name, ok := headerMap["name"].(string); ok {
+				headerValue := ""
+				if val, ok := headerMap["value"].(string); ok {
+					headerValue = val
+				} else if _, ok := headerMap["description"].(string); ok {
+					headerValue = "{" + strings.ToLower(strings.ReplaceAll(name, " ", "_")) + "}"
+				}
+
+				headersMap.Fields[name] = &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: headerValue},
+				}
+			}
+		}
+	}
+
+	if len(headersMap.GetFields()) > 0 {
+		return headersMap
+	}
+
+	return nil
+}
+
+// buildStdioConnection builds a stdio connection from package data.
+func buildStdioConnection(pkgMap map[string]any) map[string]*structpb.Value { //nolint:gocognit,nestif,gocyclo,cyclop,maintidx
+	connectionFields := map[string]*structpb.Value{}
+
+	registryType := ""
+	identifier := ""
+
+	if rt, ok := pkgMap["registryType"].(string); ok {
+		registryType = rt
+	}
+
+	if id, ok := pkgMap["identifier"].(string); ok {
+		identifier = id
+	}
+
+	// Build command
+	var command string
+	if runtimeHint, ok := pkgMap["runtimeHint"].(string); ok {
+		command = runtimeHint
+	} else {
+		switch registryType {
+		case packageTypeNPM:
+			command = "npx"
+		case packageTypePyPI:
+			command = "python"
+		case packageTypeOCI:
+			command = "docker"
+		case packageTypeNuGet:
+			command = "dotnet"
+		case packageTypeMCPB:
+			command = "mcpb"
+		default:
+			command = "echo"
+		}
+	}
+
+	connectionFields["command"] = &structpb.Value{
+		Kind: &structpb.Value_StringValue{StringValue: command},
+	}
+
+	// Build args array
+	var argsValues []*structpb.Value
+
+	_, hasRuntimeHint := pkgMap["runtimeHint"]
+
+	if !hasRuntimeHint && registryType != "" {
+		switch registryType {
+		case packageTypePyPI:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: "-m"},
+			})
+		case packageTypeOCI:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: "run"},
+			})
+		case packageTypeNuGet:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: "tool"},
+			})
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: "run"},
+			})
+		case packageTypeMCPB:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: "run"},
+			})
+		}
+	}
+
+	// Add runtime arguments
+	if runtimeArgs, ok := pkgMap["runtimeArguments"].([]any); ok { //nolint:nestif
+		for _, arg := range runtimeArgs {
+			if argMap, ok := arg.(map[string]any); ok {
+				if argType, ok := argMap["type"].(string); ok && argType == "named" {
+					if name, ok := argMap["name"].(string); ok {
+						argsValues = append(argsValues, &structpb.Value{
+							Kind: &structpb.Value_StringValue{StringValue: name},
+						})
+					}
+				} else if argType == "positional" {
+					if value, ok := argMap["value"].(string); ok {
+						argsValues = append(argsValues, &structpb.Value{
+							Kind: &structpb.Value_StringValue{StringValue: value},
+						})
+					}
+				}
+			}
+		}
+	}
+
+	// Add package identifier
+	if identifier != "" && registryType != "" { //nolint:nestif
+		pkgVersion := ""
+		if v, ok := pkgMap["version"].(string); ok {
+			pkgVersion = v
+		}
+
+		switch registryType {
+		case packageTypeNPM:
+			if pkgVersion != "" && !hasRuntimeHint {
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s@%s", identifier, pkgVersion)},
+				})
+			} else {
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: identifier},
+				})
+			}
+		case packageTypePyPI, packageTypeMCPB:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: identifier},
+			})
+		case packageTypeOCI:
+			if pkgVersion != "" && !hasRuntimeHint {
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s:%s", identifier, pkgVersion)},
+				})
+			} else {
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: identifier},
+				})
+			}
+		case packageTypeNuGet:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: identifier},
+			})
+			if pkgVersion != "" && !hasRuntimeHint {
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: "--version"},
+				})
+				argsValues = append(argsValues, &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: pkgVersion},
+				})
+			}
+		default:
+			argsValues = append(argsValues, &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: identifier},
+			})
+		}
+	}
+
+	// Add package arguments
+	if packageArgs, ok := pkgMap["packageArguments"].([]any); ok {
+		for _, arg := range packageArgs {
+			if argMap, ok := arg.(map[string]any); ok {
+				if value, ok := argMap["value"].(string); ok {
+					argsValues = append(argsValues, &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: value},
+					})
+				}
+			}
+		}
+	}
+
+	if len(argsValues) > 0 {
+		connectionFields["args"] = &structpb.Value{
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{Values: argsValues},
+			},
+		}
+	}
+
+	// Add environment variables
+	if envVars, ok := pkgMap["environmentVariables"].([]any); ok { //nolint:nestif
+		envVarsValues := make([]*structpb.Value, 0, len(envVars))
+		for _, envVar := range envVars {
+			if envMap, ok := envVar.(map[string]any); ok {
+				name, hasName := envMap["name"].(string)
+				if !hasName || name == "" {
+					continue
+				}
+
+				envFields := map[string]*structpb.Value{
+					"name": {
+						Kind: &structpb.Value_StringValue{StringValue: name},
+					},
+				}
+
+				description := "Environment variable: " + name
+				if desc, ok := envMap["description"].(string); ok && desc != "" {
+					description = desc
+				}
+
+				envFields["description"] = &structpb.Value{
+					Kind: &structpb.Value_StringValue{StringValue: description},
+				}
+
+				if value, ok := envMap["value"].(string); ok {
+					envFields["default_value"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: value},
+					}
+				} else if defaultVal, ok := envMap["default"].(string); ok {
+					envFields["default_value"] = &structpb.Value{
+						Kind: &structpb.Value_StringValue{StringValue: defaultVal},
+					}
+				}
+
+				envVarsValues = append(envVarsValues, &structpb.Value{
+					Kind: &structpb.Value_StructValue{
+						StructValue: &structpb.Struct{Fields: envFields},
+					},
+				})
+			}
+		}
+
+		if len(envVarsValues) > 0 {
+			connectionFields["env_vars"] = &structpb.Value{
+				Kind: &structpb.Value_ListValue{
+					ListValue: &structpb.ListValue{Values: envVarsValues},
+				},
+			}
+		}
+	}
+
+	return connectionFields
+}
+
+// convertPackageToConnection converts an MCP package to an mcp_server_connection.
+func convertPackageToConnection(pkgMap map[string]any) *structpb.Struct {
+	connectionFields := map[string]*structpb.Value{}
+
+	// Determine connection type from transport
+	connectionType := connectionTypeStdio
+	transportUrl := ""
+
+	if transport, ok := pkgMap["transport"].(map[string]any); ok {
+		if tType, ok := transport["type"].(string); ok {
+			switch tType {
+			case connectionTypeSSE:
+				connectionType = connectionTypeSSE
+			case connectionTypeHTTP:
+				connectionType = connectionTypeHTTP
+			}
+		}
+
+		if url, ok := transport["url"].(string); ok {
+			transportUrl = url
+		}
+	}
+
+	connectionFields["type"] = &structpb.Value{
+		Kind: &structpb.Value_StringValue{StringValue: connectionType},
+	}
+
+	// For stdio connections, build command and args
+	if connectionType == connectionTypeStdio { //nolint:nestif
+		stdioFields := buildStdioConnection(pkgMap)
+
+		// Copy fields from stdio connection
+		maps.Copy(connectionFields, stdioFields)
+	} else {
+		// For HTTP/SSE connections, add URL
+		if transportUrl != "" {
+			connectionFields["url"] = &structpb.Value{
+				Kind: &structpb.Value_StringValue{StringValue: transportUrl},
+			}
+		}
+
+		// Add headers if present
+		if transport, ok := pkgMap["transport"].(map[string]any); ok {
+			if headers, ok := transport["headers"].([]any); ok && len(headers) > 0 {
+				headersMap := processHeaders(headers)
+				if headersMap != nil {
+					connectionFields["headers"] = &structpb.Value{
+						Kind: &structpb.Value_StructValue{StructValue: headersMap},
+					}
+				}
+			}
+		}
+	}
+
+	return &structpb.Struct{Fields: connectionFields}
+}
+
+// convertRemoteToConnection converts an MCP remote to an mcp_server_connection.
+func convertRemoteToConnection(remoteMap map[string]any) *structpb.Struct {
+	connectionFields := map[string]*structpb.Value{}
+
+	// Determine connection type
+	connectionType := connectionTypeHTTP
+
+	if rType, ok := remoteMap["type"].(string); ok {
+		switch rType {
+		case connectionTypeSSE:
+			connectionType = connectionTypeSSE
+		case connectionTypeHTTP:
+			connectionType = connectionTypeHTTP
+		}
+	}
+
+	connectionFields["type"] = &structpb.Value{
+		Kind: &structpb.Value_StringValue{StringValue: connectionType},
+	}
+
+	// Add URL (required)
+	if url, ok := remoteMap["url"].(string); ok {
+		connectionFields["url"] = &structpb.Value{
+			Kind: &structpb.Value_StringValue{StringValue: url},
+		}
+	}
+
+	// Add headers if present
+	if headers, ok := remoteMap["headers"].([]any); ok && len(headers) > 0 {
+		headersMap := processHeaders(headers)
+		if headersMap != nil {
+			connectionFields["headers"] = &structpb.Value{
+				Kind: &structpb.Value_StructValue{StructValue: headersMap},
+			}
+		}
+	}
+
+	return &structpb.Struct{Fields: connectionFields}
+}
+
+// MCPToRecord translates an MCP Registry server.json into an OASF-compliant record format (1.0.0-rc.1).
+func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:gocognit,cyclop,maintidx
 	// Extract the server from the input data
 	mcpServerVal, ok := mcpData.GetFields()["server"]
 	if !ok {
@@ -361,444 +704,74 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 	}
 
 	// Use current timestamp for created_at (RFC3339 format)
-	// Note: For consistent test results, this could be overridden in test fixtures
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
-	// Build MCP servers array from packages and/or remotes
-	var mcpServers []*structpb.Value
+	// Build connections array from packages and/or remotes
+	var connections []*structpb.Value
 
-	// Collect important metadata that doesn't fit in OASF structure
-	annotations := make(map[string]string)
-
-	// Process packages (local stdio servers)
-	if packages, ok := serverMap["packages"].([]any); ok { //nolint:nestif
+	// Process packages (convert to connections)
+	if packages, ok := serverMap["packages"].([]any); ok {
 		for _, pkg := range packages {
 			if pkgMap, ok := pkg.(map[string]any); ok {
-				// Extract metadata early for use throughout
-				registryType := ""
-				identifier := ""
+				connection := convertPackageToConnection(pkgMap)
 
-				if rt, ok := pkgMap["registryType"].(string); ok {
-					registryType = rt
-				}
-
-				if id, ok := pkgMap["identifier"].(string); ok {
-					identifier = id
-				}
-
-				// Add important package metadata to annotations
-				if identifier != "" {
-					// fileSha256 - important for security/integrity verification
-					if fileSha256, ok := pkgMap["fileSha256"].(string); ok && fileSha256 != "" {
-						annotations[fmt.Sprintf("mcp.package.%s.fileSha256", identifier)] = fileSha256
-					}
-
-					// registryType - useful for reconstructing package source
-					if registryType != "" {
-						annotations[fmt.Sprintf("mcp.package.%s.registryType", identifier)] = registryType
-					}
-
-					// registryBaseUrl - needed to reconstruct full package URL
-					if registryBaseUrl, ok := pkgMap["registryBaseUrl"].(string); ok && registryBaseUrl != "" {
-						annotations[fmt.Sprintf("mcp.package.%s.registryBaseUrl", identifier)] = registryBaseUrl
-					}
-
-					// package version - useful for tracking
-					if pkgVersion, ok := pkgMap["version"].(string); ok && pkgVersion != "" {
-						annotations[fmt.Sprintf("mcp.package.%s.version", identifier)] = pkgVersion
-					}
-				}
-
-				// Determine server type from transport and extract URL if present
-				serverType := serverTypeLocal
-				transportUrl := ""
-
-				if transport, ok := pkgMap["transport"].(map[string]any); ok {
-					if tType, ok := transport["type"].(string); ok {
-						switch tType {
-						case serverTypeSSE:
-							serverType = serverTypeSSE
-						case "streamable-http":
-							serverType = serverTypeHTTP
-						}
-						// stdio is local (default)
-					}
-					// Extract URL from transport if it's an HTTP/SSE transport
-					if url, ok := transport["url"].(string); ok {
-						transportUrl = url
-					}
-				}
-
-				serverFields := map[string]*structpb.Value{
-					"name": {
-						Kind: &structpb.Value_StringValue{StringValue: serverName},
-					},
-					"type": {
-						Kind: &structpb.Value_StringValue{StringValue: serverType},
-					},
-					"capabilities": {
-						Kind: &structpb.Value_ListValue{
-							ListValue: &structpb.ListValue{Values: []*structpb.Value{}},
-						},
-					},
-				}
-
-				// Add description
-				if serverDescription != "" {
-					serverFields["description"] = &structpb.Value{
-						Kind: &structpb.Value_StringValue{StringValue: serverDescription},
-					}
-				}
-
-				// For local servers, build command from package metadata (required!)
-				// For http/sse servers, add url from websiteUrl or construct from registry
-				if serverType == "local" {
-					// Build command: use runtimeHint if available, otherwise generate from registryType
-					var command string
-					if runtimeHint, ok := pkgMap["runtimeHint"].(string); ok {
-						command = runtimeHint
-					} else {
-						// Generate command based on registryType
-						switch registryType {
-						case packageTypeNPM:
-							command = "npx"
-						case packageTypePyPI:
-							command = "python"
-						case packageTypeOCI:
-							command = "docker"
-						case packageTypeNuGet:
-							command = "dotnet"
-						case packageTypeMCPB:
-							command = "mcpb"
-						default:
-							command = "echo"
-						}
-					}
-
-					serverFields["command"] = &structpb.Value{
-						Kind: &structpb.Value_StringValue{StringValue: command},
-					}
-				} else if transportUrl != "" {
-					// For http/sse servers, URL from transport is required
-					// If missing, the record will be invalid (url is required for non-local servers)
-					serverFields["url"] = &structpb.Value{
-						Kind: &structpb.Value_StringValue{StringValue: transportUrl},
-					}
-				}
-
-				// Build args array from runtimeArguments and packageArguments (only for local servers)
-				if serverType == "local" {
-					var argsValues []*structpb.Value
-
-					// Add registry-specific args based on command type (only if no runtimeHint)
-					_, hasRuntimeHint := pkgMap["runtimeHint"]
-					if !hasRuntimeHint && registryType != "" {
-						switch registryType {
-						case packageTypePyPI:
-							// python -m <package>
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: "-m"},
-							})
-						case packageTypeOCI:
-							// docker run <image>
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: "run"},
-							})
-						case packageTypeNuGet:
-							// dotnet tool run <package>
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: "tool"},
-							})
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: "run"},
-							})
-						case packageTypeMCPB:
-							// mcpb run <package>
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: "run"},
-							})
-						case packageTypeNPM:
-							// npx <package> (no extra args needed)
-						default:
-							// echo "command generation for registryType <type> is not yet implemented"
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("command generation for registryType %s is not yet implemented", registryType)},
-							})
-						}
-					}
-
-					// Add runtime arguments
-					if runtimeArgs, ok := pkgMap["runtimeArguments"].([]any); ok {
-						for _, arg := range runtimeArgs {
-							if argMap, ok := arg.(map[string]any); ok {
-								if argType, ok := argMap["type"].(string); ok && argType == "named" {
-									if name, ok := argMap["name"].(string); ok {
-										argsValues = append(argsValues, &structpb.Value{
-											Kind: &structpb.Value_StringValue{StringValue: name},
-										})
-									}
-								}
-							}
-						}
-					}
-
-					// Add package identifier with version where appropriate
-					if identifier != "" && registryType != "" {
-						pkgVersion := ""
-						if v, ok := pkgMap["version"].(string); ok {
-							pkgVersion = v
-						}
-
-						// For some registry types, append version to the identifier
-						switch registryType {
-						case packageTypeNPM:
-							// npm: npx package@version
-							if pkgVersion != "" && !hasRuntimeHint {
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s@%s", identifier, pkgVersion)},
-								})
-							} else {
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: identifier},
-								})
-							}
-						case packageTypePyPI:
-							// pypi: python -m package (version pinned at install time, not at runtime)
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: identifier},
-							})
-						case packageTypeOCI:
-							// oci: docker run image:version
-							if pkgVersion != "" && !hasRuntimeHint {
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("%s:%s", identifier, pkgVersion)},
-								})
-							} else {
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: identifier},
-								})
-							}
-						case packageTypeNuGet:
-							// nuget: dotnet tool run package --version x.x.x
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: identifier},
-							})
-							if pkgVersion != "" && !hasRuntimeHint {
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: "--version"},
-								})
-								argsValues = append(argsValues, &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: pkgVersion},
-								})
-							}
-						case packageTypeMCPB:
-							// mcpb: mcpb run package (version typically in URL)
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: identifier},
-							})
-						default:
-							argsValues = append(argsValues, &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: identifier},
-							})
-						}
-					}
-
-					// Add package arguments
-					if packageArgs, ok := pkgMap["packageArguments"].([]any); ok {
-						for _, arg := range packageArgs {
-							if argMap, ok := arg.(map[string]any); ok {
-								if value, ok := argMap["value"].(string); ok {
-									argsValues = append(argsValues, &structpb.Value{
-										Kind: &structpb.Value_StringValue{StringValue: value},
-									})
-								}
-							}
-						}
-					}
-
-					if len(argsValues) > 0 {
-						serverFields["args"] = &structpb.Value{
-							Kind: &structpb.Value_ListValue{
-								ListValue: &structpb.ListValue{Values: argsValues},
-							},
-						}
-					}
-				}
-
-				// Add environment variables
-				if envVars, ok := pkgMap["environmentVariables"].([]any); ok {
-					envVarsValues := make([]*structpb.Value, 0, len(envVars))
-					for _, envVar := range envVars {
-						if envMap, ok := envVar.(map[string]any); ok {
-							envFields := map[string]*structpb.Value{}
-
-							// Skip env vars with empty or missing name (invalid)
-							name, hasName := envMap["name"].(string)
-							if !hasName || name == "" {
-								continue
-							}
-
-							envFields["name"] = &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: name},
-							}
-
-							// Try "value" first, then "default"
-							if value, ok := envMap["value"].(string); ok {
-								envFields["default_value"] = &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: value},
-								}
-							} else if defaultVal, ok := envMap["default"].(string); ok {
-								envFields["default_value"] = &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: defaultVal},
-								}
-							}
-
-							// Try direct description first
-							description := ""
-							if desc, ok := envMap["description"].(string); ok && desc != "" {
-								description = desc
-							} else if variables, ok := envMap["variables"].(map[string]any); ok {
-								// Check for description in variables.{variable_name}.description
-								// Extract variable name from value (e.g., "{weather_choices}" -> "weather_choices")
-								if value, ok := envMap["value"].(string); ok && len(value) > 2 && value[0] == '{' && value[len(value)-1] == '}' {
-									varKey := value[1 : len(value)-1]
-									if varDef, ok := variables[varKey].(map[string]any); ok {
-										if desc, ok := varDef["description"].(string); ok && desc != "" {
-											description = desc
-										}
-									}
-								}
-							}
-
-							// OASF requires description - provide default if missing
-							if description == "" {
-								description = "Environment variable: " + name
-							}
-
-							envFields["description"] = &structpb.Value{
-								Kind: &structpb.Value_StringValue{StringValue: description},
-							}
-
-							if len(envFields) > 0 {
-								envVarsValues = append(envVarsValues, &structpb.Value{
-									Kind: &structpb.Value_StructValue{
-										StructValue: &structpb.Struct{Fields: envFields},
-									},
-								})
-							}
-						}
-					}
-
-					if len(envVarsValues) > 0 {
-						serverFields["env_vars"] = &structpb.Value{
-							Kind: &structpb.Value_ListValue{
-								ListValue: &structpb.ListValue{Values: envVarsValues},
-							},
-						}
-					}
-				}
-
-				mcpServers = append(mcpServers, &structpb.Value{
-					Kind: &structpb.Value_StructValue{
-						StructValue: &structpb.Struct{Fields: serverFields},
-					},
+				connections = append(connections, &structpb.Value{
+					Kind: &structpb.Value_StructValue{StructValue: connection},
 				})
 			}
 		}
 	}
 
-	// Process remotes (HTTP/SSE servers)
-	if remotes, ok := serverMap["remotes"].([]any); ok { //nolint:nestif
+	// Process remotes (convert to connections)
+	if remotes, ok := serverMap["remotes"].([]any); ok {
 		for _, remote := range remotes {
 			if remoteMap, ok := remote.(map[string]any); ok {
-				// Determine server type from remote type
-				remoteType := "http"
+				connection := convertRemoteToConnection(remoteMap)
 
-				if rType, ok := remoteMap["type"].(string); ok {
-					switch rType {
-					case serverTypeSSE:
-						remoteType = serverTypeSSE
-					case "streamable-http":
-						remoteType = serverTypeHTTP
-					}
-				}
-
-				serverFields := map[string]*structpb.Value{
-					"name": {
-						Kind: &structpb.Value_StringValue{StringValue: serverName},
-					},
-					"type": {
-						Kind: &structpb.Value_StringValue{StringValue: remoteType},
-					},
-					"capabilities": {
-						Kind: &structpb.Value_ListValue{
-							ListValue: &structpb.ListValue{Values: []*structpb.Value{}},
-						},
-					},
-				}
-
-				// Add description
-				if serverDescription != "" {
-					serverFields["description"] = &structpb.Value{
-						Kind: &structpb.Value_StringValue{StringValue: serverDescription},
-					}
-				}
-
-				// Add URL (required for http/sse)
-				if url, ok := remoteMap["url"].(string); ok {
-					serverFields["url"] = &structpb.Value{
-						Kind: &structpb.Value_StringValue{StringValue: url},
-					}
-				}
-
-				// Add headers if present
-				if headers, ok := remoteMap["headers"].([]any); ok && len(headers) > 0 {
-					headersMap := &structpb.Struct{Fields: map[string]*structpb.Value{}}
-
-					for _, header := range headers {
-						if headerMap, ok := header.(map[string]any); ok {
-							if name, ok := headerMap["name"].(string); ok {
-								headerValue := ""
-								if val, ok := headerMap["value"].(string); ok {
-									headerValue = val
-								} else if _, ok := headerMap["description"].(string); ok {
-									// Use description as a placeholder if no value
-									headerValue = "{" + strings.ToLower(strings.ReplaceAll(name, " ", "_")) + "}"
-								}
-
-								headersMap.Fields[name] = &structpb.Value{
-									Kind: &structpb.Value_StringValue{StringValue: headerValue},
-								}
-							}
-						}
-					}
-
-					if len(headersMap.GetFields()) > 0 {
-						serverFields["headers"] = &structpb.Value{
-							Kind: &structpb.Value_StructValue{StructValue: headersMap},
-						}
-					}
-				}
-
-				mcpServers = append(mcpServers, &structpb.Value{
-					Kind: &structpb.Value_StructValue{
-						StructValue: &structpb.Struct{Fields: serverFields},
-					},
+				connections = append(connections, &structpb.Value{
+					Kind: &structpb.Value_StructValue{StructValue: connection},
 				})
 			}
 		}
 	}
 
-	// Create MCP data structure conforming to OASF v0.8.0 MCP data schema
-	mcpModuleData := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"servers": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{Values: mcpServers},
-				},
+	if len(connections) == 0 {
+		return nil, errors.New("no packages or remotes found in MCP server data")
+	}
+
+	// Create a copy of mcpServerStruct without $schema field
+	mcpDataWithoutSchema := &structpb.Struct{
+		Fields: make(map[string]*structpb.Value),
+	}
+
+	for k, v := range mcpServerStruct.GetFields() {
+		if k != "$schema" {
+			mcpDataWithoutSchema.Fields[k] = v
+		}
+	}
+
+	// Create mcp_data structure with the entire server.json stored in mcp_data field (without $schema)
+	mcpDataFields := map[string]*structpb.Value{
+		"name": {
+			Kind: &structpb.Value_StringValue{StringValue: serverName},
+		},
+		"connections": {
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{Values: connections},
 			},
 		},
+		"mcp_data": {
+			Kind: &structpb.Value_StructValue{StructValue: mcpDataWithoutSchema},
+		},
 	}
+
+	if serverDescription != "" {
+		mcpDataFields["description"] = &structpb.Value{
+			Kind: &structpb.Value_StringValue{StringValue: serverDescription},
+		}
+	}
+
+	mcpModuleData := &structpb.Struct{Fields: mcpDataFields}
 
 	// Create the MCP module with schema-compliant data
 	mcpModule := &structpb.Struct{
@@ -903,22 +876,6 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 				Kind: &structpb.Value_ListValue{ListValue: modulesList},
 			},
 		},
-	}
-
-	// Add annotations if any exist
-	if len(annotations) > 0 {
-		annotationFields := make(map[string]*structpb.Value)
-		for k, v := range annotations {
-			annotationFields[k] = &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: v},
-			}
-		}
-
-		record.Fields["annotations"] = &structpb.Value{
-			Kind: &structpb.Value_StructValue{
-				StructValue: &structpb.Struct{Fields: annotationFields},
-			},
-		}
 	}
 
 	return record, nil

@@ -3,35 +3,59 @@
   "authors": [
     "meminal"
   ],
+  "created_at": "2025-01-01T00:00:00Z",
   "description": "Memory for deep conversational context across any platform",
   "domains": [],
   "locators": [
     {
       "type": "source_code",
-      "url": "https://github.com/meminal/meminal-mcp"
+      "urls": [
+        "https://github.com/meminal/meminal-mcp"
+      ]
     }
   ],
   "modules": [
     {
       "data": {
-        "servers": [
+        "name": "ai.meminal/meminal",
+        "description": "Memory for deep conversational context across any platform",
+        "connections": [
           {
-            "capabilities": [],
-            "description": "Memory for deep conversational context across any platform",
+            "type": "streamable-http",
+            "url": "https://meminal.ai/mcp",
             "headers": {
               "Authorization": "{authorization}"
-            },
-            "name": "ai.meminal/meminal",
-            "type": "http",
-            "url": "https://meminal.ai/mcp"
+            }
           }
-        ]
+        ],
+        "mcp_data": {
+          "name": "ai.meminal/meminal",
+          "description": "Memory for deep conversational context across any platform",
+          "repository": {
+            "url": "https://github.com/meminal/meminal-mcp",
+            "source": "github"
+          },
+          "version": "1.0.0",
+          "remotes": [
+            {
+              "type": "streamable-http",
+              "url": "https://meminal.ai/mcp",
+              "headers": [
+                {
+                  "description": "Bearer token for authentication (OAuth or Personal Access Token)",
+                  "isSecret": true,
+                  "name": "Authorization"
+                }
+              ]
+            }
+          ]
+        }
       },
       "name": "integration/mcp"
     }
   ],
   "name": "ai.meminal/meminal",
-  "schema_version": "0.8.0",
+  "schema_version": "1.0.0-rc.1",
   "skills": [],
   "version": "1.0.0"
 }
