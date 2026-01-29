@@ -29,6 +29,9 @@ var translationV070Record []byte
 //go:embed fixtures/translation_0.8.0_record.json
 var translationV080Record []byte
 
+//go:embed fixtures/translation_1.0.0_record.json
+var translationV100Record []byte
+
 //go:embed fixtures/expected_0.8.0_decoded.json
 var expectedV080Decoded []byte
 
@@ -43,6 +46,12 @@ var expectedGHCopilotOutput []byte
 
 //go:embed fixtures/expected_a2a_output.json
 var expectedA2AOutput []byte
+
+//go:embed fixtures/expected_a2a_from_070_080_output.json
+var expectedA2AFrom070080Output []byte
+
+//go:embed fixtures/translation_a2a.json
+var a2aCard []byte
 
 //go:embed fixtures/expected_a2atorecord_output.json
 var expectedA2AToRecordOutput []byte

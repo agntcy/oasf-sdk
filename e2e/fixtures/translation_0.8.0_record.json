@@ -1,52 +1,55 @@
 {
-    "name": "poc/integrations-agent-example",
-    "schema_version": "0.8.0",
-    "version": "v1.0.0",
-    "description": "An example agent with IDE integrations support",
-    "authors": [
-      "Adam Tagscherer <atagsche@cisco.com>"
-    ],
-    "created_at": "2025-06-16T17:06:37Z",
-    "skills": [
-      {
-        "name": "schema.oasf.agntcy.org/skills/contextual_comprehension",
-        "id": 10101
-      }
-    ],
-    "locators": [
-      {
-        "type": "docker-image",
-        "url": "https://ghcr.io/agntcy/dir/integrations-agent-example"
-      }
-    ],
-    "modules": [
-      {
-        "name": "integration/mcp",
-        "version": "v1.0.0",
-        "data": {
-          "servers": {
-            "github": {
-              "command": "docker",
-              "args": [
-                "run",
-                "-i",
-                "--rm",
-                "-e",
-                "GITHUB_PERSONAL_ACCESS_TOKEN",
-                "ghcr.io/github/github-mcp-server"
-              ],
-              "env": {
-                "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:GITHUB_PERSONAL_ACCESS_TOKEN}"
-              }
-            }
+  "name": "poc/integrations-agent-example",
+  "schema_version": "0.8.0",
+  "version": "v1.0.0",
+  "description": "An example agent with IDE integrations support",
+  "authors": [
+    "Adam Tagscherer <atagsche@cisco.com>"
+  ],
+  "created_at": "2025-06-16T17:06:37Z",
+  "skills": [
+    {
+      "name": "natural_language_processing/natural_language_understanding/contextual_comprehension",
+      "id": 10101
+    }
+  ],
+  "locators": [
+    {
+      "type": "docker_image",
+      "url": "https://ghcr.io/agntcy/dir/integrations-agent-example"
+    }
+  ],
+  "modules": [
+    {
+      "name": "integration/mcp",
+      "data": {
+        "servers": [
+          {
+            "name": "github-mcp-server",
+            "type": "local",
+            "capabilities": [
+              "notify"
+            ],
+            "command": "docker",
+            "args": [
+              "run",
+              "-i",
+              "--rm",
+              "-e",
+              "GITHUB_PERSONAL_ACCESS_TOKEN",
+              "ghcr.io/github/github-mcp-server"
+            ]
           }
-        }
-      },
-      {
-        "name": "integration/a2a",
-        "version": "v1.0.0",
-        "data": {
+        ]
+      }
+    },
+    {
+      "name": "integration/a2a",
+      "data": {
+        "protocol_version": "0.2.6",
+        "card_data": {
           "name": "example-agent",
+          "protocol_version": "0.2.6",
           "description": "An agent that performs web searches and extracts information.",
           "url": "http://localhost:8000",
           "capabilities": {
@@ -68,6 +71,6 @@
           ]
         }
       }
-    ],
-    "signature": {}
+    }
+  ]
 }

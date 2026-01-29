@@ -1,0 +1,42 @@
+{
+  "protocolVersions": [
+    "0.2.6"
+  ],
+  "name": "burger_seller_agent",
+  "description": "Helps with creating burger orders",
+  "supportedInterfaces": [
+    {
+      "url": "https://burger-agent-109790610330.us-central1.run.app",
+      "protocolBinding": "HTTP+JSON"
+    }
+  ],
+  "provider": {
+    "url": "https://example.com",
+    "organization": "Example Organization"
+  },
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true
+  },
+  "defaultInputModes": [
+    "text",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "create_burger_order",
+      "name": "Burger Order Creation Tool",
+      "description": "Helps with creating burger orders",
+      "tags": [
+        "burger order creation"
+      ],
+      "examples": [
+        "I want to order 2 classic cheeseburgers"
+      ]
+    }
+  ]
+}

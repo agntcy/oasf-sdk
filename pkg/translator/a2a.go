@@ -5,19 +5,18 @@ package translator
 
 import (
 	"errors"
-	"fmt"
-	"strconv"
 	"time"
 
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // RecordToA2A translates a record into an A2A card structure.
+// Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
 // Returns the A2A card data as a structpb.Struct, preserving all fields
 // from the A2A protocol definition to prevent schema drift.
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
-	// Get A2A module - try 0.8.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName) // "integration/a2a"
+	// Get A2A module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
+	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
 	if !found {
 		found, a2aModule = getModuleDataFromRecord(record, "runtime/a2a") // 0.7.0 compatibility
 	}
@@ -28,26 +27,32 @@ func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 
 	if cardDataVal, ok := a2aModule.GetFields()["card_data"]; ok {
 		cardData := cardDataVal.GetStructValue()
-		if cardData != nil {
+		if cardData != nil && len(cardData.GetFields()) > 0 {
 			return cardData, nil
 		}
 	}
 
 	// Fallback: return the module data directly (for records where card data is at the top level)
+	// This handles older schema versions where card data might be at the top level
 	return a2aModule, nil
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
-func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:cyclop,maintidx
-	// Extract the a2aCard from the input data
-	a2aCardVal, ok := a2aData.GetFields()["a2aCard"]
-	if !ok {
-		return nil, errors.New("missing 'a2aCard' in input data")
-	}
+// Generates records using the targetSchema (1.0.0-rc.1) with simplified A2A module structure.
+// Accepts both wrapped format ({"a2aCard": {...}}) and unwrapped format (direct card object).
+func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:cyclop
+	// Extract the a2aCard from the input data - handle both wrapped and unwrapped formats
+	var A2ACardStruct *structpb.Struct
 
-	A2ACardStruct := a2aCardVal.GetStructValue()
-	if A2ACardStruct == nil {
-		return nil, errors.New("'a2aCard' is not a struct")
+	if a2aCardVal, ok := a2aData.GetFields()["a2aCard"]; ok {
+		// Wrapped format: {"a2aCard": {...}}
+		A2ACardStruct = a2aCardVal.GetStructValue()
+		if A2ACardStruct == nil {
+			return nil, errors.New("'a2aCard' is not a struct")
+		}
+	} else {
+		// Unwrapped format: direct card object
+		A2ACardStruct = a2aData
 	}
 
 	// Convert A2A card struct to map for easier access
@@ -89,73 +94,18 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 	// Note: For consistent test results, this could be overridden in test fixtures
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
-	// Collect A2A URLs and other metadata in annotations
-	annotations := extractA2AAnnotations(cardMap)
+	// card_schema_version refers to the A2A card schema version, not the OASF schema version
+	cardSchemaVersion := "v1.0.0"
 
-	// Extract protocol version from card (with fallback)
-	// A2A proto uses "protocol_version" but JSON serialization may use "protocolVersion" (camelCase)
-	protocolVersion := defaultVersion
-	if pv, ok := cardMap["protocolVersion"].(string); ok && pv != "" {
-		protocolVersion = pv
-	} else if pv, ok := cardMap["protocol_version"].(string); ok && pv != "" {
-		protocolVersion = pv
-	}
-
-	// Create A2A data structure conforming to OASF v0.8.0 A2A data schema
+	// Create A2A data structure conforming to OASF v1.0.0 A2A data schema
+	// In 1.0.0, the structure is simplified to only card_data and card_schema_version
 	A2AModuleData := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"card_data": {
 				Kind: &structpb.Value_StructValue{StructValue: A2ACardStruct},
 			},
-			"protocol_version": {
-				Kind: &structpb.Value_StringValue{StringValue: protocolVersion},
-			},
-			"capabilities": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: "streaming"}},
-						},
-					},
-				},
-			},
-			"input_modes": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: "text/plain"}},
-							{Kind: &structpb.Value_StringValue{StringValue: "application/json"}},
-						},
-					},
-				},
-			},
-			"output_modes": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: "text/html"}},
-							{Kind: &structpb.Value_StringValue{StringValue: "application/json"}},
-						},
-					},
-				},
-			},
-			"security_schemes": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: "none"}},
-						},
-					},
-				},
-			},
-			"transports": {
-				Kind: &structpb.Value_ListValue{
-					ListValue: &structpb.ListValue{
-						Values: []*structpb.Value{
-							{Kind: &structpb.Value_StringValue{StringValue: "http"}},
-						},
-					},
-				},
+			"card_schema_version": {
+				Kind: &structpb.Value_StringValue{StringValue: cardSchemaVersion},
 			},
 		},
 	}
@@ -235,141 +185,5 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 		},
 	}
 
-	// Add annotations if any exist
-	if len(annotations) > 0 {
-		annotationFields := make(map[string]*structpb.Value)
-		for k, v := range annotations {
-			annotationFields[k] = &structpb.Value{
-				Kind: &structpb.Value_StringValue{StringValue: v},
-			}
-		}
-
-		record.Fields["annotations"] = &structpb.Value{
-			Kind: &structpb.Value_StructValue{
-				StructValue: &structpb.Struct{Fields: annotationFields},
-			},
-		}
-	}
-
 	return record, nil
-}
-
-// extractA2AAnnotations extracts A2A card URLs and metadata into annotations.
-// These don't map cleanly to OASF locators, so we store them as annotations.
-func extractA2AAnnotations(cardMap map[string]any) map[string]string { //nolint:gocognit,nestif,cyclop,gocyclo
-	annotations := make(map[string]string)
-
-	// Store deprecated URL field if present
-	if url, ok := cardMap["url"]; ok {
-		if urlStr, ok := url.(string); ok && urlStr != "" {
-			annotations["a2a.url"] = urlStr
-		}
-	}
-
-	// Store supported_interfaces URLs
-	// Note: A2A proto uses "supported_interfaces" but JSON may use "supportedInterfaces"
-	var interfaces []any
-	if ifaces, ok := cardMap["supportedInterfaces"].([]any); ok {
-		interfaces = ifaces
-	} else if ifaces, ok := cardMap["supported_interfaces"].([]any); ok {
-		interfaces = ifaces
-	}
-
-	if len(interfaces) > 0 { //nolint:nestif
-		for i, iface := range interfaces {
-			if ifaceMap, ok := iface.(map[string]any); ok {
-				if url, ok := ifaceMap["url"].(string); ok && url != "" {
-					annotations[fmt.Sprintf("a2a.interface.%d.url", i)] = url
-				}
-
-				// Check both camelCase and snake_case for protocol_binding
-				var protocolBinding string
-				if pb, ok := ifaceMap["protocolBinding"].(string); ok && pb != "" {
-					protocolBinding = pb
-				} else if pb, ok := ifaceMap["protocol_binding"].(string); ok && pb != "" {
-					protocolBinding = pb
-				}
-
-				if protocolBinding != "" {
-					annotations[fmt.Sprintf("a2a.interface.%d.protocol_binding", i)] = protocolBinding
-				}
-			}
-		}
-	}
-
-	// Store provider information
-	if provider, ok := cardMap["provider"].(map[string]any); ok { //nolint:nestif
-		if providerURL, ok := provider["url"].(string); ok && providerURL != "" {
-			annotations["a2a.provider.url"] = providerURL
-		}
-
-		if org, ok := provider["organization"].(string); ok && org != "" {
-			annotations["a2a.provider.organization"] = org
-		}
-
-		// Store provider extensions - important for protocol capability discovery
-		if extensions, ok := provider["extensions"].([]any); ok {
-			for i, ext := range extensions {
-				if extMap, ok := ext.(map[string]any); ok {
-					if uri, ok := extMap["uri"].(string); ok && uri != "" {
-						annotations[fmt.Sprintf("a2a.provider.extension.%d.uri", i)] = uri
-					}
-
-					if desc, ok := extMap["description"].(string); ok && desc != "" {
-						annotations[fmt.Sprintf("a2a.provider.extension.%d.description", i)] = desc
-					}
-
-					if required, ok := extMap["required"].(bool); ok {
-						annotations[fmt.Sprintf("a2a.provider.extension.%d.required", i)] = strconv.FormatBool(required)
-					}
-				}
-			}
-		}
-	}
-
-	// Store documentation URL
-	// Note: A2A proto uses "documentation_url" but JSON may use "documentationUrl"
-	var docURL string
-	if url, ok := cardMap["documentationUrl"].(string); ok && url != "" {
-		docURL = url
-	} else if url, ok := cardMap["documentation_url"].(string); ok && url != "" {
-		docURL = url
-	}
-
-	if docURL != "" {
-		annotations["a2a.documentation_url"] = docURL
-	}
-
-	// Store icon URL if present
-	// Note: A2A proto uses "icon_url" but JSON may use "iconUrl"
-	var iconURL string
-	if url, ok := cardMap["iconUrl"].(string); ok && url != "" {
-		iconURL = url
-	} else if url, ok := cardMap["icon_url"].(string); ok && url != "" {
-		iconURL = url
-	}
-
-	if iconURL != "" {
-		annotations["a2a.icon_url"] = iconURL
-	}
-
-	// Store authenticated extended card support flag
-	// Note: A2A proto uses "supports_authenticated_extended_card" but JSON may use "supportsAuthenticatedExtendedCard"
-	var supportsAuth bool
-
-	var hasAuthFlag bool
-
-	if auth, ok := cardMap["supportsAuthenticatedExtendedCard"].(bool); ok {
-		supportsAuth = auth
-		hasAuthFlag = true
-	} else if auth, ok := cardMap["supports_authenticated_extended_card"].(bool); ok {
-		supportsAuth = auth
-		hasAuthFlag = true
-	}
-
-	if hasAuthFlag {
-		annotations["a2a.supports_authenticated_extended_card"] = strconv.FormatBool(supportsAuth)
-	}
-
-	return annotations
 }
