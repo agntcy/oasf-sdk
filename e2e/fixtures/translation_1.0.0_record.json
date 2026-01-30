@@ -1,13 +1,56 @@
 {
+  "name": "burger_seller_agent",
+  "schema_version": "1.0.0-rc.1",
+  "version": "1.0.0",
+  "description": "Helps with creating burger orders",
   "authors": [
     "Example Organization"
   ],
-  "_comment_created_at": "NOTE: This timestamp is dynamically generated. Test should be flexible about this field.",
   "created_at": "2025-01-01T00:00:00Z",
-  "description": "Helps with creating burger orders",
-  "domains": [],
+  "skills": [
+    {
+      "name": "natural_language_processing/natural_language_understanding/contextual_comprehension",
+      "id": 10101
+    }
+  ],
+  "locators": [
+    {
+      "type": "container_image",
+      "urls": [
+        "https://ghcr.io/agntcy/burger-seller-agent"
+      ]
+    }
+  ],
   "modules": [
     {
+      "name": "integration/mcp",
+      "data": {
+        "name": "github-mcp-server",
+        "connections": [
+          {
+            "type": "stdio",
+            "command": "docker",
+            "args": [
+              "run",
+              "-i",
+              "--rm",
+              "-e",
+              "GITHUB_PERSONAL_ACCESS_TOKEN",
+              "ghcr.io/github/github-mcp-server"
+            ],
+            "env_vars": [
+              {
+                "name": "GITHUB_PERSONAL_ACCESS_TOKEN",
+                "default_value": "",
+                "description": "Secret value for GITHUB_PERSONAL_ACCESS_TOKEN"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "integration/a2a",
       "data": {
         "card_data": {
           "protocolVersions": [
@@ -52,12 +95,7 @@
           ]
         },
         "card_schema_version": "v1.0.0"
-      },
-      "name": "integration/a2a"
+      }
     }
-  ],
-  "name": "burger_seller_agent",
-  "schema_version": "1.0.0-rc.1",
-  "skills": [],
-  "version": "1.0.0"
+  ]
 }

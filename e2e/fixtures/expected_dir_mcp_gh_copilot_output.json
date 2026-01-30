@@ -1,0 +1,35 @@
+{
+  "mcpConfig": {
+    "inputs": [
+      {
+        "description": "Secret value for DIRECTORY_CLIENT_SPIFFE_TOKEN",
+        "id": "DIRECTORY_CLIENT_SPIFFE_TOKEN",
+        "password": true,
+        "type": "promptString"
+      },
+      {
+        "description": "Secret value for DIRECTORY_CLIENT_GITHUB_TOKEN",
+        "id": "DIRECTORY_CLIENT_GITHUB_TOKEN",
+        "password": true,
+        "type": "promptString"
+      }
+    ],
+    "servers": {
+      "dir": {
+        "args": [
+          "mcp",
+          "serve"
+        ],
+        "command": "dirctl",
+        "env": {
+          "DIRECTORY_CLIENT_AUTH_MODE": "none",
+          "DIRECTORY_CLIENT_GITHUB_TOKEN": "${input:DIRECTORY_CLIENT_GITHUB_TOKEN}",
+          "DIRECTORY_CLIENT_SERVER_ADDRESS": "0.0.0.0:8888",
+          "DIRECTORY_CLIENT_SPIFFE_TOKEN": "${input:DIRECTORY_CLIENT_SPIFFE_TOKEN}",
+          "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": "false",
+          "OASF_API_VALIDATION_SCHEMA_URL": "https://schema.oasf.outshift.com/"
+        }
+      }
+    }
+  }
+}

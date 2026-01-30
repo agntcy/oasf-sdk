@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	decodingv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/decoding/v1"
-	typesv1alpha0 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha0"
+	typesv1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1"
 	typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha1"
 	typesv1alpha2 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha2"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -32,18 +32,6 @@ func DecodeRecord(record *structpb.Struct) (*decodingv1.DecodeRecordResponse, er
 
 	// Decode data based on schema version
 	switch schemaVersion {
-	case "0.3.1", "v0.3.1":
-		record, err := ProtoToStruct[typesv1alpha0.Record](record)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert %s record: %w", schemaVersion, err)
-		}
-
-		return &decodingv1.DecodeRecordResponse{
-			Record: &decodingv1.DecodeRecordResponse_V1Alpha0{
-				V1Alpha0: record,
-			},
-		}, nil
-
 	case "0.7.0":
 		record, err := ProtoToStruct[typesv1alpha1.Record](record)
 		if err != nil {
@@ -65,6 +53,18 @@ func DecodeRecord(record *structpb.Struct) (*decodingv1.DecodeRecordResponse, er
 		return &decodingv1.DecodeRecordResponse{
 			Record: &decodingv1.DecodeRecordResponse_V1Alpha2{
 				V1Alpha2: record,
+			},
+		}, nil
+
+	case "1.0.0-rc.1":
+		record, err := ProtoToStruct[typesv1.Record](record)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %s record: %w", schemaVersion, err)
+		}
+
+		return &decodingv1.DecodeRecordResponse{
+			Record: &decodingv1.DecodeRecordResponse_V1{
+				V1: record,
 			},
 		}, nil
 

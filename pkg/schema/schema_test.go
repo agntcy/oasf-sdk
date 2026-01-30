@@ -82,9 +82,9 @@ func createMockServer(t *testing.T, version string, expectError bool) *httptest.
 					Version string `json:"version"`
 					URL     string `json:"url"`
 				}{
-					{Version: "0.3.1", URL: r.Host + "/0.3.1/api"},
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
 				},
 			}
 
@@ -96,12 +96,7 @@ func createMockServer(t *testing.T, version string, expectError bool) *httptest.
 		}
 
 		// Verify the URL path matches expected pattern
-		var expectedPath string
-		if version == schemaVersion031 {
-			expectedPath = "/schema/0.3.1/objects/agent"
-		} else {
-			expectedPath = "/schema/" + version + "/objects/record"
-		}
+		expectedPath := "/schema/" + version + "/objects/record"
 
 		if !contains(r.URL.Path, expectedPath) {
 			t.Errorf("Expected URL path to contain %s, got %s", expectedPath, r.URL.Path)
@@ -154,8 +149,8 @@ func TestGetRecordSchemaContent(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid version 0.3.1",
-			version:     "0.3.1",
+			name:        "valid version 1.0.0-rc.1",
+			version:     "1.0.0-rc.1",
 			expectError: false,
 		},
 		{
@@ -206,13 +201,6 @@ func TestGetSchema(t *testing.T) {
 			version:     "0.8.0",
 			typ:         SchemaTypeObjects,
 			schemaName:  "record",
-			expectError: false,
-		},
-		{
-			name:        "valid objects/agent for 0.3.1",
-			version:     "0.3.1",
-			typ:         SchemaTypeObjects,
-			schemaName:  "agent",
 			expectError: false,
 		},
 		{
@@ -301,9 +289,9 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 					Version string `json:"version"`
 					URL     string `json:"url"`
 				}{
-					{Version: "0.3.1", URL: r.Host + "/0.3.1/api"},
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
 				},
 			}
 
@@ -445,7 +433,7 @@ func TestGetSchemaKey(t *testing.T) {
 }
 
 // validateSkillsResult validates the result from GetSchemaSkills.
-func validateSkillsResult(t *testing.T, skills []byte, version string) {
+func validateSkillsResult(t *testing.T, skills []byte) {
 	t.Helper()
 
 	if len(skills) == 0 {
@@ -460,12 +448,9 @@ func validateSkillsResult(t *testing.T, skills []byte, version string) {
 	if len(skillsMap) == 0 {
 		t.Errorf("GetSchemaSkills() returned empty skills map")
 	}
-
-	if _, ok := skillsMap["text_classification"]; !ok && (version == schemaVersion031) {
-		t.Logf("Warning: Expected skill 'text_classification' not found in version %s", version)
-	}
 }
 
+//nolint:dupl // Test functions intentionally follow similar patterns
 func TestGetSchemaSkills(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -483,8 +468,8 @@ func TestGetSchemaSkills(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid version 0.3.1",
-			version:     "0.3.1",
+			name:        "valid version 1.0.0-rc.1",
+			version:     "1.0.0-rc.1",
 			expectError: false,
 		},
 		{
@@ -517,7 +502,7 @@ func TestGetSchemaSkills(t *testing.T) {
 				t.Errorf("GetSchemaSkills() unexpected error: %v", err)
 			}
 
-			validateSkillsResult(t, skills, tt.version)
+			validateSkillsResult(t, skills)
 		})
 	}
 }
@@ -542,6 +527,7 @@ func validateDomainsResult(t *testing.T, domains []byte, version string) {
 	}
 }
 
+//nolint:dupl // Test functions intentionally follow similar patterns
 func TestGetSchemaDomains(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -556,6 +542,11 @@ func TestGetSchemaDomains(t *testing.T) {
 		{
 			name:        "valid version 0.8.0",
 			version:     "0.8.0",
+			expectError: false,
+		},
+		{
+			name:        "valid version 1.0.0-rc.1",
+			version:     "1.0.0-rc.1",
 			expectError: false,
 		},
 		{
@@ -617,6 +608,7 @@ func createMockServerWithVersionsEndpoint(t *testing.T) *httptest.Server {
 				}{
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
 				},
 			}
 
@@ -664,9 +656,9 @@ func validateVersionsResult(t *testing.T, versions []string) {
 	}
 
 	expectedVersions := map[string]bool{
-		"0.3.1": true,
-		"0.7.0": true,
-		"0.8.0": true,
+		"0.7.0":      true,
+		"0.8.0":      true,
+		"1.0.0-rc.1": true,
 	}
 
 	foundVersions := make(map[string]bool)
@@ -694,9 +686,9 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 			Version string `json:"version"`
 			URL     string `json:"url"`
 		}{
-			{Version: "0.3.1", URL: "http://schema.oasf.outshift.com:8000/0.3.1/api"},
 			{Version: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
 			{Version: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
+			{Version: "1.0.0-rc.1", URL: "http://schema.oasf.outshift.com:8000/1.0.0-rc.1/api"},
 		},
 	}
 

@@ -1,24 +1,44 @@
 {
   "a2aCard": {
-    "name": "example-agent",
-    "skills": [
+    "protocolVersions": [
+      "0.2.6"
+    ],
+    "name": "burger_seller_agent",
+    "description": "Helps with creating burger orders",
+    "supportedInterfaces": [
       {
-        "description": "Performs web searches to retrieve information.",
-        "id": "browser",
-        "name": "browser automation"
+        "url": "https://burger-agent-109790610330.us-central1.run.app",
+        "protocolBinding": "HTTP+JSON"
       }
     ],
-    "url": "http://localhost:8000",
+    "provider": {
+      "url": "https://example.com",
+      "organization": "Example Organization"
+    },
+    "version": "1.0.0",
     "capabilities": {
-      "pushNotifications": false,
       "streaming": true
     },
     "defaultInputModes": [
-      "text"
+      "text",
+      "text/plain"
     ],
     "defaultOutputModes": [
-      "text"
+      "text",
+      "text/plain"
     ],
-    "description": "An agent that performs web searches and extracts information."
+    "skills": [
+      {
+        "id": "create_burger_order",
+        "name": "Burger Order Creation Tool",
+        "description": "Helps with creating burger orders",
+        "tags": [
+          "burger order creation"
+        ],
+        "examples": [
+          "I want to order 2 classic cheeseburgers"
+        ]
+      }
+    ]
   }
 }

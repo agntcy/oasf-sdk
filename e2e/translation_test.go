@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
@@ -18,6 +19,36 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// normalizeMapOrder recursively normalizes map order by sorting keys for deterministic comparison.
+func normalizeMapOrder(data any) any {
+	switch v := data.(type) {
+	case map[string]any:
+		normalized := make(map[string]any)
+
+		keys := make([]string, 0, len(v))
+		for k := range v {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			normalized[k] = normalizeMapOrder(v[k])
+		}
+
+		return normalized
+	case []any:
+		normalized := make([]any, len(v))
+		for i, item := range v {
+			normalized[i] = normalizeMapOrder(item)
+		}
+
+		return normalized
+	default:
+		return v
+	}
+}
+
 var _ = Describe("Translation Service E2E", func() {
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", "0.0.0.0", "31234"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	Expect(err).NotTo(HaveOccurred())
@@ -25,6 +56,39 @@ var _ = Describe("Translation Service E2E", func() {
 	client := translationv1grpc.NewTranslationServiceClient(conn)
 
 	Context("GH Copilot config Generation", func() { //nolint:dupl
+		It("should generate github GH Copilot config from 0.7.0 record matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToGHCopilotRequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToGHCopilot(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail for 0.7.0 record")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
+		})
+
 		It("should generate github GH Copilot config from 0.8.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
@@ -56,24 +120,72 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
 
-		It("should generate github GH Copilot config from 0.7.0 record (backward compatibility)", func() {
+		It("should generate github GH Copilot config from 1.0.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedRecord, err := decoder.JsonToProto(translationV070Record)
+			encodedRecord, err := decoder.JsonToProto(translationV100Record)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
 
-			req := &translationv1.RecordToGHCopilotRequest{
-				Record: encodedRecord,
-			}
+			req := &translationv1.RecordToGHCopilotRequest{Record: encodedRecord}
 
 			resp, err := client.RecordToGHCopilot(ctx, req)
-			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail for 0.7.0 record")
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
 			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
 
-			// Verify we got valid MCP config structure
-			mcpConfig := resp.GetData().AsMap()["mcpConfig"]
-			Expect(mcpConfig).NotTo(BeNil(), "Expected mcpConfig in response")
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
+		})
+
+		It("should generate dir MCP server GH Copilot config from 1.0.0-rc.1 record matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationDirMCPRecord)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToGHCopilotRequest{Record: encodedRecord}
+
+			resp, err := client.RecordToGHCopilot(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedDirMCPGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Normalize map order for deterministic comparison (handles random map iteration order)
+			normalizedActual, ok := normalizeMapOrder(actualOutput).(map[string]any)
+			Expect(ok).To(BeTrue(), "Normalized actual output should be a map")
+			normalizedExpected, ok := normalizeMapOrder(expectedOutput).(map[string]any)
+			Expect(ok).To(BeTrue(), "Normalized expected output should be a map")
+
+			// Compare structure against expected output
+			Expect(normalizedActual).To(Equal(normalizedExpected), "GH Copilot config should match expected output")
 		})
 	})
 
@@ -95,9 +207,9 @@ var _ = Describe("Translation Service E2E", func() {
 			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
 			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
 
-			// Parse expected output
+			// Parse expected output (0.7.0 and 0.8.0 records have the same card data structure)
 			var expectedOutput map[string]any
-			err = json.Unmarshal(expectedA2AOutput, &expectedOutput)
+			err = json.Unmarshal(expectedA2AFrom070080Output, &expectedOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
 
 			// Parse actual output for comparison
@@ -109,7 +221,7 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
 		})
 
-		It("should extract A2A card from 0.7.0 record (backward compatibility)", func() {
+		It("should extract A2A card from 0.7.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
@@ -122,9 +234,22 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail for 0.7.0 record")
 			Expect(resp.GetData()).NotTo(BeNil(), "Expected A2A card data in response")
 
-			// Verify we got valid A2A structure
-			a2aCard := resp.GetData().AsMap()["a2aCard"]
-			Expect(a2aCard).NotTo(BeNil(), "Expected a2aCard in response")
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output (0.7.0 and 0.8.0 records have the same card data structure)
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedA2AFrom070080Output, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
 		})
 	})
 
@@ -133,11 +258,12 @@ var _ = Describe("Translation Service E2E", func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
-			encodedA2AData, err := decoder.JsonToProto(expectedA2AOutput)
-			Expect(err).NotTo(HaveOccurred(), "Failed to encode A2A data")
+			// Convert A2A card to OASF record
+			encodedA2ACard, err := decoder.JsonToProto(a2aCard)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode A2A card")
 
 			req := &translationv1.A2AToRecordRequest{
-				Data: encodedA2AData,
+				Data: encodedA2ACard,
 			}
 
 			resp, err := client.A2AToRecord(ctx, req)
@@ -172,6 +298,74 @@ var _ = Describe("Translation Service E2E", func() {
 
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
+		})
+
+		It("should convert 1.0.0 OASF record back to A2A card matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Convert 1.0.0 OASF record to proto
+			encodedRecord, err := decoder.JsonToProto(translationV100Record)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode OASF record")
+
+			req := &translationv1.RecordToA2ARequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToA2A(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected A2A card data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedA2AOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
+		})
+
+		It("should convert A2A-to-record output back to A2A card matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Convert expected A2A-to-record output to proto
+			encodedRecord, err := decoder.JsonToProto(expectedA2AToRecordOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode OASF record")
+
+			req := &translationv1.RecordToA2ARequest{
+				Record: encodedRecord,
+			}
+
+			resp, err := client.RecordToA2A(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToA2A should not fail")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected A2A card data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedA2AOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Compare structure against expected output
+			Expect(actualOutput).To(Equal(expectedOutput), "A2A card should match expected output")
 		})
 	})
 

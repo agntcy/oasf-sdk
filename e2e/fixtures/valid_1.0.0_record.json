@@ -1,0 +1,26 @@
+{
+    "authors": ["Test Corp"],
+    "created_at": "2025-01-01T00:00:00Z",
+    "description": "Valid agent record conforming to OASF schema 1.0.0-rc.1",
+    "domains": [
+        {
+            "id": 101,
+            "name": "technology/internet_of_things"
+        }
+    ],
+    "locators": [
+        {
+            "type": "container_image",
+            "urls": ["ghcr.io/example/valid-agent:latest"]
+        }
+    ],
+    "name": "example.org/valid-agent",
+    "schema_version": "1.0.0-rc.1",
+    "skills": [
+        {
+            "name": "natural_language_processing/natural_language_understanding",
+            "id": 101
+        }
+    ],
+    "version": "v1.0.0"
+}

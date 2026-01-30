@@ -6,7 +6,6 @@ syntax = "proto3";
 package agntcy.oasfsdk.decoding.v1;
 
 import "agntcy/oasf/types/v1/record.proto";
-import "agntcy/oasf/types/v1alpha0/record.proto";
 import "agntcy/oasf/types/v1alpha1/record.proto";
 import "agntcy/oasf/types/v1alpha2/record.proto";
 import "google/protobuf/struct.proto";
@@ -29,8 +28,10 @@ message DecodeRecordRequest {
 // The record is represented using a oneof field to support
 // multiple versions or types of record schemas.
 message DecodeRecordResponse {
+  reserved 1;
+  reserved "v1alpha0";
+
   oneof record {
-    agntcy.oasf.types.v1alpha0.Record v1alpha0 = 1;
     agntcy.oasf.types.v1alpha1.Record v1alpha1 = 2;
     agntcy.oasf.types.v1alpha2.Record v1alpha2 = 3;
     agntcy.oasf.types.v1.Record v1 = 4;
