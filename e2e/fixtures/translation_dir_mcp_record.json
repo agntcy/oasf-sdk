@@ -1,0 +1,185 @@
+{
+  "schema_version": "1.0.0-rc.1",
+  "name": "dir-mcp-server",
+  "version": "v0.1.0",
+  "description": "Model Context Protocol (MCP) server for working with OASF agent records. Provides tools and prompts for validating, searching, pushing, pulling, importing, and exporting OASF agent records to/from Directory servers.",
+  "authors": [
+    "AGNTCY Contributors"
+  ],
+  "created_at": "2026-01-29T00:00:00Z",
+  "domains": [
+    {
+      "id": 10201,
+      "name": "technology/software_engineering/software_development"
+    }
+  ],
+  "skills": [
+    {
+      "id": 103,
+      "name": "natural_language_processing/information_retrieval_synthesis"
+    }
+  ],
+  "modules": [
+    {
+      "id": 202,
+      "name": "integration/mcp",
+      "data": {
+        "name": "dir-mcp-server",
+        "description": "MCP server for Directory operations with OASF agent records. Provides comprehensive tooling for schema validation, record management, and format conversion.",
+        "connections": [
+          {
+            "type": "stdio",
+            "command": "dirctl",
+            "args": [
+              "mcp",
+              "serve"
+            ],
+            "env_vars": [
+              {
+                "name": "OASF_API_VALIDATION_SCHEMA_URL",
+                "description": "OASF schema URL for validation and schema operations (required)",
+                "required": true,
+                "default_value": "https://schema.oasf.outshift.com/"
+              },
+              {
+                "name": "DIRECTORY_CLIENT_SERVER_ADDRESS",
+                "description": "Directory server address (default: 0.0.0.0:8888)",
+                "required": false,
+                "default_value": "0.0.0.0:8888"
+              },
+              {
+                "name": "DIRECTORY_CLIENT_AUTH_MODE",
+                "description": "Authentication mode: none, x509, jwt, token, github",
+                "required": false,
+                "default_value": "none"
+              },
+              {
+                "name": "DIRECTORY_CLIENT_SPIFFE_TOKEN",
+                "description": "Path to SPIFFE token file (for token authentication)",
+                "required": false
+              },
+              {
+                "name": "DIRECTORY_CLIENT_GITHUB_TOKEN",
+                "description": "GitHub Personal Access Token (for GitHub authentication)",
+                "required": false
+              },
+              {
+                "name": "DIRECTORY_CLIENT_TLS_SKIP_VERIFY",
+                "description": "Skip TLS verification (set to true if needed)",
+                "required": false,
+                "default_value": "false"
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "name": "agntcy_oasf_list_versions",
+            "description": "Lists all available OASF schema versions supported by the server."
+          },
+          {
+            "name": "agntcy_oasf_get_schema",
+            "description": "Retrieves the complete OASF schema JSON content for the specified version."
+          },
+          {
+            "name": "agntcy_oasf_get_schema_skills",
+            "description": "Retrieves skills from the OASF schema with hierarchical navigation support."
+          },
+          {
+            "name": "agntcy_oasf_get_schema_domains",
+            "description": "Retrieves domains from the OASF schema with hierarchical navigation support."
+          },
+          {
+            "name": "agntcy_oasf_validate_record",
+            "description": "Validates an OASF agent record against the OASF schema."
+          },
+          {
+            "name": "agntcy_dir_push_record",
+            "description": "Pushes an OASF agent record to a Directory server."
+          },
+          {
+            "name": "agntcy_dir_search_local",
+            "description": "Searches for agent records on the local directory node using structured query filters."
+          },
+          {
+            "name": "agntcy_dir_pull_record",
+            "description": "Pulls an OASF agent record from the local Directory node by its CID (Content Identifier)."
+          },
+          {
+            "name": "agntcy_oasf_import_record",
+            "description": "Imports data from other formats (MCP, A2A) to OASF agent record format."
+          },
+          {
+            "name": "agntcy_oasf_export_record",
+            "description": "Exports an OASF agent record to other formats (A2A, GitHub Copilot)."
+          }
+        ],
+        "prompts": [
+          {
+            "name": "create_record",
+            "command": "create_record",
+            "description": "Analyzes the current directory codebase and automatically creates a complete OASF agent record.",
+            "args": [
+              "output_path",
+              "schema_version"
+            ]
+          },
+          {
+            "name": "validate_record",
+            "command": "validate_record",
+            "description": "Validates an existing OASF agent record against the schema.",
+            "args": [
+              "record_path"
+            ]
+          },
+          {
+            "name": "push_record",
+            "command": "push_record",
+            "description": "Complete workflow for validating and pushing an OASF record to the Directory server.",
+            "args": [
+              "record_path"
+            ]
+          },
+          {
+            "name": "search_records",
+            "command": "search_records",
+            "description": "Guided workflow for searching agent records using free-text queries. Automatically translates natural language queries into structured search parameters using OASF schema knowledge. Examples: \"find Python agents\", \"agents that can process images\".",
+            "args": [
+              "query"
+            ]
+          },
+          {
+            "name": "pull_record",
+            "command": "pull_record",
+            "description": "Guided workflow for pulling an OASF agent record from Directory by its CID. Optionally saves the result to a file.",
+            "args": [
+              "cid",
+              "output_path"
+            ]
+          },
+          {
+            "name": "import_record",
+            "command": "import_record",
+            "description": "Complete workflow for importing data from other formats to OASF with enrichment and validation. This guided workflow includes: format conversion using the OASF SDK translator, domain and skill enrichment using OASF schema, comprehensive validation, and optional output to file.",
+            "args": [
+              "source_data_path",
+              "source_format",
+              "output_path",
+              "schema_version"
+            ]
+          },
+          {
+            "name": "export_record",
+            "command": "export_record",
+            "description": "Complete workflow for validating and exporting an OASF record to other formats. This guided workflow includes: OASF record validation, schema compatibility check, format conversion using the OASF SDK translator, export verification, and optional output to file.",
+            "args": [
+              "record_path",
+              "target_format",
+              "output_path"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

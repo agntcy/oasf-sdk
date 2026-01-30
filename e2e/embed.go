@@ -79,3 +79,9 @@ var translationMCPSSEMinimal []byte
 
 //go:embed fixtures/expected_mcp_sse_minimal_output.json
 var expectedMCPSSEMinimalOutput []byte
+
+//go:embed fixtures/translation_dir_mcp_record.json
+var translationDirMCPRecord []byte
+
+//go:embed fixtures/expected_dir_mcp_gh_copilot_output.json
+var expectedDirMCPGHCopilotOutput []byte

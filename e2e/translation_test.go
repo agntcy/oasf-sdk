@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
@@ -17,6 +18,36 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+// normalizeMapOrder recursively normalizes map order by sorting keys for deterministic comparison.
+func normalizeMapOrder(data any) any {
+	switch v := data.(type) {
+	case map[string]any:
+		normalized := make(map[string]any)
+
+		keys := make([]string, 0, len(v))
+		for k := range v {
+			keys = append(keys, k)
+		}
+
+		sort.Strings(keys)
+
+		for _, k := range keys {
+			normalized[k] = normalizeMapOrder(v[k])
+		}
+
+		return normalized
+	case []any:
+		normalized := make([]any, len(v))
+		for i, item := range v {
+			normalized[i] = normalizeMapOrder(item)
+		}
+
+		return normalized
+	default:
+		return v
+	}
+}
 
 var _ = Describe("Translation Service E2E", func() {
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", "0.0.0.0", "31234"), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -118,6 +149,43 @@ var _ = Describe("Translation Service E2E", func() {
 
 			// Compare structure against expected output
 			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
+		})
+
+		It("should generate dir MCP server GH Copilot config from 1.0.0-rc.1 record matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationDirMCPRecord)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal translation record")
+
+			req := &translationv1.RecordToGHCopilotRequest{Record: encodedRecord}
+
+			resp, err := client.RecordToGHCopilot(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToGHCopilot should not fail")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected GH Copilot config data in response")
+
+			// Convert response to JSON for comparison
+			actualJSON, err := json.MarshalIndent(resp.GetData().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			// Parse expected output
+			var expectedOutput map[string]any
+			err = json.Unmarshal(expectedDirMCPGHCopilotOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			// Parse actual output for comparison
+			var actualOutput map[string]any
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// Normalize map order for deterministic comparison (handles random map iteration order)
+			normalizedActual, ok := normalizeMapOrder(actualOutput).(map[string]any)
+			Expect(ok).To(BeTrue(), "Normalized actual output should be a map")
+			normalizedExpected, ok := normalizeMapOrder(expectedOutput).(map[string]any)
+			Expect(ok).To(BeTrue(), "Normalized expected output should be a map")
+
+			// Compare structure against expected output
+			Expect(normalizedActual).To(Equal(normalizedExpected), "GH Copilot config should match expected output")
 		})
 	})
 
