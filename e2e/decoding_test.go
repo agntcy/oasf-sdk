@@ -44,7 +44,6 @@ var _ = Describe("Decoding Service E2E", func() {
 			// Verify the response contains v1alpha2 record
 			Expect(resp.GetV1Alpha2()).NotTo(BeNil(), "Should return v1alpha2 record for 0.8.0 schema")
 			Expect(resp.GetV1Alpha1()).To(BeNil(), "Should not return v1alpha1 record for 0.8.0 schema")
-			Expect(resp.GetV1Alpha0()).To(BeNil(), "Should not return v1alpha0 record for 0.8.0 schema")
 
 			// Convert the decoded response to JSON for comparison
 			actualJSON, err := json.MarshalIndent(resp.GetV1Alpha2(), "", "  ")
@@ -86,7 +85,6 @@ var _ = Describe("Decoding Service E2E", func() {
 			Expect(resp.GetV1()).NotTo(BeNil(), "Should return v1 record for 1.0.0-rc.1 schema")
 			Expect(resp.GetV1Alpha2()).To(BeNil(), "Should not return v1alpha2 record for 1.0.0-rc.1 schema")
 			Expect(resp.GetV1Alpha1()).To(BeNil(), "Should not return v1alpha1 record for 1.0.0-rc.1 schema")
-			Expect(resp.GetV1Alpha0()).To(BeNil(), "Should not return v1alpha0 record for 1.0.0-rc.1 schema")
 
 			// Convert the decoded response to JSON for comparison
 			actualJSON, err := json.MarshalIndent(resp.GetV1(), "", "  ")
@@ -126,7 +124,6 @@ var _ = Describe("Decoding Service E2E", func() {
 
 			// Verify the response contains v1alpha1 record
 			Expect(resp.GetV1Alpha1()).NotTo(BeNil(), "Should return v1alpha1 record for 0.7.0 schema")
-			Expect(resp.GetV1Alpha0()).To(BeNil(), "Should not return v1alpha0 record for 0.7.0 schema")
 
 			// Convert the decoded response to JSON for comparison
 			v1alpha1Record := resp.GetV1Alpha1()
