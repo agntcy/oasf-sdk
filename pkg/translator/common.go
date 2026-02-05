@@ -26,7 +26,7 @@ const (
 const (
 	MCPModuleName = "integration/mcp"
 	A2AModuleName = "integration/a2a"
-	targetSchema  = "1.0.0-rc.1"
+	targetSchema  = "1.0.0"
 )
 
 func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {

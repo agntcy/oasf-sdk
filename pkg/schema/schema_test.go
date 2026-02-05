@@ -84,7 +84,7 @@ func createMockServer(t *testing.T, version string, expectError bool) *httptest.
 				}{
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
+					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -149,8 +149,8 @@ func TestGetRecordSchemaContent(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid version 1.0.0-rc.1",
-			version:     "1.0.0-rc.1",
+			name:        "valid version 1.0.0",
+			version:     "1.0.0",
 			expectError: false,
 		},
 		{
@@ -291,7 +291,7 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 				}{
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
+					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -468,8 +468,8 @@ func TestGetSchemaSkills(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid version 1.0.0-rc.1",
-			version:     "1.0.0-rc.1",
+			name:        "valid version 1.0.0",
+			version:     "1.0.0",
 			expectError: false,
 		},
 		{
@@ -545,8 +545,8 @@ func TestGetSchemaDomains(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid version 1.0.0-rc.1",
-			version:     "1.0.0-rc.1",
+			name:        "valid version 1.0.0",
+			version:     "1.0.0",
 			expectError: false,
 		},
 		{
@@ -608,7 +608,7 @@ func createMockServerWithVersionsEndpoint(t *testing.T) *httptest.Server {
 				}{
 					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
 					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0-rc.1", URL: r.Host + "/1.0.0-rc.1/api"},
+					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -656,9 +656,9 @@ func validateVersionsResult(t *testing.T, versions []string) {
 	}
 
 	expectedVersions := map[string]bool{
-		"0.7.0":      true,
-		"0.8.0":      true,
-		"1.0.0-rc.1": true,
+		"0.7.0": true,
+		"0.8.0": true,
+		"1.0.0": true,
 	}
 
 	foundVersions := make(map[string]bool)
@@ -688,7 +688,7 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 		}{
 			{Version: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
 			{Version: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
-			{Version: "1.0.0-rc.1", URL: "http://schema.oasf.outshift.com:8000/1.0.0-rc.1/api"},
+			{Version: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
 		},
 	}
 

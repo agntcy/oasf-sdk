@@ -23,7 +23,7 @@ func TestA2ARoundtripPreservesFields(t *testing.T) {
 			"description": "Test agent for roundtrip validation",
 			"url": "https://example.com",
 			"protocol_version": "1.0",
-			"version": "1.0.0-rc.1",
+			"version": "1.0.0",
 			"capabilities": {
 				"streaming": true,
 				"pushNotifications": false,

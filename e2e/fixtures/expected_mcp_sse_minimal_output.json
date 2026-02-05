@@ -42,7 +42,7 @@
     }
   ],
   "name": "ai.gomarble/mcp-api",
-  "schema_version": "1.0.0-rc.1",
+  "schema_version": "1.0.0",
   "skills": [],
   "version": "1.0.0"
 }

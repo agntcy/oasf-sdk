@@ -151,7 +151,7 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "GH Copilot config should match expected output")
 		})
 
-		It("should generate dir MCP server GH Copilot config from 1.0.0-rc.1 record matching expected output", func() { //nolint:dupl
+		It("should generate dir MCP server GH Copilot config from 1.0.0 record matching expected output", func() { //nolint:dupl
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 
