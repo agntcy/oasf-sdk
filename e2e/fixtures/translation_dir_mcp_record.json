@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0-rc.1",
+  "schema_version": "1.0.0",
   "name": "dir-mcp-server",
   "version": "v0.1.0",
   "description": "Model Context Protocol (MCP) server for working with OASF agent records. Provides tools and prompts for validating, searching, pushing, pulling, importing, and exporting OASF agent records to/from Directory servers.",

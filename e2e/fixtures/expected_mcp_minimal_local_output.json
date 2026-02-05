@@ -54,7 +54,7 @@
     }
   ],
   "name": "ai.mcpcap/mcpcap",
-  "schema_version": "1.0.0-rc.1",
+  "schema_version": "1.0.0",
   "skills": [],
   "version": "0.6.0"
 }

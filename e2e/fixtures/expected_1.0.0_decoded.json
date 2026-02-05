@@ -1,8 +1,8 @@
 {
   "name": "example.org/valid-agent",
   "version": "v1.0.0",
-  "schema_version": "1.0.0-rc.1",
-  "description": "Valid agent record conforming to OASF schema 1.0.0-rc.1",
+  "schema_version": "1.0.0",
+  "description": "Valid agent record conforming to OASF schema 1.0.0",
   "authors": ["Test Corp"],
   "created_at": "2025-01-01T00:00:00Z",
   "skills": [

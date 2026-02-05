@@ -1,7 +1,7 @@
 {
     "authors": ["Test Corp"],
     "created_at": "2025-01-01T00:00:00Z",
-    "description": "Valid agent record conforming to OASF schema 1.0.0-rc.1",
+    "description": "Valid agent record conforming to OASF schema 1.0.0",
     "domains": [
         {
             "id": 101,
@@ -15,7 +15,7 @@
         }
     ],
     "name": "example.org/valid-agent",
-    "schema_version": "1.0.0-rc.1",
+    "schema_version": "1.0.0",
     "skills": [
         {
             "name": "natural_language_processing/natural_language_understanding",

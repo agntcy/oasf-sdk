@@ -38,7 +38,7 @@ func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
-// Generates records using the targetSchema (1.0.0-rc.1) with simplified A2A module structure.
+// Generates records using the targetSchema (1.0.0) with simplified A2A module structure.
 // Accepts both wrapped format ({"a2aCard": {...}}) and unwrapped format (direct card object).
 func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:cyclop
 	// Extract the a2aCard from the input data - handle both wrapped and unwrapped formats
