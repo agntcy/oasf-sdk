@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -338,6 +339,13 @@ func processHeaders(headers []any) *structpb.Struct {
 	return nil
 }
 
+// containsStringValue checks if a string value already exists in argsValues slice.
+func containsStringValue(argsValues []*structpb.Value, value string) bool {
+	return slices.ContainsFunc(argsValues, func(v *structpb.Value) bool {
+		return v.GetStringValue() == value
+	})
+}
+
 // buildStdioConnection builds a stdio connection from package data.
 func buildStdioConnection(pkgMap map[string]any) map[string]*structpb.Value { //nolint:gocognit,nestif,gocyclo,cyclop,maintidx
 	connectionFields := map[string]*structpb.Value{}
@@ -413,15 +421,21 @@ func buildStdioConnection(pkgMap map[string]any) map[string]*structpb.Value { //
 			if argMap, ok := arg.(map[string]any); ok {
 				if argType, ok := argMap["type"].(string); ok && argType == "named" {
 					if name, ok := argMap["name"].(string); ok {
-						argsValues = append(argsValues, &structpb.Value{
-							Kind: &structpb.Value_StringValue{StringValue: name},
-						})
+						// Only add if not already in argsValues
+						if !containsStringValue(argsValues, name) {
+							argsValues = append(argsValues, &structpb.Value{
+								Kind: &structpb.Value_StringValue{StringValue: name},
+							})
+						}
 					}
 				} else if argType == "positional" {
 					if value, ok := argMap["value"].(string); ok {
-						argsValues = append(argsValues, &structpb.Value{
-							Kind: &structpb.Value_StringValue{StringValue: value},
-						})
+						// Only add if not already in argsValues
+						if !containsStringValue(argsValues, value) {
+							argsValues = append(argsValues, &structpb.Value{
+								Kind: &structpb.Value_StringValue{StringValue: value},
+							})
+						}
 					}
 				}
 			}
