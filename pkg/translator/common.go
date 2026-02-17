@@ -9,9 +9,6 @@ import (
 
 // Constants for repeated strings.
 const (
-	serverTypeLocal     = "local"
-	serverTypeSSE       = "sse"
-	serverTypeHTTP      = "http"
 	packageTypeNPM      = "npm"
 	packageTypePyPI     = "pypi"
 	packageTypeOCI      = "oci"
