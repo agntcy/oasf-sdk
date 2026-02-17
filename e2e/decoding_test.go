@@ -51,11 +51,13 @@ var _ = Describe("Decoding Service E2E", func() {
 
 			// Parse expected output
 			var expectedOutput map[string]any
+
 			err = json.Unmarshal(expectedV080Decoded, &expectedOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
 
 			// Parse actual output
 			var actualOutput map[string]any
+
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
@@ -92,11 +94,13 @@ var _ = Describe("Decoding Service E2E", func() {
 
 			// Parse expected output
 			var expectedOutput map[string]any
+
 			err = json.Unmarshal(expectedV100Decoded, &expectedOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
 
 			// Parse actual output
 			var actualOutput map[string]any
+
 			err = json.Unmarshal(actualJSON, &actualOutput)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
 
@@ -132,11 +136,13 @@ var _ = Describe("Decoding Service E2E", func() {
 
 			// Parse expected output
 			var expectedRecord map[string]any
+
 			err = json.Unmarshal(expectedV070Decoded, &expectedRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected decoded output")
 
 			// Parse actual output for comparison
 			var actualRecord map[string]any
+
 			err = json.Unmarshal(actualJSON, &actualRecord)
 			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual decoded output")
 
