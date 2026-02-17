@@ -1,6 +1,6 @@
 module github.com/agntcy/oasf-sdk/e2e
 
-go 1.24.4
+go 1.26.1
 
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.5.1-20251104080327-0fc042e98377.2
