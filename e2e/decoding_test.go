@@ -189,7 +189,7 @@ var _ = Describe("Decoding Service E2E", func() {
 				"created_at":     "2025-09-11T12:00:00Z",
 				"description":    "Record with unsupported schema",
 				"name":           "example.org/unsupported-schema",
-				"schema_version": "v99.99.99",
+				"schema_version": "99.99.99",
 			}
 
 			encodedRecord, err := decoder.StructToProto(recordWithUnsupportedSchema)
@@ -201,7 +201,7 @@ var _ = Describe("Decoding Service E2E", func() {
 
 			_, err = client.DecodeRecord(ctx, req)
 			Expect(err).To(HaveOccurred(), "DecodeRecord should fail for unsupported schema version")
-			Expect(err.Error()).To(ContainSubstring("unsupported OASF version: v99.99.99"))
+			Expect(err.Error()).To(ContainSubstring("unsupported OASF version"), "Error should mention unsupported version")
 		})
 
 		It("should return error for nil request", func() {
@@ -268,6 +268,196 @@ var _ = Describe("Decoding Service E2E", func() {
 			// Should map to v1
 			Expect(resp.GetV1()).NotTo(BeNil())
 			Expect(resp.GetV1().GetSchemaVersion()).To(Equal("1.0.0"))
+		})
+	})
+
+	Context("Version Range Support", func() {
+		It("should support all 1.x.x versions without SDK updates", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 1.0.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV100Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test various 1.x.x versions that should all map to v1 proto
+			testVersions := []string{"1.0.0", "1.0.1", "1.0.2", "1.1.0", "1.2.3", "1.5.0"}
+
+			for _, version := range testVersions {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				resp, err := client.DecodeRecord(ctx, req)
+				Expect(err).NotTo(HaveOccurred(), "DecodeRecord should succeed for version %s", version)
+
+				// All 1.x.x versions should map to v1 proto
+				Expect(resp.GetV1()).NotTo(BeNil(), "Version %s should map to v1 proto", version)
+				Expect(resp.GetV1Alpha2()).To(BeNil(), "Version %s should not map to v1alpha2", version)
+				Expect(resp.GetV1Alpha1()).To(BeNil(), "Version %s should not map to v1alpha1", version)
+			}
+		})
+
+		It("should support 0.7.x version range", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 0.7.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV070Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test various 0.7.x versions
+			testVersions := []string{"0.7.0", "0.7.1", "0.7.5"}
+
+			for _, version := range testVersions {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				resp, err := client.DecodeRecord(ctx, req)
+				Expect(err).NotTo(HaveOccurred(), "DecodeRecord should succeed for version %s", version)
+
+				// All 0.7.x versions should map to v1alpha1 proto
+				Expect(resp.GetV1Alpha1()).NotTo(BeNil(), "Version %s should map to v1alpha1 proto", version)
+			}
+		})
+
+		It("should support 0.8.x version range", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 0.8.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV080Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test various 0.8.x versions
+			testVersions := []string{"0.8.0", "0.8.1", "0.8.5"}
+
+			for _, version := range testVersions {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				resp, err := client.DecodeRecord(ctx, req)
+				Expect(err).NotTo(HaveOccurred(), "DecodeRecord should succeed for version %s", version)
+
+				// All 0.8.x versions should map to v1alpha2 proto
+				Expect(resp.GetV1Alpha2()).NotTo(BeNil(), "Version %s should map to v1alpha2 proto", version)
+			}
+		})
+
+		It("should reject unsupported major versions", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 1.0.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV100Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test unsupported major versions
+			unsupportedVersions := []string{"2.0.0", "3.1.0", "99.0.0"}
+
+			for _, version := range unsupportedVersions {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				_, err = client.DecodeRecord(ctx, req)
+				Expect(err).To(HaveOccurred(), "DecodeRecord should fail for unsupported major version %s", version)
+				Expect(err.Error()).To(ContainSubstring("unsupported OASF version"), "Error should mention unsupported version")
+			}
+		})
+
+		It("should reject versions with 'v' prefix", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 1.0.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV100Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test versions with 'v' prefix (should be rejected)
+			versionsWithPrefix := []string{"v1.0.0", "V1.0.0", "v1.5.0", "v0.7.0"}
+
+			for _, version := range versionsWithPrefix {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				_, err = client.DecodeRecord(ctx, req)
+				Expect(err).To(HaveOccurred(), "DecodeRecord should fail for version with 'v' prefix: %s", version)
+				Expect(err.Error()).To(ContainSubstring("must not have 'v' prefix"), "Error should mention 'v' prefix rejection")
+			}
+		})
+
+		It("should reject invalid version formats", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			// Parse the valid 1.0.0 record
+			var record map[string]any
+			err := json.Unmarshal(validV100Record, &record)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Test invalid version formats
+			invalidVersions := []string{"1.0", "1", "1.0.0.0", "invalid"}
+
+			for _, version := range invalidVersions {
+				// Modify the schema_version
+				record["schema_version"] = version
+
+				// Convert to protobuf
+				encodedRecord, err := decoder.StructToProto(record)
+				Expect(err).NotTo(HaveOccurred(), "Failed to encode record with version %s", version)
+
+				req := &decodingv1.DecodeRecordRequest{
+					Record: encodedRecord,
+				}
+
+				_, err = client.DecodeRecord(ctx, req)
+				Expect(err).To(HaveOccurred(), "DecodeRecord should fail for invalid version format: %s", version)
+				Expect(err.Error()).To(ContainSubstring("invalid version format"), "Error should mention invalid format")
+			}
 		})
 	})
 })

@@ -666,8 +666,10 @@ func convertRemoteToConnection(remoteMap map[string]any) *structpb.Struct {
 	return &structpb.Struct{Fields: connectionFields}
 }
 
-// MCPToRecord translates an MCP Registry server.json into an OASF-compliant record format (1.0.0).
-func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:gocognit,cyclop,maintidx
+// MCPToRecord translates an MCP Registry server.json into an OASF-compliant record format.
+// Generates records using the specified schema version (via WithVersion option) or the default schema version.
+// The version must be 1.x.x format.
+func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.Struct, error) { //nolint:gocognit,cyclop,maintidx
 	// Extract the server from the input data
 	mcpServerVal, ok := mcpData.GetFields()["server"]
 	if !ok {
@@ -808,6 +810,26 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 		},
 	}
 
+	// Determine target schema version from options or default
+	options := &translatorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var targetVersion string
+
+	if options.version != "" {
+		targetVersion = options.version
+
+		// Validate provided version
+		if err := validateMajorVersion(targetVersion); err != nil {
+			return nil, err
+		}
+	} else {
+		// Use hardcoded default version
+		targetVersion = DefaultSchemaVersion
+	}
+
 	// Create OASF-compliant record with all required fields
 	record := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
@@ -815,7 +837,7 @@ func MCPToRecord(mcpData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 				Kind: &structpb.Value_StringValue{StringValue: serverName},
 			},
 			"schema_version": {
-				Kind: &structpb.Value_StringValue{StringValue: targetSchema},
+				Kind: &structpb.Value_StringValue{StringValue: targetVersion},
 			},
 			"version": {
 				Kind: &structpb.Value_StringValue{StringValue: serverVersion},

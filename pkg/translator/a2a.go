@@ -38,9 +38,9 @@ func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
-// Generates records using the targetSchema (1.0.0) with simplified A2A module structure.
-// Accepts both wrapped format ({"a2aCard": {...}}) and unwrapped format (direct card object).
-func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:cyclop
+// Generates records using the specified schema version (via WithVersion option) or the default schema version.
+// The version must be 1.x.x format. Accepts both wrapped format ({"a2aCard": {...}}) and unwrapped format (direct card object).
+func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.Struct, error) { //nolint:cyclop
 	// Extract the a2aCard from the input data - handle both wrapped and unwrapped formats
 	var A2ACardStruct *structpb.Struct
 
@@ -94,8 +94,25 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 	// Note: For consistent test results, this could be overridden in test fixtures
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
-	// card_schema_version refers to the A2A card schema version, not the OASF schema version
-	cardSchemaVersion := "v1.0.0"
+	// Determine target schema version from options or default
+	options := &translatorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var targetVersion string
+
+	if options.version != "" {
+		targetVersion = options.version
+
+		// Validate provided version
+		if err := validateMajorVersion(targetVersion); err != nil {
+			return nil, err
+		}
+	} else {
+		// Use hardcoded default version
+		targetVersion = DefaultSchemaVersion
+	}
 
 	// Create A2A data structure conforming to OASF v1.0.0 A2A data schema
 	// In 1.0.0, the structure is simplified to only card_data and card_schema_version
@@ -105,7 +122,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 				Kind: &structpb.Value_StructValue{StructValue: A2ACardStruct},
 			},
 			"card_schema_version": {
-				Kind: &structpb.Value_StringValue{StringValue: cardSchemaVersion},
+				Kind: &structpb.Value_StringValue{StringValue: A2ACardSchemaVersion},
 			},
 		},
 	}
@@ -138,7 +155,7 @@ func A2AToRecord(a2aData *structpb.Struct) (*structpb.Struct, error) { //nolint:
 				Kind: &structpb.Value_StringValue{StringValue: cardName},
 			},
 			"schema_version": {
-				Kind: &structpb.Value_StringValue{StringValue: targetSchema},
+				Kind: &structpb.Value_StringValue{StringValue: targetVersion},
 			},
 			"version": {
 				Kind: &structpb.Value_StringValue{StringValue: cardVersion},

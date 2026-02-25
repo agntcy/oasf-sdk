@@ -7,3 +7,5 @@ require (
 	buf.build/gen/go/agntcy/oasf/protocolbuffers/go v1.36.11-20260127123814-046ed24ce65a.1
 	google.golang.org/protobuf v1.36.11
 )
+
+require github.com/Masterminds/semver/v3 v3.4.0
