@@ -878,6 +878,7 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 							if repoUrl == "" {
 								return []*structpb.Value{}
 							}
+
 							return []*structpb.Value{
 								{
 									Kind: &structpb.Value_StructValue{
