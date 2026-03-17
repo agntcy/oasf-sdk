@@ -3,7 +3,7 @@
 
 module-sets:
   oasf-sdk:
-    version: v1.0.1
+    version: v1.0.2
     modules:
       - github.com/agntcy/oasf-sdk/e2e
       - github.com/agntcy/oasf-sdk/pkg
