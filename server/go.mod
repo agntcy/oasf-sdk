@@ -1,6 +1,6 @@
 module github.com/agntcy/oasf-sdk/server
 
-go 1.24.4
+go 1.26.0
 
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.6.0-20260115113053-9b110d5996b7.1
