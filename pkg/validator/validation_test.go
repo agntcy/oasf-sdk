@@ -105,6 +105,16 @@ func TestValidateWithSchemaURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a mock HTTP server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					t.Errorf("Expected POST request, got %s", r.Method)
+				}
+				if r.URL.Path != "/api/0.8.0/validate/object/record" {
+					t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+				}
+				if r.URL.Query().Get("missing_recommended") != "true" {
+					t.Errorf("Expected missing_recommended=true, got %q", r.URL.Query().Get("missing_recommended"))
+				}
+
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 
@@ -185,6 +195,9 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/0.8.0/validate/object/record" {
+			t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
@@ -262,6 +275,9 @@ func TestValidateWithSchemaURL_WarningsOnly(t *testing.T) {
 
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/0.8.0/validate/object/record" {
+			t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
