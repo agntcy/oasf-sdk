@@ -13,16 +13,20 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const recordValidationPath = "/api/0.8.0/validate/object/record"
+
+type validateWithSchemaURLTestCase struct {
+	name                 string
+	mockResponse         ValidationResponse
+	expectedValid        bool
+	expectedErrorCount   int
+	expectedWarningCount int
+	expectError          bool
+}
+
 // TestValidateWithSchemaURL tests validation behavior with errors and warnings.
 func TestValidateWithSchemaURL(t *testing.T) {
-	tests := []struct {
-		name                 string
-		mockResponse         ValidationResponse
-		expectedValid        bool
-		expectedErrorCount   int
-		expectedWarningCount int
-		expectError          bool
-	}{
+	tests := []validateWithSchemaURLTestCase{
 		{
 			name: "no errors or warnings",
 			mockResponse: ValidationResponse{
@@ -103,63 +107,76 @@ func TestValidateWithSchemaURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a mock HTTP server
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-
-				if err := json.NewEncoder(w).Encode(tt.mockResponse); err != nil {
-					t.Errorf("Failed to encode mock response: %v", err)
-				}
-			}))
-			defer server.Close()
-
-			// Create a validator with the mock server URL
-			validator, err := New(server.URL)
-			if err != nil {
-				t.Fatalf("Failed to create validator: %v", err)
-			}
-
-			// Create a test record
-			record, err := structpb.NewStruct(map[string]any{
-				"schema_version": "0.8.0",
-				"data": map[string]any{
-					"name": "test",
-				},
-			})
-			if err != nil {
-				t.Fatalf("Failed to create test record: %v", err)
-			}
-
-			// Validate with the mock server URL
-			valid, errors, warnings, err := validator.ValidateRecord(context.Background(), record)
-
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-
-				return
-			}
-
-			if valid != tt.expectedValid {
-				t.Errorf("Expected valid=%v, got valid=%v", tt.expectedValid, valid)
-			}
-
-			if len(errors) != tt.expectedErrorCount {
-				t.Errorf("Expected %d errors, got %d errors: %v", tt.expectedErrorCount, len(errors), errors)
-			}
-
-			if len(warnings) != tt.expectedWarningCount {
-				t.Errorf("Expected %d warnings, got %d warnings: %v", tt.expectedWarningCount, len(warnings), warnings)
-			}
+			runValidateWithSchemaURLCase(t, tt)
 		})
+	}
+}
+
+func runValidateWithSchemaURLCase(t *testing.T, tt validateWithSchemaURLTestCase) {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST request, got %s", r.Method)
+		}
+
+		if r.URL.Path != recordValidationPath {
+			t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+		}
+
+		if r.URL.Query().Get("missing_recommended") != "true" {
+			t.Errorf("Expected missing_recommended=true, got %q", r.URL.Query().Get("missing_recommended"))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(tt.mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	validator, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create validator: %v", err)
+	}
+
+	record, err := structpb.NewStruct(map[string]any{
+		"schema_version": "0.8.0",
+		"data": map[string]any{
+			"name": "test",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create test record: %v", err)
+	}
+
+	valid, validationErrors, warnings, err := validator.ValidateRecord(context.Background(), record)
+	if tt.expectError {
+		if err == nil {
+			t.Errorf("Expected error but got none")
+		}
+
+		return
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+
+		return
+	}
+
+	if valid != tt.expectedValid {
+		t.Errorf("Expected valid=%v, got valid=%v", tt.expectedValid, valid)
+	}
+
+	if len(validationErrors) != tt.expectedErrorCount {
+		t.Errorf("Expected %d errors, got %d errors: %v", tt.expectedErrorCount, len(validationErrors), validationErrors)
+	}
+
+	if len(warnings) != tt.expectedWarningCount {
+		t.Errorf("Expected %d warnings, got %d warnings: %v", tt.expectedWarningCount, len(warnings), warnings)
 	}
 }
 
@@ -185,6 +202,10 @@ func TestValidateWithSchemaURL_ConstraintFailed(t *testing.T) {
 
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != recordValidationPath {
+			t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
@@ -262,6 +283,10 @@ func TestValidateWithSchemaURL_WarningsOnly(t *testing.T) {
 
 	// Create a mock HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != recordValidationPath {
+			t.Errorf("Expected canonical validation path, got %s", r.URL.Path)
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 

@@ -18,14 +18,19 @@ const defaultHTTPTimeoutSeconds = 30
 
 // VersionsResponse represents the response from the api/versions endpoint.
 type VersionsResponse struct {
-	Default struct {
-		Version string `json:"version"`
-		URL     string `json:"url"`
-	} `json:"default"`
-	Versions []struct {
-		Version string `json:"version"`
-		URL     string `json:"url"`
-	} `json:"versions"`
+	Default  VersionInfo   `json:"default"`
+	Versions []VersionInfo `json:"versions"`
+}
+
+// VersionInfo represents schema server version metadata.
+// The API has evolved over time, so we support both legacy and v0.6.0 fields.
+type VersionInfo struct {
+	Version       string `json:"version,omitempty"`
+	SchemaVersion string `json:"schema_version"`
+	URL           string `json:"url,omitempty"`
+	APIURL        string `json:"api_url,omitempty"`
+	ServerVersion string `json:"server_version,omitempty"`
+	APIVersion    string `json:"api_version,omitempty"`
 }
 
 // SchemaOption is a function that configures schema options.
@@ -132,9 +137,9 @@ func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, er
 	return &versionsResp, nil
 }
 
-// GetDefaultVersion returns the default schema version, caching it after first fetch.
-// The default version is fetched from the server's api/versions endpoint.
-func (s *Schema) GetDefaultVersion(ctx context.Context) (string, error) {
+// GetDefaultSchemaVersion returns the default schema version, caching it after first fetch.
+// The default schema version is fetched from the server's api/versions endpoint.
+func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
 	if s.defaultVersion != "" {
 		return s.defaultVersion, nil
 	}
@@ -144,7 +149,10 @@ func (s *Schema) GetDefaultVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	s.defaultVersion = versionsResp.Default.Version
+	s.defaultVersion = schemaVersionFromVersionInfo(versionsResp.Default)
+	if s.defaultVersion == "" {
+		return "", errors.New("default schema version is missing from /api/versions response")
+	}
 
 	return s.defaultVersion, nil
 }
@@ -157,20 +165,30 @@ func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, erro
 		return nil, err
 	}
 
-	// Extract version strings from the response
-	versions := make([]string, 0, len(versionsResp.Versions))
+	// Extract schema version strings from the response
+	schemaVersions := make([]string, 0, len(versionsResp.Versions))
 	for _, v := range versionsResp.Versions {
-		versions = append(versions, v.Version)
+		schemaVersion := schemaVersionFromVersionInfo(v)
+		if schemaVersion != "" {
+			schemaVersions = append(schemaVersions, schemaVersion)
+		}
 	}
 
-	return versions, nil
+	return schemaVersions, nil
 }
 
-// constructSchemaURL builds the full schema URL from options.
+// constructSchemaURL builds the schema URL from options.
 // Format: /schema/<version>/<type>/<name>.
 func (s *Schema) constructSchemaURL(version string, schemaType SchemaType, name string) string {
-	// Construct the full schema URL (schemaURL is already normalized)
 	return fmt.Sprintf("%s/schema/%s/%s/%s", s.schemaURL, version, schemaType, name)
+}
+
+func schemaVersionFromVersionInfo(versionInfo VersionInfo) string {
+	if versionInfo.SchemaVersion != "" {
+		return versionInfo.SchemaVersion
+	}
+
+	return versionInfo.Version
 }
 
 // GetSchema is a generic function to fetch schema content from the OASF API.
@@ -189,7 +207,7 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 	if version == "" {
 		var err error
 
-		version, err = s.GetDefaultVersion(ctx)
+		version, err = s.GetDefaultSchemaVersion(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get default version: %w", err)
 		}
@@ -197,7 +215,6 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 
 	schemaURL := s.constructSchemaURL(version, schemaType, name)
 
-	// Create GET request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request to %s: %w", schemaURL, err)
@@ -205,7 +222,6 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 
 	req.Header.Set("Accept", "application/json")
 
-	// Send request
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send GET request to %s: %w", schemaURL, err)
@@ -218,7 +234,6 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: HTTP %d, body: %s", schemaURL, resp.StatusCode, string(body))
 	}
 
-	// Read response body
 	schemaData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read schema response from URL %s: %w", schemaURL, err)

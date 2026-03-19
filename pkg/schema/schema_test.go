@@ -71,20 +71,14 @@ func createMockServer(t *testing.T, version string, expectError bool) *httptest.
 			w.WriteHeader(http.StatusOK)
 
 			versionsResp := VersionsResponse{
-				Default: struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					Version: "0.8.0",
-					URL:     r.Host + "/api/0.8.0",
+				Default: VersionInfo{
+					SchemaVersion: "0.8.0",
+					URL:           r.Host + "/api/0.8.0",
 				},
-				Versions: []struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
-					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.7.0", URL: r.Host + "/0.7.0/api"},
+					{SchemaVersion: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{SchemaVersion: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -95,11 +89,9 @@ func createMockServer(t *testing.T, version string, expectError bool) *httptest.
 			return
 		}
 
-		// Verify the URL path matches expected pattern
 		expectedPath := "/schema/" + version + "/objects/record"
-
-		if !contains(r.URL.Path, expectedPath) {
-			t.Errorf("Expected URL path to contain %s, got %s", expectedPath, r.URL.Path)
+		if r.URL.Path != expectedPath {
+			t.Errorf("Expected path %s, got %s", expectedPath, r.URL.Path)
 		}
 
 		if expectError {
@@ -278,20 +270,14 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 			w.WriteHeader(http.StatusOK)
 
 			versionsResp := VersionsResponse{
-				Default: struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					Version: "0.8.0",
-					URL:     r.Host + "/api/0.8.0",
+				Default: VersionInfo{
+					SchemaVersion: "0.8.0",
+					URL:           r.Host + "/api/0.8.0",
 				},
-				Versions: []struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
-					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.7.0", URL: r.Host + "/0.7.0/api"},
+					{SchemaVersion: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{SchemaVersion: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -302,29 +288,17 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 			return
 		}
 
-		// Check if this is a schema request with invalid version
-		if checkVersion && strings.Contains(r.URL.Path, "/schema/") {
-			// Extract version from path (e.g., /schema/99.99.99/objects/record)
-			pathParts := strings.Split(r.URL.Path, "/")
-			if len(pathParts) >= 3 {
-				version := pathParts[2]
-				// Check if version is invalid
-				if version == invalidVersion {
-					w.WriteHeader(http.StatusNotFound)
+		// For invalid-version tests, all schema fetch candidates should fail.
+		if checkVersion {
+			w.WriteHeader(http.StatusNotFound)
 
-					return
-				}
-			}
+			return
 		}
 
-		// Validate URL format: /schema/<version>/<type>/<name>
-		if strings.Contains(r.URL.Path, "/schema/") {
-			pathParts := strings.Split(r.URL.Path, "/")
-			if len(pathParts) < 5 {
-				w.WriteHeader(http.StatusBadRequest)
-
-				return
-			}
+		// Validate schema request shape.
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) < 5 || pathParts[1] != "schema" {
+			t.Errorf("Expected path /schema/<version>/<type>/<name>, got %s", r.URL.Path)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -595,20 +569,14 @@ func createMockServerWithVersionsEndpoint(t *testing.T) *httptest.Server {
 			w.WriteHeader(http.StatusOK)
 
 			versionsResp := VersionsResponse{
-				Default: struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					Version: "0.8.0",
-					URL:     r.Host + "/api/0.8.0",
+				Default: VersionInfo{
+					SchemaVersion: "0.8.0",
+					URL:           r.Host + "/api/0.8.0",
 				},
-				Versions: []struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
-					{Version: "0.8.0", URL: r.Host + "/0.8.0/api"},
-					{Version: "1.0.0", URL: r.Host + "/1.0.0/api"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.7.0", URL: r.Host + "/0.7.0/api"},
+					{SchemaVersion: "0.8.0", URL: r.Host + "/0.8.0/api"},
+					{SchemaVersion: "1.0.0", URL: r.Host + "/1.0.0/api"},
 				},
 			}
 
@@ -675,17 +643,22 @@ func validateVersionsResult(t *testing.T, versions []string) {
 
 func TestGetAvailableSchemaVersions(t *testing.T) {
 	mockResponse := VersionsResponse{
-		Default: struct {
-			Version string `json:"version"`
-			URL     string `json:"url"`
-		}{
+		Default: VersionInfo{
+			SchemaVersion: "0.8.0",
+			URL:           "http://schema.oasf.outshift.com:8000/api/0.8.0",
+		},
+		Versions: []VersionInfo{
+			{SchemaVersion: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
+			{SchemaVersion: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
+			{SchemaVersion: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
+		},
+	}
+	legacyMockResponse := VersionsResponse{
+		Default: VersionInfo{
 			Version: "0.8.0",
 			URL:     "http://schema.oasf.outshift.com:8000/api/0.8.0",
 		},
-		Versions: []struct {
-			Version string `json:"version"`
-			URL     string `json:"url"`
-		}{
+		Versions: []VersionInfo{
 			{Version: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
 			{Version: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
 			{Version: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
@@ -708,6 +681,22 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 
 		validateVersionsResult(t, versions)
 	})
+	t.Run("legacy versions response", func(t *testing.T) {
+		server := createVersionsMockServer(t, legacyMockResponse)
+		defer server.Close()
+
+		schema, err := New(server.URL)
+		if err != nil {
+			t.Fatalf("Failed to create schema: %v", err)
+		}
+
+		versions, err := schema.GetAvailableSchemaVersions(context.Background())
+		if err != nil {
+			t.Errorf("GetAvailableSchemaVersions() unexpected error: %v", err)
+		}
+
+		validateVersionsResult(t, versions)
+	})
 
 	t.Run("empty URL", func(t *testing.T) {
 		_, err := New("")
@@ -715,6 +704,31 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 			t.Errorf("New() expected error but got none")
 		}
 	})
+}
+
+func TestGetDefaultSchemaVersionLegacyFormat(t *testing.T) {
+	server := createVersionsMockServer(t, VersionsResponse{
+		Default: VersionInfo{Version: "0.8.0"},
+		Versions: []VersionInfo{
+			{Version: "0.7.0"},
+			{Version: "0.8.0"},
+		},
+	})
+	defer server.Close()
+
+	schema, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	defaultVersion, err := schema.GetDefaultSchemaVersion(context.Background())
+	if err != nil {
+		t.Fatalf("GetDefaultSchemaVersion() unexpected error: %v", err)
+	}
+
+	if defaultVersion != "0.8.0" {
+		t.Fatalf("Expected default version 0.8.0, got %s", defaultVersion)
+	}
 }
 
 // Helper function to compare schema section counts between dedicated getter and full schema.
@@ -822,19 +836,13 @@ func TestDefaultVersion(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 
 			versionsResp := VersionsResponse{
-				Default: struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					Version: defaultVersion,
-					URL:     r.Host + "/api/" + defaultVersion,
+				Default: VersionInfo{
+					SchemaVersion: defaultVersion,
+					URL:           r.Host + "/api/" + defaultVersion,
 				},
-				Versions: []struct {
-					Version string `json:"version"`
-					URL     string `json:"url"`
-				}{
-					{Version: "0.7.0", URL: r.Host + "/0.7.0/api"},
-					{Version: defaultVersion, URL: r.Host + "/" + defaultVersion + "/api"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.7.0", URL: r.Host + "/0.7.0/api"},
+					{SchemaVersion: defaultVersion, URL: r.Host + "/" + defaultVersion + "/api"},
 				},
 			}
 
@@ -845,12 +853,10 @@ func TestDefaultVersion(t *testing.T) {
 			return
 		}
 
-		// Track which schema version was requested
-		if strings.Contains(r.URL.Path, "/schema/") {
-			pathParts := strings.Split(r.URL.Path, "/")
-			if len(pathParts) >= 3 {
-				requestedVersions = append(requestedVersions, pathParts[2])
-			}
+		// Track which schema version was requested on /schema/<version>/<type>/<name>.
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) >= 5 && pathParts[1] == "schema" {
+			requestedVersions = append(requestedVersions, pathParts[2])
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -975,16 +981,3 @@ func TestNew(t *testing.T) {
 }
 
 // Helper function to check if a string contains a substring.
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsHelper(s, substr))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-
-	return false
-}

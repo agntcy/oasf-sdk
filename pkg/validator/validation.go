@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -79,7 +80,7 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 		return nil, nil, fmt.Errorf("failed to get schema version from record: %w", err)
 	}
 
-	// Construct the full validation URL
+	// Construct the canonical validation URL for the declared record schema version.
 	validationURL := constructValidationURL(schemaURL, schemaVersion)
 
 	// Convert record to JSON for the POST request
@@ -107,10 +108,15 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 		return nil, nil, fmt.Errorf("failed to validate record at URL %s: HTTP %d", validationURL, resp.StatusCode)
 	}
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read validation response from URL %s: %w", validationURL, err)
+	}
+
 	// Parse response
 	var validationResp ValidationResponse
 
-	decoder := json.NewDecoder(resp.Body)
+	decoder := json.NewDecoder(bytes.NewReader(respBody))
 	if err := decoder.Decode(&validationResp); err != nil {
 		return nil, nil, fmt.Errorf("failed to decode validation response from URL %s: %w", validationURL, err)
 	}
@@ -148,8 +154,7 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 	return errorMessages, warningMessages, nil
 }
 
-// constructValidationURL builds the full validation URL from a base URL and schema version.
-func constructValidationURL(baseURL, schemaVersion string) string {
+func normalizeURL(baseURL string) string {
 	// Normalize the base URL (remove trailing slash if present)
 	normalizedURL := strings.TrimSuffix(baseURL, "/")
 
@@ -158,6 +163,11 @@ func constructValidationURL(baseURL, schemaVersion string) string {
 		normalizedURL = "http://" + normalizedURL
 	}
 
-	// Construct the full validation URL
-	return fmt.Sprintf("%s/api/%s/validate/object/record?missing_recommended=true", normalizedURL, schemaVersion)
+	return normalizedURL
+}
+
+func constructValidationURL(baseURL, schemaVersion string) string {
+	normalizedBaseURL := normalizeURL(baseURL)
+
+	return fmt.Sprintf("%s/api/%s/validate/object/record?missing_recommended=true", normalizedBaseURL, schemaVersion)
 }

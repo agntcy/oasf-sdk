@@ -99,6 +99,7 @@ var _ = Describe("Validation Service E2E", func() {
 				resp, err := client.ValidateRecord(ctx, req)
 
 				Expect(err).NotTo(HaveOccurred(), "ValidateRecord should not fail", err)
+
 				if tc.shouldPass {
 					Expect(resp.GetIsValid()).To(BeTrue(), "Expected valid record", resp.GetErrors())
 					Expect(resp.GetErrors()).To(BeEmpty(), "Expected no validation errors", resp.GetErrors())
