@@ -94,6 +94,7 @@ func (v *Validator) validateWithSchemaURL(ctx context.Context, record *structpb.
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create POST request to %s: %w", validationURL, err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send request
@@ -167,5 +168,6 @@ func normalizeURL(baseURL string) string {
 
 func constructValidationURL(baseURL, schemaVersion string) string {
 	normalizedBaseURL := normalizeURL(baseURL)
+
 	return fmt.Sprintf("%s/api/%s/validate/object/record?missing_recommended=true", normalizedBaseURL, schemaVersion)
 }

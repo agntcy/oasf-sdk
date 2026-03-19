@@ -214,6 +214,7 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 	}
 
 	schemaURL := s.constructSchemaURL(version, schemaType, name)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request to %s: %w", schemaURL, err)
