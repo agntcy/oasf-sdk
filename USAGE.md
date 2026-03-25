@@ -182,7 +182,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -224,32 +223,22 @@ func main() {
 	}
 	fmt.Printf("Schema version 0.8.0 loaded successfully\n")
 
-	// Get skills from schema (using default version - no option needed)
+	// Get nested skill categories (using default version - no option needed)
 	skillsData, err := s.GetSchemaSkills(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get skills: %v", err)
 	}
+	fmt.Printf("Found %d top-level skill categories\n", len(skillsData))
 
-	var skillsMap map[string]interface{}
-	if err := json.Unmarshal(skillsData, &skillsMap); err != nil {
-		log.Fatalf("Failed to parse skills: %v", err)
-	}
-	fmt.Printf("Found %d skills in schema\n", len(skillsMap))
-
-	// Get domains from schema (using specific version)
+	// Get nested domain categories (using specific version)
 	domainsData, err := s.GetSchemaDomains(ctx, schema.WithVersion("0.8.0"))
 	if err != nil {
 		log.Fatalf("Failed to get domains: %v", err)
 	}
+	fmt.Printf("Found %d top-level domain categories\n", len(domainsData))
 
-	var domainsMap map[string]interface{}
-	if err := json.Unmarshal(domainsData, &domainsMap); err != nil {
-		log.Fatalf("Failed to parse domains: %v", err)
-	}
-	fmt.Printf("Found %d domains in schema\n", len(domainsMap))
-
-	// Get a specific $defs key (e.g., modules) using default version
-	modulesData, err := s.GetSchemaKey(ctx, "modules")
+	// Get nested module categories (using default version)
+	modulesData, err := s.GetSchemaModules(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get modules: %v", err)
 	}
@@ -325,23 +314,11 @@ schemaContent, err := s.GetRecordSchemaContent(ctx)
 schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
 ```
 
-### GetSchemaKey
-Extracts a specific `$defs` category from the schema. If no version is provided, the default version is used:
-```go
-// Using default version
-skillsData, err := s.GetSchemaKey(ctx, "skills")
-
-// Using specific version
-skillsData, err := s.GetSchemaKey(ctx, "skills", schema.WithVersion("0.8.0"))
-domainsData, err := s.GetSchemaKey(ctx, "domains", schema.WithVersion("0.8.0"))
-modulesData, err := s.GetSchemaKey(ctx, "modules", schema.WithVersion("0.8.0"))
-```
-
 ### Convenience Methods
-All convenience methods accept optional `WithVersion()` option. If omitted, the default version is used:
-- `GetSchemaSkills(ctx, ...SchemaOption)` - Extracts skills definitions
-- `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
-- `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
+All convenience methods accept optional `WithVersion()` option. If omitted, the default version is used. These methods call the new taxonomy endpoints and return nested Go structs (`schema.SchemaCategories`):
+- `GetSchemaSkills(ctx, ...SchemaOption)` - calls `/api/<version>/skill_categories`
+- `GetSchemaDomains(ctx, ...SchemaOption)` - calls `/api/<version>/domain_categories`
+- `GetSchemaModules(ctx, ...SchemaOption)` - calls `/api/<version>/module_categories`
 
 ### Accessing Agent Skills data from a record
 The translator package can render a spec-compliant `SKILL.md` directly from a record.

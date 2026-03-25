@@ -56,6 +56,41 @@ func mockSchemaResponse() map[string]any {
 	}
 }
 
+func mockCategoriesResponse() SchemaCategories {
+	return SchemaCategories{
+		"core": {
+			ID:          1,
+			Name:        "core",
+			Description: "Module set for core functionalities and features.",
+			Category:    true,
+			Caption:     "Core",
+			Classes: map[string]SchemaCategoryNode{
+				"language_model": {
+					ID:          103,
+					Name:        "core/language_model",
+					Description: "Modules for basic Language Model functionality.",
+					Caption:     "Language Model",
+					Classes: map[string]SchemaCategoryNode{
+						"prompt": {
+							ID:          10301,
+							Name:        "core/language_model/prompt",
+							Description: "Describes common Language Model interaction prompts to use the agent.",
+							Caption:     "Language Model Prompt",
+						},
+					},
+				},
+			},
+		},
+		"integration": {
+			ID:          2,
+			Name:        "integration",
+			Description: "Module set for integrating with external systems and services.",
+			Category:    true,
+			Caption:     "Integration",
+		},
+	}
+}
+
 // createMockServer creates a mock HTTP server for schema tests.
 func createMockServer(t *testing.T, version string, expectError bool) *httptest.Server {
 	t.Helper()
@@ -295,8 +330,21 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 			return
 		}
 
-		// Validate schema request shape.
+		// Handle category endpoints.
 		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) == 4 && pathParts[1] == "api" &&
+			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
+				t.Errorf("Failed to encode categories response: %v", err)
+			}
+
+			return
+		}
+
+		// Validate schema request shape.
+		pathParts = strings.Split(r.URL.Path, "/")
 		if len(pathParts) < 5 || pathParts[1] != "schema" {
 			t.Errorf("Expected path /schema/<version>/<type>/<name>, got %s", r.URL.Path)
 		}
@@ -311,116 +359,21 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 	}))
 }
 
-// validateSchemaKeyResult validates the result from GetSchemaKey.
-func validateSchemaKeyResult(t *testing.T, result []byte, expectEmpty bool) {
-	t.Helper()
-
-	if expectEmpty {
-		if len(result) > 2 { // More than just {}
-			t.Errorf("GetSchemaKey() expected empty result but got data")
-		}
-
-		return
-	}
-
-	if len(result) == 0 {
-		t.Errorf("GetSchemaKey() returned empty result")
-	}
-
-	var jsonMap map[string]any
-	if err := json.Unmarshal(result, &jsonMap); err != nil {
-		t.Errorf("GetSchemaKey() returned invalid JSON: %v", err)
-	}
-}
-
-func TestGetSchemaKey(t *testing.T) {
-	tests := []struct {
-		name        string
-		version     string
-		defsKey     string
-		expectError bool
-		expectEmpty bool
-	}{
-		{
-			name:        "valid skills key",
-			version:     "0.7.0",
-			defsKey:     "skills",
-			expectError: false,
-			expectEmpty: false,
-		},
-		{
-			name:        "valid domains key",
-			version:     "0.7.0",
-			defsKey:     "domains",
-			expectError: false,
-			expectEmpty: false,
-		},
-		{
-			name:        "valid objects key",
-			version:     "0.7.0",
-			defsKey:     "objects",
-			expectError: false,
-			expectEmpty: false,
-		},
-		{
-			name:        "invalid key",
-			version:     "0.7.0",
-			defsKey:     "nonexistent",
-			expectError: true,
-		},
-		{
-			name:        "invalid version",
-			version:     invalidVersion,
-			defsKey:     "skills",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
-			defer server.Close()
-
-			schema, err := New(server.URL)
-			if err != nil {
-				t.Fatalf("Failed to create schema: %v", err)
-			}
-
-			result, err := schema.GetSchemaKey(context.Background(), tt.defsKey, WithVersion(tt.version))
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("GetSchemaKey() expected error but got none")
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Errorf("GetSchemaKey() unexpected error: %v", err)
-
-				return
-			}
-
-			validateSchemaKeyResult(t, result, tt.expectEmpty)
-		})
-	}
-}
-
 // validateSkillsResult validates the result from GetSchemaSkills.
-func validateSkillsResult(t *testing.T, skills []byte) {
+func validateSkillsResult(t *testing.T, skills SchemaCategories) {
 	t.Helper()
 
 	if len(skills) == 0 {
-		t.Errorf("GetSchemaSkills() returned empty skills")
-	}
-
-	var skillsMap map[string]any
-	if err := json.Unmarshal(skills, &skillsMap); err != nil {
-		t.Errorf("GetSchemaSkills() returned invalid JSON: %v", err)
-	}
-
-	if len(skillsMap) == 0 {
 		t.Errorf("GetSchemaSkills() returned empty skills map")
+	}
+
+	core, ok := skills["core"]
+	if !ok {
+		t.Fatalf("GetSchemaSkills() missing top-level 'core' category")
+	}
+
+	if _, ok := core.Classes["language_model"]; !ok {
+		t.Errorf("GetSchemaSkills() missing nested 'language_model' class")
 	}
 }
 
@@ -482,21 +435,16 @@ func TestGetSchemaSkills(t *testing.T) {
 }
 
 // validateDomainsResult validates the result from GetSchemaDomains.
-func validateDomainsResult(t *testing.T, domains []byte, version string) {
+func validateDomainsResult(t *testing.T, domains SchemaCategories, version string) {
 	t.Helper()
 
-	var domainsMap map[string]any
-	if err := json.Unmarshal(domains, &domainsMap); err != nil {
-		t.Errorf("GetSchemaDomains() returned invalid JSON: %v", err)
-	}
-
 	if version == testSchemaVersion {
-		if len(domainsMap) == 0 {
+		if len(domains) == 0 {
 			t.Errorf("GetSchemaDomains() returned empty domains map for version %s", version)
 		}
 
-		if _, ok := domainsMap["lean_manufacturing"]; !ok {
-			t.Logf("Warning: Expected domain 'lean_manufacturing' not found in version %s", version)
+		if _, ok := domains["core"]; !ok {
+			t.Logf("Warning: Expected domain category 'core' not found in version %s", version)
 		}
 	}
 }
@@ -582,6 +530,18 @@ func createMockServerWithVersionsEndpoint(t *testing.T) *httptest.Server {
 
 			if err := json.NewEncoder(w).Encode(versionsResp); err != nil {
 				t.Errorf("Failed to encode versions response: %v", err)
+			}
+
+			return
+		}
+
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) == 4 && pathParts[1] == "api" &&
+			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
+				t.Errorf("Failed to encode categories response: %v", err)
 			}
 
 			return
@@ -731,49 +691,30 @@ func TestGetDefaultSchemaVersionLegacyFormat(t *testing.T) {
 	}
 }
 
-// Helper function to compare schema section counts between dedicated getter and full schema.
-func compareSchemaSection(t *testing.T, schema *Schema, version string, sectionName string, getSection func(context.Context, ...SchemaOption) ([]byte, error)) {
+// validateCategoryTree checks that categories include nested classes.
+func validateCategoryTree(t *testing.T, categories SchemaCategories) {
 	t.Helper()
 
-	fullSchema, err := schema.GetRecordSchemaContent(context.Background(), WithVersion(version))
-	if err != nil {
-		t.Fatalf("Failed to get full schema: %v", err)
+	if len(categories) == 0 {
+		t.Fatalf("Expected non-empty category response")
 	}
 
-	var fullSchemaMap map[string]any
-	if err := json.Unmarshal(fullSchema, &fullSchemaMap); err != nil {
-		t.Fatalf("Failed to parse full schema: %v", err)
-	}
-
-	sectionData, err := getSection(context.Background(), WithVersion(version))
-	if err != nil {
-		t.Fatalf("Failed to get %s: %v", sectionName, err)
-	}
-
-	var sectionMap map[string]any
-	if err := json.Unmarshal(sectionData, &sectionMap); err != nil {
-		t.Fatalf("Failed to parse %s: %v", sectionName, err)
-	}
-
-	// Extract section from full schema
-	defs, ok := fullSchemaMap["$defs"].(map[string]any)
+	core, ok := categories["core"]
 	if !ok {
-		t.Fatalf("Expected $defs to be map[string]any")
+		t.Fatalf("Expected top-level 'core' category")
 	}
 
-	fullSchemaSection, ok := defs[sectionName].(map[string]any)
+	languageModel, ok := core.Classes["language_model"]
 	if !ok {
-		t.Fatalf("Expected %s to be map[string]any", sectionName)
+		t.Fatalf("Expected nested 'language_model' class")
 	}
 
-	// Compare the number of items
-	if len(sectionMap) != len(fullSchemaSection) {
-		t.Errorf("%s count mismatch: getter returned %d items, full schema has %d items",
-			sectionName, len(sectionMap), len(fullSchemaSection))
+	if _, ok := languageModel.Classes["prompt"]; !ok {
+		t.Fatalf("Expected nested 'prompt' class")
 	}
 }
 
-func TestGetSchemaSkillsVsFullSchema(t *testing.T) {
+func TestGetSchemaSkillsNested(t *testing.T) {
 	// Create a mock HTTP server
 	server := createMockServerWithVersionsEndpoint(t)
 	defer server.Close()
@@ -784,12 +725,15 @@ func TestGetSchemaSkillsVsFullSchema(t *testing.T) {
 		t.Fatalf("Failed to create schema: %v", err)
 	}
 
-	// This test ensures that GetSchemaSkills returns the same skills
-	// section as in the full schema
-	compareSchemaSection(t, schema, testSchemaVersion, "skills", schema.GetSchemaSkills)
+	skills, err := schema.GetSchemaSkills(context.Background(), WithVersion(testSchemaVersion))
+	if err != nil {
+		t.Fatalf("Failed to get skills: %v", err)
+	}
+
+	validateCategoryTree(t, skills)
 }
 
-func TestGetSchemaDomainsVsFullSchema(t *testing.T) {
+func TestGetSchemaDomainsNested(t *testing.T) {
 	// Create a mock HTTP server
 	server := createMockServerWithVersionsEndpoint(t)
 	defer server.Close()
@@ -800,9 +744,12 @@ func TestGetSchemaDomainsVsFullSchema(t *testing.T) {
 		t.Fatalf("Failed to create schema: %v", err)
 	}
 
-	// This test ensures that GetSchemaDomains returns the same domains
-	// section as in the full schema
-	compareSchemaSection(t, schema, testSchemaVersion, "domains", schema.GetSchemaDomains)
+	domains, err := schema.GetSchemaDomains(context.Background(), WithVersion(testSchemaVersion))
+	if err != nil {
+		t.Fatalf("Failed to get domains: %v", err)
+	}
+
+	validateCategoryTree(t, domains)
 }
 
 func TestGetSchemaModules(t *testing.T) {
@@ -859,6 +806,24 @@ func TestDefaultVersion(t *testing.T) {
 			requestedVersions = append(requestedVersions, pathParts[2])
 		}
 
+		// Track which schema version was requested on /api/<version>/*_categories.
+		if len(pathParts) == 4 && pathParts[1] == "api" &&
+			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+			requestedVersions = append(requestedVersions, pathParts[2])
+		}
+
+		// Return category responses for category endpoints.
+		if len(pathParts) == 4 && pathParts[1] == "api" &&
+			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
+				t.Errorf("Failed to encode categories response: %v", err)
+			}
+
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
@@ -905,15 +870,6 @@ func TestDefaultVersion(t *testing.T) {
 				return err
 			},
 			minCount: 3,
-		},
-		{
-			name: "GetSchemaKey",
-			testFunc: func() error {
-				_, err := schema.GetSchemaKey(context.Background(), "skills")
-
-				return err
-			},
-			minCount: 4,
 		},
 	}
 

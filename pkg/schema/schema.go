@@ -33,6 +33,20 @@ type VersionInfo struct {
 	APIVersion    string `json:"api_version,omitempty"`
 }
 
+// SchemaCategoryNode represents a nested taxonomy node returned by *_categories endpoints.
+type SchemaCategoryNode struct {
+	ID          int                           `json:"id"`
+	Name        string                        `json:"name"`
+	Description string                        `json:"description,omitempty"`
+	Category    bool                          `json:"category,omitempty"`
+	Caption     string                        `json:"caption,omitempty"`
+	Deprecated  bool                          `json:"deprecated,omitempty"`
+	Classes     map[string]SchemaCategoryNode `json:"classes,omitempty"`
+}
+
+// SchemaCategories is the top-level category map keyed by category slug.
+type SchemaCategories map[string]SchemaCategoryNode
+
 // SchemaOption is a function that configures schema options.
 type SchemaOption func(*schemaOptions)
 
@@ -52,21 +66,21 @@ const (
 
 // schemaOptions holds the options for schema operations.
 type schemaOptions struct {
-	version string
+	schemaVersion string
 }
 
-// WithVersion sets the schema version to use.
-func WithVersion(version string) SchemaOption {
+// WithSchemaVersion sets the schema version to use.
+func WithSchemaVersion(schemaVersion string) SchemaOption {
 	return func(opts *schemaOptions) {
-		opts.version = version
+		opts.schemaVersion = schemaVersion
 	}
 }
 
 // Schema provides access to OASF schema definitions via API.
 type Schema struct {
-	schemaURL      string // Normalized schema URL
-	httpClient     *http.Client
-	defaultVersion string // Cached default version
+	schemaURL            string // Normalized schema URL
+	httpClient           *http.Client
+	defaultSchemaVersion string // Cached default version
 }
 
 // normalizeURL normalizes a schema URL by removing trailing slashes and adding protocol if missing.
@@ -140,8 +154,8 @@ func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, er
 // GetDefaultSchemaVersion returns the default schema version, caching it after first fetch.
 // The default schema version is fetched from the server's api/versions endpoint.
 func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
-	if s.defaultVersion != "" {
-		return s.defaultVersion, nil
+	if s.defaultSchemaVersion != "" {
+		return s.defaultSchemaVersion, nil
 	}
 
 	versionsResp, err := s.getVersionsResponse(ctx)
@@ -149,12 +163,12 @@ func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	s.defaultVersion = schemaVersionFromVersionInfo(versionsResp.Default)
-	if s.defaultVersion == "" {
+	s.defaultSchemaVersion = schemaVersionFromVersionInfo(versionsResp.Default)
+	if s.defaultSchemaVersion == "" {
 		return "", errors.New("default schema version is missing from /api/versions response")
 	}
 
-	return s.defaultVersion, nil
+	return s.defaultSchemaVersion, nil
 }
 
 // GetAvailableSchemaVersions returns a list of all supported schema versions from the OASF server.
@@ -202,18 +216,18 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 		opt(options)
 	}
 
-	// Use provided version or fetch default
-	version := options.version
-	if version == "" {
+	// Use provided schemaVersion or fetch default
+	schemaVersion := options.schemaVersion
+	if schemaVersion == "" {
 		var err error
 
-		version, err = s.GetDefaultSchemaVersion(ctx)
+		schemaVersion, err = s.GetDefaultSchemaVersion(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get default version: %w", err)
 		}
 	}
 
-	schemaURL := s.constructSchemaURL(version, schemaType, name)
+	schemaURL := s.constructSchemaURL(schemaVersion, schemaType, name)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
 	if err != nil {
@@ -242,6 +256,53 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 	return schemaData, nil
 }
 
+// GetSchemaCategories fetches nested taxonomy categories from /api/<version>/<endpoint>.
+// The endpoint must be one of: module_categories, skill_categories, domain_categories.
+func (s *Schema) GetSchemaCategories(ctx context.Context, endpoint string, opts ...SchemaOption) (SchemaCategories, error) {
+	options := &schemaOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	version := options.schemaVersion
+	if version == "" {
+		var err error
+
+		version, err = s.GetDefaultSchemaVersion(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get default version: %w", err)
+		}
+	}
+
+	categoriesURL := fmt.Sprintf("%s/api/%s/%s", s.schemaURL, version, endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, categoriesURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET request to %s: %w", categoriesURL, err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send GET request to %s: %w", categoriesURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("failed to fetch categories from URL %s: HTTP %d, body: %s", categoriesURL, resp.StatusCode, string(body))
+	}
+
+	var categories SchemaCategories
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&categories); err != nil {
+		return nil, fmt.Errorf("failed to decode categories response from URL %s: %w", categoriesURL, err)
+	}
+
+	return categories, nil
+}
+
 // GetRecordSchemaContent returns the raw JSON schema content for a given version.
 // If no version is provided via options, the default version from the server is used.
 // It fetches the "record" object schema.
@@ -257,56 +318,23 @@ func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOptio
 	return s.GetSchema(ctx, SchemaTypeObjects, "record", opts...)
 }
 
-// GetSchemaKey is a generic function to extract any $defs category from a schema.
-// For example, extracting skills, domains, modules, or any other $defs key.
+// GetSchemaSkills is a convenience function to fetch skill categories.
 // If no version is provided via options, the default version from the server is used.
-// Returns the category definitions as JSON bytes, or an error if not found.
-func (s *Schema) GetSchemaKey(ctx context.Context, defsKey string, opts ...SchemaOption) ([]byte, error) {
-	schemaData, err := s.GetRecordSchemaContent(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	var schemaMap map[string]any
-	if err := json.Unmarshal(schemaData, &schemaMap); err != nil {
-		return nil, fmt.Errorf("failed to parse schema: %w", err)
-	}
-
-	defs, ok := schemaMap["$defs"].(map[string]any)
-	if !ok {
-		return nil, errors.New("schema does not contain $defs section")
-	}
-
-	category, ok := defs[defsKey].(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("schema does not contain '%s' definitions in $defs", defsKey)
-	}
-
-	categoryJSON, err := json.Marshal(category)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal %s: %w", defsKey, err)
-	}
-
-	return categoryJSON, nil
+// Returns nested skill categories from /api/<version>/skill_categories.
+func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
+	return s.GetSchemaCategories(ctx, "skill_categories", opts...)
 }
 
-// GetSchemaSkills is a convenience function to extract skills from a schema.
+// GetSchemaDomains is a convenience function to fetch domain categories.
 // If no version is provided via options, the default version from the server is used.
-// Returns the skills as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetSchemaKey(ctx, "skills", opts...)
+// Returns nested domain categories from /api/<version>/domain_categories.
+func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
+	return s.GetSchemaCategories(ctx, "domain_categories", opts...)
 }
 
-// GetSchemaDomains is a convenience function to extract domains from a schema.
+// GetSchemaModules is a convenience function to fetch module categories.
 // If no version is provided via options, the default version from the server is used.
-// Returns the domains as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetSchemaKey(ctx, "domains", opts...)
-}
-
-// GetSchemaModules is a convenience function to extract modules from a schema.
-// If no version is provided via options, the default version from the server is used.
-// Returns the modules as JSON bytes, or an error if the version is not found or parsing fails.
-func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetSchemaKey(ctx, "modules", opts...)
+// Returns nested module categories from /api/<version>/module_categories.
+func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
+	return s.GetSchemaCategories(ctx, "module_categories", opts...)
 }
