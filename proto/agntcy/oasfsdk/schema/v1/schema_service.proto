@@ -1,0 +1,101 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package agntcy.oasfsdk.schema.v1;
+
+import "google/protobuf/struct.proto";
+
+// SchemaService provides methods to fetch schema metadata and taxonomy categories.
+service SchemaService {
+  // GetDefaultSchemaVersion returns the default schema version configured by the schema server.
+  rpc GetDefaultSchemaVersion(GetDefaultSchemaVersionRequest) returns (GetDefaultSchemaVersionResponse);
+
+  // GetAvailableSchemaVersions returns all schema versions supported by the schema server.
+  rpc GetAvailableSchemaVersions(GetAvailableSchemaVersionsRequest) returns (GetAvailableSchemaVersionsResponse);
+
+  // GetRecordSchemaContent returns the full record JSON schema for a version.
+  rpc GetRecordSchemaContent(GetRecordSchemaContentRequest) returns (GetRecordSchemaContentResponse);
+
+  // GetSchemaSkills returns nested skill categories for a version.
+  rpc GetSchemaSkills(GetSchemaSkillsRequest) returns (GetSchemaSkillsResponse);
+
+  // GetSchemaDomains returns nested domain categories for a version.
+  rpc GetSchemaDomains(GetSchemaDomainsRequest) returns (GetSchemaDomainsResponse);
+
+  // GetSchemaModules returns nested module categories for a version.
+  rpc GetSchemaModules(GetSchemaModulesRequest) returns (GetSchemaModulesResponse);
+}
+
+message GetDefaultSchemaVersionRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+}
+
+message GetDefaultSchemaVersionResponse {
+  // Default schema version returned by the schema server.
+  string version = 1;
+}
+
+message GetAvailableSchemaVersionsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+}
+
+message GetAvailableSchemaVersionsResponse {
+  // List of schema versions supported by the schema server.
+  repeated string versions = 1;
+}
+
+message GetRecordSchemaContentRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetRecordSchemaContentResponse {
+  // Full record schema represented as structured JSON.
+  google.protobuf.Struct schema = 1;
+}
+
+message GetSchemaSkillsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaSkillsResponse {
+  // Nested skill categories represented as structured JSON.
+  google.protobuf.Struct data = 1;
+}
+
+message GetSchemaDomainsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaDomainsResponse {
+  // Nested domain categories represented as structured JSON.
+  google.protobuf.Struct data = 1;
+}
+
+message GetSchemaModulesRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaModulesResponse {
+  // Nested module categories represented as structured JSON.
+  google.protobuf.Struct data = 1;
+}
