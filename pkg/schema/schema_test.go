@@ -198,7 +198,7 @@ func TestGetRecordSchemaContent(t *testing.T) {
 				t.Fatalf("Failed to create schema: %v", err)
 			}
 
-			content, err := schema.GetRecordSchemaContent(context.Background(), WithVersion(tt.version))
+			content, err := schema.GetRecordSchemaContent(context.Background(), WithSchemaVersion(tt.version))
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("GetRecordSchemaContent() expected error but got none")
@@ -274,7 +274,7 @@ func TestGetSchema(t *testing.T) {
 			var opts []SchemaOption
 
 			if tt.version != "" {
-				opts = append(opts, WithVersion(tt.version))
+				opts = append(opts, WithSchemaVersion(tt.version))
 			}
 
 			content, err := schema.GetSchema(context.Background(), tt.typ, tt.schemaName, opts...)
@@ -417,7 +417,7 @@ func TestGetSchemaSkills(t *testing.T) {
 				t.Fatalf("Failed to create schema: %v", err)
 			}
 
-			skills, err := schema.GetSchemaSkills(context.Background(), WithVersion(tt.version))
+			skills, err := schema.GetSchemaSkills(context.Background(), WithSchemaVersion(tt.version))
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("GetSchemaSkills() expected error but got none")
@@ -489,7 +489,7 @@ func TestGetSchemaDomains(t *testing.T) {
 				t.Fatalf("Failed to create schema: %v", err)
 			}
 
-			domains, err := schema.GetSchemaDomains(context.Background(), WithVersion(tt.version))
+			domains, err := schema.GetSchemaDomains(context.Background(), WithSchemaVersion(tt.version))
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("GetSchemaDomains() expected error but got none")
@@ -614,18 +614,6 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 			{SchemaVersion: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
 		},
 	}
-	legacyMockResponse := VersionsResponse{
-		Default: VersionInfo{
-			Version: "0.8.0",
-			URL:     "http://schema.oasf.outshift.com:8000/api/0.8.0",
-		},
-		Versions: []VersionInfo{
-			{Version: "0.7.0", URL: "http://schema.oasf.outshift.com:8000/0.7.0/api"},
-			{Version: "0.8.0", URL: "http://schema.oasf.outshift.com:8000/0.8.0/api"},
-			{Version: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
-		},
-	}
-
 	t.Run("valid versions response", func(t *testing.T) {
 		server := createVersionsMockServer(t, mockResponse)
 		defer server.Close()
@@ -642,23 +630,6 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 
 		validateVersionsResult(t, versions)
 	})
-	t.Run("legacy versions response", func(t *testing.T) {
-		server := createVersionsMockServer(t, legacyMockResponse)
-		defer server.Close()
-
-		schema, err := New(server.URL)
-		if err != nil {
-			t.Fatalf("Failed to create schema: %v", err)
-		}
-
-		versions, err := schema.GetAvailableSchemaVersions(context.Background())
-		if err != nil {
-			t.Errorf("GetAvailableSchemaVersions() unexpected error: %v", err)
-		}
-
-		validateVersionsResult(t, versions)
-	})
-
 	t.Run("empty URL", func(t *testing.T) {
 		_, err := New("")
 		if err == nil {
@@ -667,12 +638,12 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 	})
 }
 
-func TestGetDefaultSchemaVersionLegacyFormat(t *testing.T) {
+func TestGetDefaultSchemaVersion(t *testing.T) {
 	server := createVersionsMockServer(t, VersionsResponse{
-		Default: VersionInfo{Version: "0.8.0"},
+		Default: VersionInfo{SchemaVersion: "0.8.0"},
 		Versions: []VersionInfo{
-			{Version: "0.7.0"},
-			{Version: "0.8.0"},
+			{SchemaVersion: "0.7.0"},
+			{SchemaVersion: "0.8.0"},
 		},
 	})
 	defer server.Close()
@@ -726,7 +697,7 @@ func TestGetSchemaSkillsNested(t *testing.T) {
 		t.Fatalf("Failed to create schema: %v", err)
 	}
 
-	skills, err := schema.GetSchemaSkills(context.Background(), WithVersion(testSchemaVersion))
+	skills, err := schema.GetSchemaSkills(context.Background(), WithSchemaVersion(testSchemaVersion))
 	if err != nil {
 		t.Fatalf("Failed to get skills: %v", err)
 	}
@@ -745,7 +716,7 @@ func TestGetSchemaDomainsNested(t *testing.T) {
 		t.Fatalf("Failed to create schema: %v", err)
 	}
 
-	domains, err := schema.GetSchemaDomains(context.Background(), WithVersion(testSchemaVersion))
+	domains, err := schema.GetSchemaDomains(context.Background(), WithSchemaVersion(testSchemaVersion))
 	if err != nil {
 		t.Fatalf("Failed to get domains: %v", err)
 	}
@@ -765,7 +736,7 @@ func TestGetSchemaModules(t *testing.T) {
 	}
 
 	// Note: modules may not exist in all schema versions
-	_, err = schema.GetSchemaModules(context.Background(), WithVersion("0.7.0"))
+	_, err = schema.GetSchemaModules(context.Background(), WithSchemaVersion("0.7.0"))
 	// We don't assert on error since modules might not exist
 	// This test mainly ensures the function doesn't panic
 	_ = err
@@ -990,10 +961,10 @@ func TestSchemaCategoriesCachedByVersion(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
-	if _, err := s.GetSchemaModules(context.Background(), WithVersion("0.8.0")); err != nil {
+	if _, err := s.GetSchemaModules(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaModules first cached call failed: %v", err)
 	}
-	if _, err := s.GetSchemaModules(context.Background(), WithVersion("0.8.0")); err != nil {
+	if _, err := s.GetSchemaModules(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaModules second cached call failed: %v", err)
 	}
 
@@ -1054,13 +1025,13 @@ func TestClearCache(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
-	if _, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0")); err != nil {
+	if _, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaSkills from cache failed: %v", err)
 	}
 
 	s.ClearCache()
 
-	if _, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0")); err != nil {
+	if _, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaSkills after ClearCache failed: %v", err)
 	}
 
@@ -1127,7 +1098,7 @@ func TestReloadCache(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
-	first, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0"))
+	first, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0"))
 	if err != nil {
 		t.Fatalf("GetSchemaSkills first cached read failed: %v", err)
 	}
@@ -1138,7 +1109,7 @@ func TestReloadCache(t *testing.T) {
 	if err := s.ReloadCache(context.Background()); err != nil {
 		t.Fatalf("ReloadCache failed: %v", err)
 	}
-	second, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0"))
+	second, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0"))
 	if err != nil {
 		t.Fatalf("GetSchemaSkills second cached read failed: %v", err)
 	}
@@ -1189,7 +1160,7 @@ func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing
 		t.Fatalf("Failed to create schema: %v", err)
 	}
 
-	_, err = s.GetSchemaModules(context.Background(), WithVersion("1.1.0"))
+	_, err = s.GetSchemaModules(context.Background(), WithSchemaVersion("1.1.0"))
 	if err == nil {
 		t.Fatalf("Expected unsupported-version error, got nil")
 	}

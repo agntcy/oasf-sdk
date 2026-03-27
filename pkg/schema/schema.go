@@ -25,9 +25,7 @@ type VersionsResponse struct {
 }
 
 // VersionInfo represents schema server version metadata.
-// The API has evolved over time, so we support both legacy and v0.6.0 fields.
 type VersionInfo struct {
-	Version       string `json:"version,omitempty"`
 	SchemaVersion string `json:"schema_version"`
 	URL           string `json:"url,omitempty"`
 	APIURL        string `json:"api_url,omitempty"`
@@ -86,12 +84,6 @@ func WithSchemaVersion(schemaVersion string) SchemaOption {
 	}
 }
 
-// WithVersion sets the schema version to use.
-// Deprecated: use WithSchemaVersion instead.
-func WithVersion(schemaVersion string) SchemaOption {
-	return WithSchemaVersion(schemaVersion)
-}
-
 // Schema provides access to OASF schema definitions via API.
 type Schema struct {
 	schemaURL  string // Normalized schema URL
@@ -121,14 +113,6 @@ func New(schemaURL string) (*Schema, error) {
 			Timeout: defaultHTTPTimeoutSeconds * time.Second,
 		},
 	}, nil
-}
-
-func schemaVersionFromVersionInfo(versionInfo VersionInfo) string {
-	if versionInfo.SchemaVersion != "" {
-		return versionInfo.SchemaVersion
-	}
-
-	return versionInfo.Version
 }
 
 // cloneCategories deep-copies SchemaCategories before returning it to callers.
@@ -188,7 +172,7 @@ func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	defaultSchemaVersion := schemaVersionFromVersionInfo(versionsResp.Default)
+	defaultSchemaVersion := versionsResp.Default.SchemaVersion
 	if defaultSchemaVersion == "" {
 		return "", errors.New("default schema version is missing from /api/versions response")
 	}
@@ -210,7 +194,7 @@ func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, erro
 
 	schemaVersions := make([]string, 0, len(versionsResp.Versions))
 	for _, v := range versionsResp.Versions {
-		schemaVersion := schemaVersionFromVersionInfo(v)
+		schemaVersion := v.SchemaVersion
 		if schemaVersion != "" {
 			schemaVersions = append(schemaVersions, schemaVersion)
 		}
@@ -316,14 +300,14 @@ func (s *Schema) Cache(ctx context.Context) error {
 		return err
 	}
 
-	defaultSchemaVersion := schemaVersionFromVersionInfo(versionsResp.Default)
+	defaultSchemaVersion := versionsResp.Default.SchemaVersion
 	if defaultSchemaVersion == "" {
 		return errors.New("default schema version is missing from /api/versions response")
 	}
 
 	schemaVersions := make([]string, 0, len(versionsResp.Versions))
 	for _, v := range versionsResp.Versions {
-		schemaVersion := schemaVersionFromVersionInfo(v)
+		schemaVersion := v.SchemaVersion
 		if schemaVersion != "" {
 			schemaVersions = append(schemaVersions, schemaVersion)
 		}
