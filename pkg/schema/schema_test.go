@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -884,6 +885,173 @@ func TestDefaultVersion(t *testing.T) {
 				t.Errorf("Expected default version %s, got %v", defaultVersion, requestedVersions)
 			}
 		})
+	}
+}
+
+func TestVersionsAreCached(t *testing.T) {
+	var versionsCalls int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == apiVersionsPath {
+			atomic.AddInt32(&versionsCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(VersionsResponse{
+				Default: VersionInfo{SchemaVersion: "0.8.0"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.7.0"},
+					{SchemaVersion: "0.8.0"},
+					{SchemaVersion: "1.0.0"},
+				},
+			})
+
+			return
+		}
+
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) == 4 && pathParts[1] == "api" &&
+			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	s, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("failed to create schema: %v", err)
+	}
+
+	if err := s.Cache(context.Background()); err != nil {
+		t.Fatalf("Cache failed: %v", err)
+	}
+	if _, err := s.GetAvailableSchemaVersions(context.Background()); err != nil {
+		t.Fatalf("GetAvailableSchemaVersions from cache failed: %v", err)
+	}
+	if _, err := s.GetDefaultSchemaVersion(context.Background()); err != nil {
+		t.Fatalf("GetDefaultSchemaVersion from cache failed: %v", err)
+	}
+	if _, err := s.GetAvailableSchemaVersions(context.Background()); err != nil {
+		t.Fatalf("GetAvailableSchemaVersions second cached call failed: %v", err)
+	}
+
+	if got := atomic.LoadInt32(&versionsCalls); got != 1 {
+		t.Fatalf("expected exactly one /api/versions call, got %d", got)
+	}
+}
+
+func TestSchemaCategoriesCachedByVersion(t *testing.T) {
+	var categoryCalls int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case apiVersionsPath:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(VersionsResponse{
+				Default: VersionInfo{SchemaVersion: "0.8.0"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.8.0"},
+				},
+			})
+			return
+		case "/api/0.8.0/skill_categories":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		case "/api/0.8.0/domain_categories":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		case "/api/0.8.0/module_categories":
+			atomic.AddInt32(&categoryCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}))
+	defer server.Close()
+
+	s, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("failed to create schema: %v", err)
+	}
+
+	if err := s.Cache(context.Background()); err != nil {
+		t.Fatalf("Cache failed: %v", err)
+	}
+	if _, err := s.GetSchemaModules(context.Background(), WithVersion("0.8.0")); err != nil {
+		t.Fatalf("GetSchemaModules first cached call failed: %v", err)
+	}
+	if _, err := s.GetSchemaModules(context.Background(), WithVersion("0.8.0")); err != nil {
+		t.Fatalf("GetSchemaModules second cached call failed: %v", err)
+	}
+
+	if got := atomic.LoadInt32(&categoryCalls); got != 1 {
+		t.Fatalf("expected exactly one categories fetch, got %d", got)
+	}
+}
+
+func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing.T) {
+	categoryEndpointHit := false
+	versionsEndpointCalls := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == apiVersionsPath {
+			versionsEndpointCalls++
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(VersionsResponse{
+				Default: VersionInfo{SchemaVersion: "1.0.0"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.8.0"},
+					{SchemaVersion: "1.0.0"},
+				},
+			})
+
+			return
+		}
+
+		if strings.HasPrefix(r.URL.Path, "/api/") && strings.HasSuffix(r.URL.Path, "/module_categories") {
+			categoryEndpointHit = true
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	s, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	_, err = s.GetSchemaModules(context.Background(), WithVersion("1.1.0"))
+	if err == nil {
+		t.Fatalf("Expected unsupported-version error, got nil")
+	}
+	if !strings.Contains(err.Error(), `schema version "1.1.0" is not supported`) {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if categoryEndpointHit {
+		t.Fatalf("Category endpoint should not be called for unsupported version")
+	}
+	if versionsEndpointCalls != 1 {
+		t.Fatalf("Expected one versions fetch, got %d", versionsEndpointCalls)
 	}
 }
 
