@@ -360,6 +360,16 @@ func (s *Schema) Cache(ctx context.Context) error {
 	return nil
 }
 
+// ReloadCache refreshes the full cache snapshot.
+func (s *Schema) ReloadCache(ctx context.Context) error {
+	return s.Cache(ctx)
+}
+
+// ClearCache removes the current cache snapshot.
+func (s *Schema) ClearCache() {
+	s.cache.Store(nil)
+}
+
 // constructSchemaURL builds the schema URL from options.
 // Format: /schema/<version>/<type>/<name>.
 func (s *Schema) constructSchemaURL(version string, schemaType SchemaType, name string) string {

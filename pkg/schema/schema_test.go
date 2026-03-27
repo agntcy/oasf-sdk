@@ -1002,6 +1002,155 @@ func TestSchemaCategoriesCachedByVersion(t *testing.T) {
 	}
 }
 
+func TestClearCache(t *testing.T) {
+	var versionsCalls int32
+	var skillCalls int32
+	var domainCalls int32
+	var moduleCalls int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case apiVersionsPath:
+			atomic.AddInt32(&versionsCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(VersionsResponse{
+				Default: VersionInfo{SchemaVersion: "0.8.0"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.8.0"},
+				},
+			})
+			return
+		case "/api/0.8.0/skill_categories":
+			atomic.AddInt32(&skillCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		case "/api/0.8.0/domain_categories":
+			atomic.AddInt32(&domainCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		case "/api/0.8.0/module_categories":
+			atomic.AddInt32(&moduleCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}))
+	defer server.Close()
+
+	s, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("failed to create schema: %v", err)
+	}
+
+	if err := s.Cache(context.Background()); err != nil {
+		t.Fatalf("Cache failed: %v", err)
+	}
+	if _, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0")); err != nil {
+		t.Fatalf("GetSchemaSkills from cache failed: %v", err)
+	}
+
+	s.ClearCache()
+
+	if _, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0")); err != nil {
+		t.Fatalf("GetSchemaSkills after ClearCache failed: %v", err)
+	}
+
+	if got := atomic.LoadInt32(&versionsCalls); got != 2 {
+		t.Fatalf("expected two /api/versions calls, got %d", got)
+	}
+	if got := atomic.LoadInt32(&skillCalls); got != 2 {
+		t.Fatalf("expected two skill fetches, got %d", got)
+	}
+	if got := atomic.LoadInt32(&domainCalls); got != 1 {
+		t.Fatalf("expected one domain fetch from initial Cache, got %d", got)
+	}
+	if got := atomic.LoadInt32(&moduleCalls); got != 1 {
+		t.Fatalf("expected one module fetch from initial Cache, got %d", got)
+	}
+}
+
+func TestReloadCache(t *testing.T) {
+	var skillCalls int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case apiVersionsPath:
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(VersionsResponse{
+				Default: VersionInfo{SchemaVersion: "0.8.0"},
+				Versions: []VersionInfo{
+					{SchemaVersion: "0.8.0"},
+				},
+			})
+			return
+		case "/api/0.8.0/skill_categories":
+			call := atomic.AddInt32(&skillCalls, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if call == 1 {
+				_ = json.NewEncoder(w).Encode(SchemaCategories{
+					"skills": {ID: 1, Name: "skills-v1"},
+				})
+			} else {
+				_ = json.NewEncoder(w).Encode(SchemaCategories{
+					"skills": {ID: 1, Name: "skills-v2"},
+				})
+			}
+			return
+		case "/api/0.8.0/domain_categories", "/api/0.8.0/module_categories":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+			return
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+	}))
+	defer server.Close()
+
+	s, err := New(server.URL)
+	if err != nil {
+		t.Fatalf("failed to create schema: %v", err)
+	}
+
+	if err := s.Cache(context.Background()); err != nil {
+		t.Fatalf("Cache failed: %v", err)
+	}
+	first, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0"))
+	if err != nil {
+		t.Fatalf("GetSchemaSkills first cached read failed: %v", err)
+	}
+	if first["skills"].Name != "skills-v1" {
+		t.Fatalf("expected first cached value skills-v1, got %q", first["skills"].Name)
+	}
+
+	if err := s.ReloadCache(context.Background()); err != nil {
+		t.Fatalf("ReloadCache failed: %v", err)
+	}
+	second, err := s.GetSchemaSkills(context.Background(), WithVersion("0.8.0"))
+	if err != nil {
+		t.Fatalf("GetSchemaSkills second cached read failed: %v", err)
+	}
+	if second["skills"].Name != "skills-v2" {
+		t.Fatalf("expected reloaded cached value skills-v2, got %q", second["skills"].Name)
+	}
+
+	if got := atomic.LoadInt32(&skillCalls); got != 2 {
+		t.Fatalf("expected two skill endpoint calls (cache + reload), got %d", got)
+	}
+}
+
 func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing.T) {
 	categoryEndpointHit := false
 	versionsEndpointCalls := 0
