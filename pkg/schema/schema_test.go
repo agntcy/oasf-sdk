@@ -17,6 +17,16 @@ const testSchemaVersion = "0.7.0"
 
 const invalidVersion = "99.99.99"
 
+const (
+	apiPathSegment           = "api"
+	skillCategoriesEndpoint  = "skill_categories"
+	domainCategoriesEndpoint = "domain_categories"
+	moduleCategoriesEndpoint = "module_categories"
+	pathSkillCategories080   = "/api/0.8.0/skill_categories"
+	pathDomainCategories080  = "/api/0.8.0/domain_categories"
+	pathModuleCategories080  = "/api/0.8.0/module_categories"
+)
+
 // mockSchemaResponse returns a mock schema JSON response with $defs section.
 func mockSchemaResponse() map[string]any {
 	return map[string]any{
@@ -333,10 +343,11 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 
 		// Handle category endpoints.
 		pathParts := strings.Split(r.URL.Path, "/")
-		if len(pathParts) == 4 && pathParts[1] == "api" &&
-			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+		if len(pathParts) == 4 && pathParts[1] == apiPathSegment &&
+			(pathParts[3] == moduleCategoriesEndpoint || pathParts[3] == skillCategoriesEndpoint || pathParts[3] == domainCategoriesEndpoint) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+
 			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
 				t.Errorf("Failed to encode categories response: %v", err)
 			}
@@ -537,10 +548,11 @@ func createMockServerWithVersionsEndpoint(t *testing.T) *httptest.Server {
 		}
 
 		pathParts := strings.Split(r.URL.Path, "/")
-		if len(pathParts) == 4 && pathParts[1] == "api" &&
-			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+		if len(pathParts) == 4 && pathParts[1] == apiPathSegment &&
+			(pathParts[3] == moduleCategoriesEndpoint || pathParts[3] == skillCategoriesEndpoint || pathParts[3] == domainCategoriesEndpoint) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+
 			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
 				t.Errorf("Failed to encode categories response: %v", err)
 			}
@@ -614,6 +626,7 @@ func TestGetAvailableSchemaVersions(t *testing.T) {
 			{SchemaVersion: "1.0.0", URL: "http://schema.oasf.outshift.com:8000/1.0.0/api"},
 		},
 	}
+
 	t.Run("valid versions response", func(t *testing.T) {
 		server := createVersionsMockServer(t, mockResponse)
 		defer server.Close()
@@ -742,6 +755,7 @@ func TestGetSchemaModules(t *testing.T) {
 	_ = err
 }
 
+//nolint:cyclop // Table-driven split would reduce complexity but hurt readability here.
 func TestDefaultVersion(t *testing.T) {
 	defaultVersion := "0.8.0"
 
@@ -779,16 +793,17 @@ func TestDefaultVersion(t *testing.T) {
 		}
 
 		// Track which schema version was requested on /api/<version>/*_categories.
-		if len(pathParts) == 4 && pathParts[1] == "api" &&
-			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+		if len(pathParts) == 4 && pathParts[1] == apiPathSegment &&
+			(pathParts[3] == moduleCategoriesEndpoint || pathParts[3] == skillCategoriesEndpoint || pathParts[3] == domainCategoriesEndpoint) {
 			requestedVersions = append(requestedVersions, pathParts[2])
 		}
 
 		// Return category responses for category endpoints.
-		if len(pathParts) == 4 && pathParts[1] == "api" &&
-			(pathParts[3] == "module_categories" || pathParts[3] == "skill_categories" || pathParts[3] == "domain_categories") {
+		if len(pathParts) == 4 && pathParts[1] == apiPathSegment &&
+			(pathParts[3] == moduleCategoriesEndpoint || pathParts[3] == skillCategoriesEndpoint || pathParts[3] == domainCategoriesEndpoint) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+
 			if err := json.NewEncoder(w).Encode(mockCategoriesResponse()); err != nil {
 				t.Errorf("Failed to encode categories response: %v", err)
 			}
@@ -885,6 +900,7 @@ func TestVersionsAreCached(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		}
 
@@ -900,12 +916,15 @@ func TestVersionsAreCached(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
+
 	if _, err := s.GetAvailableSchemaVersions(context.Background()); err != nil {
 		t.Fatalf("GetAvailableSchemaVersions from cache failed: %v", err)
 	}
+
 	if _, err := s.GetDefaultSchemaVersion(context.Background()); err != nil {
 		t.Fatalf("GetDefaultSchemaVersion from cache failed: %v", err)
 	}
+
 	if _, err := s.GetAvailableSchemaVersions(context.Background()); err != nil {
 		t.Fatalf("GetAvailableSchemaVersions second cached call failed: %v", err)
 	}
@@ -929,25 +948,30 @@ func TestSchemaCategoriesCachedByVersion(t *testing.T) {
 					{SchemaVersion: "0.8.0"},
 				},
 			})
+
 			return
-		case "/api/0.8.0/skill_categories":
+		case pathSkillCategories080:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
-		case "/api/0.8.0/domain_categories":
+		case pathDomainCategories080:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
-		case "/api/0.8.0/module_categories":
+		case pathModuleCategories080:
 			atomic.AddInt32(&categoryCalls, 1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		default:
 			w.WriteHeader(http.StatusNotFound)
+
 			return
 		}
 	}))
@@ -961,9 +985,11 @@ func TestSchemaCategoriesCachedByVersion(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
+
 	if _, err := s.GetSchemaModules(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaModules first cached call failed: %v", err)
 	}
+
 	if _, err := s.GetSchemaModules(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaModules second cached call failed: %v", err)
 	}
@@ -974,10 +1000,12 @@ func TestSchemaCategoriesCachedByVersion(t *testing.T) {
 }
 
 func TestClearCache(t *testing.T) {
-	var versionsCalls int32
-	var skillCalls int32
-	var domainCalls int32
-	var moduleCalls int32
+	var (
+		versionsCalls int32
+		skillCalls    int32
+		domainCalls   int32
+		moduleCalls   int32
+	)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -991,27 +1019,32 @@ func TestClearCache(t *testing.T) {
 					{SchemaVersion: "0.8.0"},
 				},
 			})
+
 			return
 		case "/api/0.8.0/skill_categories":
 			atomic.AddInt32(&skillCalls, 1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		case "/api/0.8.0/domain_categories":
 			atomic.AddInt32(&domainCalls, 1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		case "/api/0.8.0/module_categories":
 			atomic.AddInt32(&moduleCalls, 1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		default:
 			w.WriteHeader(http.StatusNotFound)
+
 			return
 		}
 	}))
@@ -1025,6 +1058,7 @@ func TestClearCache(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
+
 	if _, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0")); err != nil {
 		t.Fatalf("GetSchemaSkills from cache failed: %v", err)
 	}
@@ -1038,12 +1072,15 @@ func TestClearCache(t *testing.T) {
 	if got := atomic.LoadInt32(&versionsCalls); got != 2 {
 		t.Fatalf("expected two /api/versions calls, got %d", got)
 	}
+
 	if got := atomic.LoadInt32(&skillCalls); got != 2 {
 		t.Fatalf("expected two skill fetches, got %d", got)
 	}
+
 	if got := atomic.LoadInt32(&domainCalls); got != 1 {
 		t.Fatalf("expected one domain fetch from initial Cache, got %d", got)
 	}
+
 	if got := atomic.LoadInt32(&moduleCalls); got != 1 {
 		t.Fatalf("expected one module fetch from initial Cache, got %d", got)
 	}
@@ -1063,11 +1100,14 @@ func TestReloadCache(t *testing.T) {
 					{SchemaVersion: "0.8.0"},
 				},
 			})
+
 			return
 		case "/api/0.8.0/skill_categories":
 			call := atomic.AddInt32(&skillCalls, 1)
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+
 			if call == 1 {
 				_ = json.NewEncoder(w).Encode(SchemaCategories{
 					"skills": {ID: 1, Name: "skills-v1"},
@@ -1077,14 +1117,17 @@ func TestReloadCache(t *testing.T) {
 					"skills": {ID: 1, Name: "skills-v2"},
 				})
 			}
+
 			return
 		case "/api/0.8.0/domain_categories", "/api/0.8.0/module_categories":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
+
 			return
 		default:
 			w.WriteHeader(http.StatusNotFound)
+
 			return
 		}
 	}))
@@ -1098,10 +1141,12 @@ func TestReloadCache(t *testing.T) {
 	if err := s.Cache(context.Background()); err != nil {
 		t.Fatalf("Cache failed: %v", err)
 	}
+
 	first, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0"))
 	if err != nil {
 		t.Fatalf("GetSchemaSkills first cached read failed: %v", err)
 	}
+
 	if first["skills"].Name != "skills-v1" {
 		t.Fatalf("expected first cached value skills-v1, got %q", first["skills"].Name)
 	}
@@ -1109,10 +1154,12 @@ func TestReloadCache(t *testing.T) {
 	if err := s.ReloadCache(context.Background()); err != nil {
 		t.Fatalf("ReloadCache failed: %v", err)
 	}
+
 	second, err := s.GetSchemaSkills(context.Background(), WithSchemaVersion("0.8.0"))
 	if err != nil {
 		t.Fatalf("GetSchemaSkills second cached read failed: %v", err)
 	}
+
 	if second["skills"].Name != "skills-v2" {
 		t.Fatalf("expected reloaded cached value skills-v2, got %q", second["skills"].Name)
 	}
@@ -1129,6 +1176,7 @@ func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == apiVersionsPath {
 			versionsEndpointCalls++
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(VersionsResponse{
@@ -1144,6 +1192,7 @@ func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing
 
 		if strings.HasPrefix(r.URL.Path, "/api/") && strings.HasSuffix(r.URL.Path, "/module_categories") {
 			categoryEndpointHit = true
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(mockCategoriesResponse())
@@ -1164,12 +1213,15 @@ func TestGetSchemaModulesRejectsUnsupportedVersionBeforeCategoryFetch(t *testing
 	if err == nil {
 		t.Fatalf("Expected unsupported-version error, got nil")
 	}
+
 	if !strings.Contains(err.Error(), `schema version "1.1.0" is not supported`) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
+
 	if categoryEndpointHit {
 		t.Fatalf("Category endpoint should not be called for unsupported version")
 	}
+
 	if versionsEndpointCalls != 1 {
 		t.Fatalf("Expected one versions fetch, got %d", versionsEndpointCalls)
 	}

@@ -10,13 +10,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
 )
 
-const defaultHTTPTimeoutSeconds = 30
-const apiVersionsPath = "/api/versions"
+const (
+	defaultHTTPTimeoutSeconds = 30
+	apiVersionsPath           = "/api/versions"
+)
 
 // VersionsResponse represents the response from the api/versions endpoint.
 type VersionsResponse struct {
@@ -125,6 +128,7 @@ func cloneCategories(src SchemaCategories) SchemaCategories {
 		if len(v.Classes) > 0 {
 			copied.Classes = cloneCategories(v.Classes)
 		}
+
 		dst[k] = copied
 	}
 
@@ -134,10 +138,12 @@ func cloneCategories(src SchemaCategories) SchemaCategories {
 // getVersionsResponse fetches the versions response from the server.
 func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, error) {
 	versionsURL := s.schemaURL + apiVersionsPath
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, versionsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request to %s: %w", versionsURL, err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := s.httpClient.Do(req)
@@ -148,10 +154,12 @@ func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, er
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("failed to fetch versions from URL %s: HTTP %d, body: %s", versionsURL, resp.StatusCode, string(body))
 	}
 
 	var versionsResp VersionsResponse
+
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&versionsResp); err != nil {
 		return nil, fmt.Errorf("failed to decode versions response from URL %s: %w", versionsURL, err)
@@ -209,10 +217,8 @@ func (s *Schema) ensureVersionSupported(ctx context.Context, schemaVersion strin
 		return fmt.Errorf("failed to get available versions: %w", err)
 	}
 
-	for _, v := range versions {
-		if v == schemaVersion {
-			return nil
-		}
+	if slices.Contains(versions, schemaVersion) {
+		return nil
 	}
 
 	return fmt.Errorf("schema version %q is not supported", schemaVersion)
@@ -223,6 +229,7 @@ func (s *Schema) resolveVersion(ctx context.Context, schemaVersion string) (stri
 		if err := s.ensureVersionSupported(ctx, schemaVersion); err != nil {
 			return "", err
 		}
+
 		return schemaVersion, nil
 	}
 
@@ -246,18 +253,21 @@ func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (Sch
 		if !ok {
 			return nil, false
 		}
+
 		return cloneCategories(c), true
 	case "domain_categories":
 		c, ok := cached.schemaDomains[schemaVersion]
 		if !ok {
 			return nil, false
 		}
+
 		return cloneCategories(c), true
 	case "module_categories":
 		c, ok := cached.schemaModules[schemaVersion]
 		if !ok {
 			return nil, false
 		}
+
 		return cloneCategories(c), true
 	default:
 		return nil, false
@@ -266,10 +276,12 @@ func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (Sch
 
 func (s *Schema) fetchCategoriesForVersion(ctx context.Context, version string, endpoint string) (SchemaCategories, error) {
 	categoriesURL := fmt.Sprintf("%s/api/%s/%s", s.schemaURL, version, endpoint)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, categoriesURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request to %s: %w", categoriesURL, err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := s.httpClient.Do(req)
@@ -280,10 +292,12 @@ func (s *Schema) fetchCategoriesForVersion(ctx context.Context, version string, 
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("failed to fetch categories from URL %s: HTTP %d, body: %s", categoriesURL, resp.StatusCode, string(body))
 	}
 
 	var categories SchemaCategories
+
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&categories); err != nil {
 		return nil, fmt.Errorf("failed to decode categories response from URL %s: %w", categoriesURL, err)
@@ -326,10 +340,12 @@ func (s *Schema) Cache(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to cache skills for version %s: %w", version, err)
 		}
+
 		domains, err := s.fetchCategoriesForVersion(ctx, version, "domain_categories")
 		if err != nil {
 			return fmt.Errorf("failed to cache domains for version %s: %w", version, err)
 		}
+
 		modules, err := s.fetchCategoriesForVersion(ctx, version, "module_categories")
 		if err != nil {
 			return fmt.Errorf("failed to cache modules for version %s: %w", version, err)
@@ -341,6 +357,7 @@ func (s *Schema) Cache(ctx context.Context) error {
 	}
 
 	s.cache.Store(next)
+
 	return nil
 }
 
@@ -374,10 +391,12 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 	}
 
 	schemaURL := s.constructSchemaURL(schemaVersion, schemaType, name)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request to %s: %w", schemaURL, err)
 	}
+
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := s.httpClient.Do(req)
@@ -388,6 +407,7 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("failed to fetch schema from URL %s: HTTP %d, body: %s", schemaURL, resp.StatusCode, string(body))
 	}
 
