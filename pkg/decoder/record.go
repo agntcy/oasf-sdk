@@ -140,3 +140,38 @@ func GetRecordSchemaVersion(record *structpb.Struct) (string, error) {
 
 	return fieldSchemaVersion.GetStringValue(), nil
 }
+
+// GetRecordModuleData returns the module data for the provided module name.
+func GetRecordModuleData(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
+	if record == nil {
+		return false, nil
+	}
+
+	modules, ok := record.GetFields()["modules"]
+	if !ok {
+		return false, nil
+	}
+
+	for _, module := range modules.GetListValue().GetValues() {
+		moduleStruct := module.GetStructValue()
+		if moduleStruct == nil {
+			continue
+		}
+
+		nameField := moduleStruct.GetFields()["name"]
+		if nameField == nil {
+			continue
+		}
+
+		if nameField.GetStringValue() == moduleName {
+			return true, moduleStruct.GetFields()["data"].GetStructValue()
+		}
+	}
+
+	return false, nil
+}
+
+// GetRecordAgentSkillsData returns the Agent Skills module data from a record.
+func GetRecordAgentSkillsData(record *structpb.Struct) (bool, *structpb.Struct) {
+	return GetRecordModuleData(record, "agentskills")
+}

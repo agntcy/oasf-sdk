@@ -258,7 +258,19 @@ func main() {
 	if err := json.Unmarshal(modulesData, &modulesMap); err != nil {
 		log.Fatalf("Failed to parse modules: %v", err)
 	}
-	fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+  fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+
+  // Get the Agent Skills module schema (includes the data field)
+  agentSkillsSchema, err := s.GetSchemaAgentSkills(ctx, schema.WithVersion("1.0.0"))
+  if err != nil {
+    log.Fatalf("Failed to get agent skills module schema: %v", err)
+  }
+
+  var agentSkillsMap map[string]interface{}
+  if err := json.Unmarshal(agentSkillsSchema, &agentSkillsMap); err != nil {
+    log.Fatalf("Failed to parse agent skills module schema: %v", err)
+  }
+  fmt.Printf("Agent skills module schema loaded\n")
 }
 ```
 
@@ -318,6 +330,35 @@ All convenience methods accept optional `WithVersion()` option. If omitted, the 
 - `GetSchemaSkills(ctx, ...SchemaOption)` - Extracts skills definitions
 - `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
 - `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
+- `GetSchemaAgentSkills(ctx, ...SchemaOption)` - Fetches the Agent Skills module schema
+- `GetSchemaAgentSkillsManifest(ctx, ...SchemaOption)` - Fetches the Agent Skills manifest object schema
+
+### Accessing Agent Skills data from a record
+The `agentskills` package can render a spec-compliant `SKILL.md` from the manifest.
+```go
+found, agentSkillsData := decoder.GetRecordAgentSkillsData(record)
+if !found || agentSkillsData == nil {
+	log.Fatalf("Agent Skills module not found in record")
+}
+
+// Example: read the skill file reference or embedded content if present
+skillFile := agentSkillsData.GetFields()["skill_file"]
+if skillFile != nil {
+	fmt.Printf("Skill file: %s\n", skillFile.GetStringValue())
+}
+
+// Rebuild SKILL.md frontmatter from the manifest
+manifest := agentSkillsData.GetFields()["skill_manifest"].GetStructValue()
+if manifest == nil {
+	log.Fatalf("Agent Skills manifest is missing")
+}
+
+skillMarkdown, err := agentskills.BuildSkillMarkdown(manifest)
+if err != nil {
+	log.Fatalf("Failed to build SKILL.md: %v", err)
+}
+fmt.Printf("SKILL.md content:\n%s", skillMarkdown)
+```
 
 Example:
 ```go
