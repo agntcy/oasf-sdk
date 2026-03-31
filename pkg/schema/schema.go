@@ -50,12 +50,6 @@ const (
 	SchemaTypeDomains SchemaType = "domains"
 )
 
-const (
-	agentSkillsModuleName       = "agentskills"
-	legacyAgentSkillsModuleName = "core/language_model/agentskills"
-	agentSkillsManifestName     = "agentskills_manifest"
-)
-
 // schemaOptions holds the options for schema operations.
 type schemaOptions struct {
 	version string
@@ -315,25 +309,4 @@ func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) ([]
 // Returns the modules as JSON bytes, or an error if the version is not found or parsing fails.
 func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
 	return s.GetSchemaKey(ctx, "modules", opts...)
-}
-
-// GetSchemaAgentSkills fetches the Agent Skills module schema.
-// If no version is provided via options, the default version from the server is used.
-func (s *Schema) GetSchemaAgentSkills(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	data, err := s.GetSchema(ctx, SchemaTypeModules, agentSkillsModuleName, opts...)
-	if err == nil {
-		return data, nil
-	}
-
-	if strings.Contains(err.Error(), "HTTP 404") {
-		return s.GetSchema(ctx, SchemaTypeModules, legacyAgentSkillsModuleName, opts...)
-	}
-
-	return nil, err
-}
-
-// GetSchemaAgentSkillsManifest fetches the Agent Skills manifest object schema.
-// If no version is provided via options, the default version from the server is used.
-func (s *Schema) GetSchemaAgentSkillsManifest(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetSchema(ctx, SchemaTypeObjects, agentSkillsManifestName, opts...)
 }

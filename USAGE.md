@@ -261,7 +261,7 @@ func main() {
   fmt.Printf("Found %d modules in schema\n", len(modulesMap))
 
   // Get the Agent Skills module schema (includes the data field)
-  agentSkillsSchema, err := s.GetSchemaAgentSkills(ctx, schema.WithVersion("1.0.0"))
+  agentSkillsSchema, err := s.GetSchema(ctx, schema.SchemaTypeModules, "agentskills", schema.WithVersion("1.0.0"))
   if err != nil {
     log.Fatalf("Failed to get agent skills module schema: %v", err)
   }
@@ -271,6 +271,18 @@ func main() {
     log.Fatalf("Failed to parse agent skills module schema: %v", err)
   }
   fmt.Printf("Agent skills module schema loaded\n")
+
+  // Get the Agent Skills manifest object schema
+  agentSkillsManifestSchema, err := s.GetSchema(ctx, schema.SchemaTypeObjects, "agentskills_manifest", schema.WithVersion("1.0.0"))
+  if err != nil {
+    log.Fatalf("Failed to get agent skills manifest schema: %v", err)
+  }
+
+  var agentSkillsManifestMap map[string]interface{}
+  if err := json.Unmarshal(agentSkillsManifestSchema, &agentSkillsManifestMap); err != nil {
+    log.Fatalf("Failed to parse agent skills manifest schema: %v", err)
+  }
+  fmt.Printf("Agent skills manifest schema loaded\n")
 }
 ```
 
@@ -330,13 +342,11 @@ All convenience methods accept optional `WithVersion()` option. If omitted, the 
 - `GetSchemaSkills(ctx, ...SchemaOption)` - Extracts skills definitions
 - `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
 - `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
-- `GetSchemaAgentSkills(ctx, ...SchemaOption)` - Fetches the Agent Skills module schema
-- `GetSchemaAgentSkillsManifest(ctx, ...SchemaOption)` - Fetches the Agent Skills manifest object schema
 
 ### Accessing Agent Skills data from a record
-The `agentskills` package can render a spec-compliant `SKILL.md` from the manifest.
+The translator package can render a spec-compliant `SKILL.md` from the manifest.
 ```go
-found, agentSkillsData := decoder.GetRecordAgentSkillsData(record)
+found, agentSkillsData := decoder.GetRecordModuleData(record, "agentskills")
 if !found || agentSkillsData == nil {
 	log.Fatalf("Agent Skills module not found in record")
 }
@@ -353,7 +363,7 @@ if manifest == nil {
 	log.Fatalf("Agent Skills manifest is missing")
 }
 
-skillMarkdown, err := agentskills.BuildSkillMarkdown(manifest)
+skillMarkdown, err := translator.BuildSkillMarkdown(manifest)
 if err != nil {
 	log.Fatalf("Failed to build SKILL.md: %v", err)
 }

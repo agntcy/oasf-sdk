@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestGetRecordAgentSkillsData(t *testing.T) {
+func TestGetRecordModuleData(t *testing.T) {
 	recordMap := map[string]any{
 		"schema_version": "1.0.0",
 		"modules": []any{
@@ -30,7 +30,7 @@ func TestGetRecordAgentSkillsData(t *testing.T) {
 		t.Fatalf("Failed to build record struct: %v", err)
 	}
 
-	found, data := GetRecordAgentSkillsData(recordStruct)
+	found, data := GetRecordModuleData(recordStruct, "agentskills")
 	if !found {
 		t.Fatalf("Expected agentskills module data to be found")
 	}

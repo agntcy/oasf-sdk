@@ -51,9 +51,6 @@ func mockSchemaResponse() map[string]any {
 				"mcp_server": map[string]any{
 					"type": "object",
 				},
-				"agentskills": map[string]any{
-					"type": "object",
-				},
 			},
 		},
 	}
@@ -557,120 +554,6 @@ func TestGetSchemaDomains(t *testing.T) {
 			}
 
 			validateDomainsResult(t, domains, tt.version)
-		})
-	}
-}
-
-//nolint:dupl // Test functions intentionally follow similar patterns
-func TestGetSchemaAgentSkills(t *testing.T) {
-	tests := []struct {
-		name        string
-		version     string
-		expectError bool
-	}{
-		{
-			name:        "valid version 0.7.0",
-			version:     "0.7.0",
-			expectError: false,
-		},
-		{
-			name:        "valid version 0.8.0",
-			version:     "0.8.0",
-			expectError: false,
-		},
-		{
-			name:        "valid version 1.0.0",
-			version:     "1.0.0",
-			expectError: false,
-		},
-		{
-			name:        "invalid version",
-			version:     invalidVersion,
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
-			defer server.Close()
-
-			schema, err := New(server.URL)
-			if err != nil {
-				t.Fatalf("Failed to create schema: %v", err)
-			}
-
-			agentskills, err := schema.GetSchemaAgentSkills(context.Background(), WithVersion(tt.version))
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("GetSchemaAgentSkills() expected error but got none")
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Errorf("GetSchemaAgentSkills() unexpected error: %v", err)
-			}
-
-			validateSchemaContent(t, agentskills)
-		})
-	}
-}
-
-//nolint:dupl // Test functions intentionally follow similar patterns
-func TestGetSchemaAgentSkillsManifest(t *testing.T) {
-	tests := []struct {
-		name        string
-		version     string
-		expectError bool
-	}{
-		{
-			name:        "valid version 0.7.0",
-			version:     "0.7.0",
-			expectError: false,
-		},
-		{
-			name:        "valid version 0.8.0",
-			version:     "0.8.0",
-			expectError: false,
-		},
-		{
-			name:        "valid version 1.0.0",
-			version:     "1.0.0",
-			expectError: false,
-		},
-		{
-			name:        "invalid version",
-			version:     invalidVersion,
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := createMockServerWithVersionCheck(t, tt.expectError && tt.version == invalidVersion)
-			defer server.Close()
-
-			schema, err := New(server.URL)
-			if err != nil {
-				t.Fatalf("Failed to create schema: %v", err)
-			}
-
-			manifest, err := schema.GetSchemaAgentSkillsManifest(context.Background(), WithVersion(tt.version))
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("GetSchemaAgentSkillsManifest() expected error but got none")
-				}
-
-				return
-			}
-
-			if err != nil {
-				t.Errorf("GetSchemaAgentSkillsManifest() unexpected error: %v", err)
-			}
-
-			validateSchemaContent(t, manifest)
 		})
 	}
 }

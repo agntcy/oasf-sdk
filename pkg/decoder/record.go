@@ -13,6 +13,7 @@ import (
 	typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha1"
 	typesv1alpha2 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha2"
 	"github.com/Masterminds/semver/v3"
+	"github.com/agntcy/oasf-sdk/pkg/record"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -142,36 +143,6 @@ func GetRecordSchemaVersion(record *structpb.Struct) (string, error) {
 }
 
 // GetRecordModuleData returns the module data for the provided module name.
-func GetRecordModuleData(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
-	if record == nil {
-		return false, nil
-	}
-
-	modules, ok := record.GetFields()["modules"]
-	if !ok {
-		return false, nil
-	}
-
-	for _, module := range modules.GetListValue().GetValues() {
-		moduleStruct := module.GetStructValue()
-		if moduleStruct == nil {
-			continue
-		}
-
-		nameField := moduleStruct.GetFields()["name"]
-		if nameField == nil {
-			continue
-		}
-
-		if nameField.GetStringValue() == moduleName {
-			return true, moduleStruct.GetFields()["data"].GetStructValue()
-		}
-	}
-
-	return false, nil
-}
-
-// GetRecordAgentSkillsData returns the Agent Skills module data from a record.
-func GetRecordAgentSkillsData(record *structpb.Struct) (bool, *structpb.Struct) {
-	return GetRecordModuleData(record, "agentskills")
+func GetRecordModuleData(rec *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
+	return record.GetModuleData(rec, moduleName)
 }
