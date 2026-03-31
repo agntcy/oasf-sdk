@@ -8,7 +8,7 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened]
 
-jobs:  
+jobs:
   license:
     name: License
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
         run: sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 
       - name: Setup license cache
-        uses: actions/cache@v4.2.3
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
