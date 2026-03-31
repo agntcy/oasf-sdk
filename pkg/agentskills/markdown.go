@@ -6,6 +6,7 @@ package agentskills
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ func BuildSkillMarkdown(manifest *structpb.Struct, opts ...MarkdownOption) (stri
 	manifestMap := manifest.AsMap()
 	name := getString(manifestMap, "name")
 	description := getString(manifestMap, "description")
+
 	if name == "" || description == "" {
 		return "", errors.New("manifest must include name and description")
 	}
@@ -59,29 +61,37 @@ func BuildSkillMarkdown(manifest *structpb.Struct, opts ...MarkdownOption) (stri
 	}
 
 	lines := []string{"---"}
-	lines = append(lines, fmt.Sprintf("name: %s", yamlScalar(name)))
-	lines = append(lines, fmt.Sprintf("description: %s", yamlScalar(description)))
+	lines = append(lines, "name: "+yamlScalar(name))
+	lines = append(lines, "description: "+yamlScalar(description))
+
 	if license != "" {
-		lines = append(lines, fmt.Sprintf("license: %s", yamlScalar(license)))
+		lines = append(lines, "license: "+yamlScalar(license))
 	}
+
 	if compatibility != "" {
-		lines = append(lines, fmt.Sprintf("compatibility: %s", yamlScalar(compatibility)))
+		lines = append(lines, "compatibility: "+yamlScalar(compatibility))
 	}
+
 	if len(allowedTools) > 0 {
-		lines = append(lines, fmt.Sprintf("allowed-tools: %s", strings.Join(allowedTools, " ")))
+		lines = append(lines, "allowed-tools: "+strings.Join(allowedTools, " "))
 	}
+
 	if len(frontmatterMetadata) > 0 {
 		lines = append(lines, "metadata:")
+
 		keys := make([]string, 0, len(frontmatterMetadata))
 		for key := range frontmatterMetadata {
 			keys = append(keys, key)
 		}
+
 		sort.Strings(keys)
+
 		for _, key := range keys {
 			value := frontmatterMetadata[key]
-			lines = append(lines, fmt.Sprintf("  %s: %s", key, yamlScalar(value)))
+			lines = append(lines, "  "+key+": "+yamlScalar(value))
 		}
 	}
+
 	lines = append(lines, "---")
 
 	body := strings.TrimSpace(options.body)
@@ -121,6 +131,7 @@ func getStringSlice(data map[string]any, key string) []string {
 				result = append(result, str)
 			}
 		}
+
 		return result
 	default:
 		return nil
@@ -135,16 +146,22 @@ func getStringMap(data map[string]any, key string) map[string]string {
 
 	metadata := map[string]string{}
 	if rawMap, ok := value.(map[string]any); ok {
-		for k, v := range rawMap {
-			metadata[k] = fmt.Sprint(v)
-		}
+		maps.Copy(metadata, toStringMap(rawMap))
+
 		return metadata
 	}
 
 	if rawMap, ok := value.(map[string]string); ok {
-		for k, v := range rawMap {
-			metadata[k] = v
-		}
+		maps.Copy(metadata, rawMap)
+	}
+
+	return metadata
+}
+
+func toStringMap(rawMap map[string]any) map[string]string {
+	metadata := make(map[string]string, len(rawMap))
+	for k, v := range rawMap {
+		metadata[k] = fmt.Sprint(v)
 	}
 
 	return metadata
