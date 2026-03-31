@@ -66,7 +66,9 @@ func TestSkillMarkdownRoundTrip(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(normalizeManifest(originalManifest), normalizeManifest(rebuiltManifest)) {
-		t.Fatalf("Manifest mismatch after roundtrip")
+		original := normalizeManifest(originalManifest)
+		rebuilt := normalizeManifest(rebuiltManifest)
+		t.Fatalf("Manifest mismatch after roundtrip\noriginal: %#v\nrebuilt: %#v", original, rebuilt)
 	}
 
 	if strings.TrimSpace(originalBody) != strings.TrimSpace(rebuiltBody) {
@@ -196,6 +198,12 @@ func normalizeManifest(manifest skillManifest) skillManifest {
 	copyManifest := manifest
 	copyManifest.Metadata = map[string]string{}
 	maps.Copy(copyManifest.Metadata, manifest.Metadata)
+
+	if copyManifest.Version != "" {
+		if _, ok := copyManifest.Metadata["version"]; !ok {
+			copyManifest.Metadata["version"] = copyManifest.Version
+		}
+	}
 
 	sort.Strings(copyManifest.AllowedTools)
 

@@ -72,6 +72,10 @@ func BuildSkillMarkdown(manifest *structpb.Struct, opts ...MarkdownOption) (stri
 		lines = append(lines, "compatibility: "+yamlScalar(compatibility))
 	}
 
+	if version != "" {
+		lines = append(lines, "version: "+yamlScalar(version))
+	}
+
 	if len(allowedTools) > 0 {
 		lines = append(lines, "allowed-tools: "+strings.Join(allowedTools, " "))
 	}
