@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -106,6 +107,30 @@ func BuildSkillMarkdown(manifest *structpb.Struct, opts ...MarkdownOption) (stri
 	}
 
 	return strings.Join(lines, "\n") + "\n", nil
+}
+
+// BuildSkillMarkdownFromRecord renders SKILL.md content from a record containing the agentskills module.
+func BuildSkillMarkdownFromRecord(record *structpb.Struct, opts ...MarkdownOption) (string, error) {
+	if record == nil {
+		return "", errors.New("record is nil")
+	}
+
+	found, moduleData := recordutil.GetModuleData(record, "agentskills")
+	if !found || moduleData == nil {
+		return "", errors.New("agentskills module not found in record")
+	}
+
+	manifestField := moduleData.GetFields()["skill_manifest"]
+	if manifestField == nil {
+		return "", errors.New("skill_manifest is missing")
+	}
+
+	manifest := manifestField.GetStructValue()
+	if manifest == nil {
+		return "", errors.New("skill_manifest is missing")
+	}
+
+	return BuildSkillMarkdown(manifest, opts...)
 }
 
 func getString(data map[string]any, key string) string {

@@ -344,28 +344,11 @@ All convenience methods accept optional `WithVersion()` option. If omitted, the 
 - `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
 
 ### Accessing Agent Skills data from a record
-The translator package can render a spec-compliant `SKILL.md` from the manifest.
+The translator package can render a spec-compliant `SKILL.md` directly from a record.
 ```go
-found, agentSkillsData := decoder.GetRecordModuleData(record, "agentskills")
-if !found || agentSkillsData == nil {
-	log.Fatalf("Agent Skills module not found in record")
-}
-
-// Example: read the skill file reference or embedded content if present
-skillFile := agentSkillsData.GetFields()["skill_file"]
-if skillFile != nil {
-	fmt.Printf("Skill file: %s\n", skillFile.GetStringValue())
-}
-
-// Rebuild SKILL.md frontmatter from the manifest
-manifest := agentSkillsData.GetFields()["skill_manifest"].GetStructValue()
-if manifest == nil {
-	log.Fatalf("Agent Skills manifest is missing")
-}
-
-skillMarkdown, err := translator.BuildSkillMarkdown(manifest)
+skillMarkdown, err := translator.BuildSkillMarkdownFromRecord(record)
 if err != nil {
-	log.Fatalf("Failed to build SKILL.md: %v", err)
+  log.Fatalf("Failed to build SKILL.md: %v", err)
 }
 fmt.Printf("SKILL.md content:\n%s", skillMarkdown)
 ```
