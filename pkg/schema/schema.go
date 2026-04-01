@@ -39,31 +39,31 @@ type VersionInfo struct {
 	APIVersion    string `json:"api_version,omitempty"`
 }
 
-// SchemaCategoryNode represents a nested taxonomy node returned by *_categories endpoints.
-type SchemaCategoryNode struct {
-	ID          int                           `json:"id"`
-	Name        string                        `json:"name"`
-	Description string                        `json:"description,omitempty"`
-	Category    bool                          `json:"category,omitempty"`
-	Caption     string                        `json:"caption,omitempty"`
-	Deprecated  bool                          `json:"deprecated,omitempty"`
-	Classes     map[string]SchemaCategoryNode `json:"classes,omitempty"`
+// TaxonomyItem represents a nested taxonomy node returned by *_categories endpoints.
+type TaxonomyItem struct {
+	ID          int                     `json:"id"`
+	Name        string                  `json:"name"`
+	Description string                  `json:"description,omitempty"`
+	Category    bool                    `json:"category,omitempty"`
+	Caption     string                  `json:"caption,omitempty"`
+	Deprecated  bool                    `json:"deprecated,omitempty"`
+	Classes     map[string]TaxonomyItem `json:"classes,omitempty"`
 }
 
-// SchemaCategories is the top-level category map keyed by category slug.
-type SchemaCategories map[string]SchemaCategoryNode
+// Taxonomy is the top-level category map keyed by category slug.
+type Taxonomy map[string]TaxonomyItem
 
 type schemaCache struct {
 	defaultSchemaVersion    string
 	availableSchemaVersions []string
-	schemaSkills            map[string]SchemaCategories
-	schemaDomains           map[string]SchemaCategories
-	schemaModules           map[string]SchemaCategories
+	skills                  map[string]Taxonomy
+	domains                 map[string]Taxonomy
+	modules                 map[string]Taxonomy
 	jsonSchema              map[string]map[string]jsonSchemaCacheEntry
 }
 
 type jsonSchemaCacheEntry struct {
-	schemaType SchemaType
+	schemaType entityType
 	name       string
 	data       []byte
 }
@@ -74,18 +74,18 @@ type SchemaOption func(*schemaOptions)
 // ConstructorOption is a function that configures schema client behavior.
 type ConstructorOption func(*constructorOptions)
 
-// SchemaType represents the type of schema to fetch.
-type SchemaType string
+// entityType represents the type of schema to fetch.
+type entityType string
 
 const (
-	// SchemaTypeObjects represents object schemas (agent, record).
-	SchemaTypeObjects SchemaType = "objects"
-	// SchemaTypeModules represents module schemas.
-	SchemaTypeModules SchemaType = "modules"
-	// SchemaTypeSkills represents skill schemas.
-	SchemaTypeSkills SchemaType = "skills"
-	// SchemaTypeDomains represents domain schemas.
-	SchemaTypeDomains SchemaType = "domains"
+	// EntityTypeObjects represents object schemas (agent, record).
+	EntityTypeObjects entityType = "objects"
+	// EntityTypeModules represents module schemas.
+	EntityTypeModules entityType = "modules"
+	// EntityTypeSkills represents skill schemas.
+	EntityTypeSkills entityType = "skills"
+	// EntityTypeDomains represents domain schemas.
+	EntityTypeDomains entityType = "domains"
 )
 
 type constructorOptions struct {
@@ -149,23 +149,30 @@ func New(schemaURL string, opts ...ConstructorOption) (*Schema, error) {
 			Timeout: defaultHTTPTimeoutSeconds * time.Second,
 		},
 		cache: &schemaCache{
-			schemaSkills:  map[string]SchemaCategories{},
-			schemaDomains: map[string]SchemaCategories{},
-			schemaModules: map[string]SchemaCategories{},
-			jsonSchema:    map[string]map[string]jsonSchemaCacheEntry{},
+			skills:     map[string]Taxonomy{},
+			domains:    map[string]Taxonomy{},
+			modules:    map[string]Taxonomy{},
+			jsonSchema: map[string]map[string]jsonSchemaCacheEntry{},
 		},
 	}, nil
 }
 
-// cloneCategories deep-copies SchemaCategories before returning it to callers.
-// SchemaCategories is a map type, so returning cached maps directly would expose
+// cloneTaxonomy deep-copies Taxonomy before returning it to callers.
+// Taxonomy is a map type, so returning cached maps directly would expose
 // mutable internal cache state and allow external code to modify it.
-func cloneCategories(src SchemaCategories) SchemaCategories {
-	dst := make(SchemaCategories, len(src))
+func cloneTaxonomy(src Taxonomy) Taxonomy {
+	return cloneTaxonomyItems(map[string]TaxonomyItem(src))
+}
+
+// cloneTaxonomyItems recursively deep-copies a map of TaxonomyItem nodes.
+// Used for both the top-level Taxonomy and nested Classes maps, which share
+// the same underlying type.
+func cloneTaxonomyItems(src map[string]TaxonomyItem) map[string]TaxonomyItem {
+	dst := make(map[string]TaxonomyItem, len(src))
 	for k, v := range src {
 		copied := v
 		if len(v.Classes) > 0 {
-			copied.Classes = cloneCategories(v.Classes)
+			copied.Classes = cloneTaxonomyItems(v.Classes)
 		}
 
 		dst[k] = copied
@@ -321,7 +328,7 @@ func (s *Schema) resolveVersion(ctx context.Context, schemaVersion string) (stri
 	return defaultSchemaVersion, nil
 }
 
-func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (SchemaCategories, bool) {
+func (s *Schema) getCachedTaxonomy(endpoint string, schemaVersion string) (Taxonomy, bool) {
 	if !s.cacheEnabled {
 		return nil, false
 	}
@@ -331,32 +338,32 @@ func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (Sch
 
 	switch endpoint {
 	case skillCategoriesEndpoint:
-		c, ok := s.cache.schemaSkills[schemaVersion]
+		c, ok := s.cache.skills[schemaVersion]
 		if !ok {
 			return nil, false
 		}
 
-		return cloneCategories(c), true
+		return cloneTaxonomy(c), true
 	case domainCategoriesEndpoint:
-		c, ok := s.cache.schemaDomains[schemaVersion]
+		c, ok := s.cache.domains[schemaVersion]
 		if !ok {
 			return nil, false
 		}
 
-		return cloneCategories(c), true
+		return cloneTaxonomy(c), true
 	case moduleCategoriesEndpoint:
-		c, ok := s.cache.schemaModules[schemaVersion]
+		c, ok := s.cache.modules[schemaVersion]
 		if !ok {
 			return nil, false
 		}
 
-		return cloneCategories(c), true
+		return cloneTaxonomy(c), true
 	default:
 		return nil, false
 	}
 }
 
-func (s *Schema) setCachedCategories(endpoint string, schemaVersion string, categories SchemaCategories) {
+func (s *Schema) setCachedTaxonomy(endpoint string, schemaVersion string, categories Taxonomy) {
 	if !s.cacheEnabled {
 		return
 	}
@@ -366,19 +373,19 @@ func (s *Schema) setCachedCategories(endpoint string, schemaVersion string, cate
 
 	switch endpoint {
 	case skillCategoriesEndpoint:
-		s.cache.schemaSkills[schemaVersion] = cloneCategories(categories)
+		s.cache.skills[schemaVersion] = cloneTaxonomy(categories)
 	case domainCategoriesEndpoint:
-		s.cache.schemaDomains[schemaVersion] = cloneCategories(categories)
+		s.cache.domains[schemaVersion] = cloneTaxonomy(categories)
 	case moduleCategoriesEndpoint:
-		s.cache.schemaModules[schemaVersion] = cloneCategories(categories)
+		s.cache.modules[schemaVersion] = cloneTaxonomy(categories)
 	}
 }
 
-func jsonSchemaCacheKey(schemaType SchemaType, name string) string {
+func jsonSchemaCacheKey(schemaType entityType, name string) string {
 	return fmt.Sprintf("%s|%s", schemaType, name)
 }
 
-func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType SchemaType, name string) ([]byte, bool) {
+func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType entityType, name string) ([]byte, bool) {
 	if !s.cacheEnabled {
 		return nil, false
 	}
@@ -399,7 +406,7 @@ func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType SchemaType
 	return append([]byte(nil), entry.data...), true
 }
 
-func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType SchemaType, name string, data []byte) {
+func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType entityType, name string, data []byte) {
 	if !s.cacheEnabled {
 		return
 	}
@@ -420,7 +427,7 @@ func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType SchemaType
 	}
 }
 
-func (s *Schema) fetchCategoriesForVersion(ctx context.Context, version string, endpoint string) (SchemaCategories, error) {
+func (s *Schema) fetchTaxonomyForVersion(ctx context.Context, version string, endpoint string) (Taxonomy, error) {
 	categoriesURL := fmt.Sprintf("%s/api/%s/%s", s.schemaURL, version, endpoint)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, categoriesURL, nil)
@@ -442,14 +449,14 @@ func (s *Schema) fetchCategoriesForVersion(ctx context.Context, version string, 
 		return nil, fmt.Errorf("failed to fetch categories from URL %s: HTTP %d, body: %s", categoriesURL, resp.StatusCode, string(body))
 	}
 
-	var categories SchemaCategories
+	var taxonomy Taxonomy
 
 	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&categories); err != nil {
+	if err := decoder.Decode(&taxonomy); err != nil {
 		return nil, fmt.Errorf("failed to decode categories response from URL %s: %w", categoriesURL, err)
 	}
 
-	return categories, nil
+	return taxonomy, nil
 }
 
 // ClearCache removes the current cache snapshot.
@@ -460,23 +467,23 @@ func (s *Schema) ClearCache() {
 
 	s.cacheMu.Lock()
 	s.cache = &schemaCache{
-		schemaSkills:  map[string]SchemaCategories{},
-		schemaDomains: map[string]SchemaCategories{},
-		schemaModules: map[string]SchemaCategories{},
-		jsonSchema:    map[string]map[string]jsonSchemaCacheEntry{},
+		skills:     map[string]Taxonomy{},
+		domains:    map[string]Taxonomy{},
+		modules:    map[string]Taxonomy{},
+		jsonSchema: map[string]map[string]jsonSchemaCacheEntry{},
 	}
 	s.cacheMu.Unlock()
 }
 
 // constructSchemaURL builds the schema URL from options.
 // Format: /schema/<version>/<type>/<name>.
-func (s *Schema) constructSchemaURL(version string, schemaType SchemaType, name string) string {
+func (s *Schema) constructSchemaURL(version string, schemaType entityType, name string) string {
 	return fmt.Sprintf("%s/schema/%s/%s/%s", s.schemaURL, version, schemaType, name)
 }
 
 // GetJSONSchema is a generic function to fetch JSON schema content from the OASF API.
 // It constructs the URL as /schema/<version>/<type>/<name>.
-func (s *Schema) GetJSONSchema(ctx context.Context, schemaType SchemaType, name string, opts ...SchemaOption) ([]byte, error) {
+func (s *Schema) GetJSONSchema(ctx context.Context, schemaType entityType, name string, opts ...SchemaOption) ([]byte, error) {
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -522,8 +529,8 @@ func (s *Schema) GetJSONSchema(ctx context.Context, schemaType SchemaType, name 
 	return schemaData, nil
 }
 
-// GetSchemaCategories fetches nested taxonomy categories from /api/<version>/<endpoint>.
-func (s *Schema) GetSchemaCategories(ctx context.Context, endpoint string, opts ...SchemaOption) (SchemaCategories, error) {
+// GetSchemaTaxonomy fetches nested taxonomy categories from /api/<version>/<endpoint>.
+func (s *Schema) GetSchemaTaxonomy(ctx context.Context, endpoint string, opts ...SchemaOption) (Taxonomy, error) {
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -534,36 +541,36 @@ func (s *Schema) GetSchemaCategories(ctx context.Context, endpoint string, opts 
 		return nil, err
 	}
 
-	if categories, ok := s.getCachedCategories(endpoint, version); ok {
+	if categories, ok := s.getCachedTaxonomy(endpoint, version); ok {
 		return categories, nil
 	}
 
-	categories, err := s.fetchCategoriesForVersion(ctx, version, endpoint)
+	categories, err := s.fetchTaxonomyForVersion(ctx, version, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	s.setCachedCategories(endpoint, version, categories)
+	s.setCachedTaxonomy(endpoint, version, categories)
 
 	return categories, nil
 }
 
 // GetRecordJSONSchema returns the record JSON schema content for a given version.
 func (s *Schema) GetRecordJSONSchema(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetJSONSchema(ctx, SchemaTypeObjects, "record", opts...)
+	return s.GetJSONSchema(ctx, EntityTypeObjects, "record", opts...)
 }
 
 // GetSchemaSkills returns nested skill categories from /api/<version>/skill_categories.
-func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, skillCategoriesEndpoint, opts...)
+func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) (Taxonomy, error) {
+	return s.GetSchemaTaxonomy(ctx, skillCategoriesEndpoint, opts...)
 }
 
 // GetSchemaDomains returns nested domain categories from /api/<version>/domain_categories.
-func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, domainCategoriesEndpoint, opts...)
+func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) (Taxonomy, error) {
+	return s.GetSchemaTaxonomy(ctx, domainCategoriesEndpoint, opts...)
 }
 
 // GetSchemaModules returns nested module categories from /api/<version>/module_categories.
-func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, moduleCategoriesEndpoint, opts...)
+func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) (Taxonomy, error) {
+	return s.GetSchemaTaxonomy(ctx, moduleCategoriesEndpoint, opts...)
 }

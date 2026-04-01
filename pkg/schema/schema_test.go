@@ -64,21 +64,21 @@ func mockSchemaResponse() map[string]any {
 	}
 }
 
-func mockCategoriesResponse() SchemaCategories {
-	return SchemaCategories{
+func mockCategoriesResponse() Taxonomy {
+	return Taxonomy{
 		"core": {
 			ID:          1,
 			Name:        "core",
 			Description: "Module set for core functionalities and features.",
 			Category:    true,
 			Caption:     "Core",
-			Classes: map[string]SchemaCategoryNode{
+			Classes: map[string]TaxonomyItem{
 				"language_model": {
 					ID:          103,
 					Name:        "core/language_model",
 					Description: "Modules for basic Language Model functionality.",
 					Caption:     "Language Model",
-					Classes: map[string]SchemaCategoryNode{
+					Classes: map[string]TaxonomyItem{
 						"prompt": {
 							ID:          10301,
 							Name:        "core/language_model/prompt",
@@ -227,42 +227,42 @@ func TestGetJSONSchema(t *testing.T) {
 	tests := []struct {
 		name        string
 		version     string
-		typ         SchemaType
+		typ         entityType
 		schemaName  string
 		expectError bool
 	}{
 		{
 			name:        "valid objects/record for 0.8.0",
 			version:     "0.8.0",
-			typ:         SchemaTypeObjects,
+			typ:         EntityTypeObjects,
 			schemaName:  "record",
 			expectError: false,
 		},
 		{
 			name:        "valid modules",
 			version:     "0.8.0",
-			typ:         SchemaTypeModules,
+			typ:         EntityTypeModules,
 			schemaName:  "integration/mcp",
 			expectError: false,
 		},
 		{
 			name:        "valid skills",
 			version:     "0.8.0",
-			typ:         SchemaTypeSkills,
+			typ:         EntityTypeSkills,
 			schemaName:  "natural_language_processing",
 			expectError: false,
 		},
 		{
 			name:        "valid domains",
 			version:     "0.8.0",
-			typ:         SchemaTypeDomains,
+			typ:         EntityTypeDomains,
 			schemaName:  "artificial_intelligence",
 			expectError: false,
 		},
 		{
 			name:        "invalid version",
 			version:     invalidVersion,
-			typ:         SchemaTypeObjects,
+			typ:         EntityTypeObjects,
 			schemaName:  "record",
 			expectError: true,
 		},
@@ -369,7 +369,7 @@ func createMockServerWithVersionCheck(t *testing.T, checkVersion bool) *httptest
 }
 
 // validateSkillsResult validates the result from GetSchemaSkills.
-func validateSkillsResult(t *testing.T, skills SchemaCategories) {
+func validateSkillsResult(t *testing.T, skills Taxonomy) {
 	t.Helper()
 
 	if len(skills) == 0 {
@@ -444,7 +444,7 @@ func TestGetSchemaSkills(t *testing.T) {
 }
 
 // validateDomainsResult validates the result from GetSchemaDomains.
-func validateDomainsResult(t *testing.T, domains SchemaCategories, version string) {
+func validateDomainsResult(t *testing.T, domains Taxonomy, version string) {
 	t.Helper()
 
 	if version == testSchemaVersion {
@@ -674,7 +674,7 @@ func TestGetDefaultSchemaVersion(t *testing.T) {
 }
 
 // validateCategoryTree checks that categories include nested classes.
-func validateCategoryTree(t *testing.T, categories SchemaCategories) {
+func validateCategoryTree(t *testing.T, categories Taxonomy) {
 	t.Helper()
 
 	if len(categories) == 0 {

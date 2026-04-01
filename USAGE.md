@@ -189,11 +189,18 @@ import (
 )
 
 func main() {
-	// Create a new schema instance with schema URL
+	// Create a new schema instance with schema URL (cache disabled by default)
 	s, err := schema.New("https://schema.oasf.outshift.com")
 	if err != nil {
 		log.Fatalf("Failed to create schema instance: %v", err)
 	}
+
+	// Optional: enable dynamic cache (only requested data is cached)
+	cachedClient, err := schema.New("https://schema.oasf.outshift.com", schema.WithCache(true))
+	if err != nil {
+		log.Fatalf("Failed to create cached schema instance: %v", err)
+	}
+	_ = cachedClient
 
 	ctx := context.Background()
 
@@ -205,23 +212,19 @@ func main() {
 	fmt.Printf("Available schema versions: %v\n", versions)
 
 	// Get the default schema version (cached after first fetch)
-	defaultVersion, err := s.GetDefaultVersion(ctx)
+	defaultVersion, err := s.GetDefaultSchemaVersion(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get default version: %v", err)
 	}
 	fmt.Printf("Default schema version: %s\n", defaultVersion)
 
-	// Get full schema content for version 0.8.0 (using WithVersion option)
-	schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
+	// Get full schema content for version 0.8.0 (using WithSchemaVersion option)
+	schemaContent, err := s.GetRecordJSONSchema(ctx, schema.WithSchemaVersion("0.8.0"))
 	if err != nil {
 		log.Fatalf("Failed to get schema content: %v", err)
 	}
 
-	var schemaMap map[string]interface{}
-	if err := json.Unmarshal(schemaContent, &schemaMap); err != nil {
-		log.Fatalf("Failed to parse schema: %v", err)
-	}
-	fmt.Printf("Schema version 0.8.0 loaded successfully\n")
+	fmt.Printf("Schema version 0.8.0 loaded successfully (%d bytes)\n", len(schemaContent))
 
 	// Get nested skill categories (using default version - no option needed)
 	skillsData, err := s.GetSchemaSkills(ctx)
@@ -231,7 +234,7 @@ func main() {
 	fmt.Printf("Found %d top-level skill categories\n", len(skillsData))
 
 	// Get nested domain categories (using specific version)
-	domainsData, err := s.GetSchemaDomains(ctx, schema.WithVersion("0.8.0"))
+	domainsData, err := s.GetSchemaDomains(ctx, schema.WithSchemaVersion("0.8.0"))
 	if err != nil {
 		log.Fatalf("Failed to get domains: %v", err)
 	}
@@ -242,36 +245,20 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to get modules: %v", err)
 	}
+	fmt.Printf("Found %d top-level module categories\n", len(modulesData))
 
-	var modulesMap map[string]interface{}
-	if err := json.Unmarshal(modulesData, &modulesMap); err != nil {
-		log.Fatalf("Failed to parse modules: %v", err)
+	// Get a specific JSON schema by type and name (using WithSchemaVersion option)
+	agentSkillsSchema, err := s.GetJSONSchema(ctx, schema.EntityTypeModules, "agentskills", schema.WithSchemaVersion("1.0.0"))
+	if err != nil {
+		log.Fatalf("Failed to get agent skills module schema: %v", err)
 	}
-  fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+	fmt.Printf("Agent skills module schema loaded (%d bytes)\n", len(agentSkillsSchema))
 
-  // Get the Agent Skills module schema (includes the data field)
-  agentSkillsSchema, err := s.GetSchema(ctx, schema.SchemaTypeModules, "agentskills", schema.WithVersion("1.0.0"))
-  if err != nil {
-    log.Fatalf("Failed to get agent skills module schema: %v", err)
-  }
-
-  var agentSkillsMap map[string]interface{}
-  if err := json.Unmarshal(agentSkillsSchema, &agentSkillsMap); err != nil {
-    log.Fatalf("Failed to parse agent skills module schema: %v", err)
-  }
-  fmt.Printf("Agent skills module schema loaded\n")
-
-  // Get the Agent Skills manifest object schema
-  agentSkillsManifestSchema, err := s.GetSchema(ctx, schema.SchemaTypeObjects, "agentskills_manifest", schema.WithVersion("1.0.0"))
-  if err != nil {
-    log.Fatalf("Failed to get agent skills manifest schema: %v", err)
-  }
-
-  var agentSkillsManifestMap map[string]interface{}
-  if err := json.Unmarshal(agentSkillsManifestSchema, &agentSkillsManifestMap); err != nil {
-    log.Fatalf("Failed to parse agent skills manifest schema: %v", err)
-  }
-  fmt.Printf("Agent skills manifest schema loaded\n")
+	agentSkillsManifestSchema, err := s.GetJSONSchema(ctx, schema.EntityTypeObjects, "agentskills_manifest", schema.WithSchemaVersion("1.0.0"))
+	if err != nil {
+		log.Fatalf("Failed to get agent skills manifest schema: %v", err)
+	}
+	fmt.Printf("Agent skills manifest schema loaded (%d bytes)\n", len(agentSkillsManifestSchema))
 }
 ```
 
@@ -298,24 +285,30 @@ if err != nil {
 
 ## API Methods
 
-### GetDefaultVersion
+### GetDefaultSchemaVersion
 Returns the default schema version from the server. The version is cached after the first fetch:
 ```go
-defaultVersion, err := s.GetDefaultVersion(ctx)
+defaultVersion, err := s.GetDefaultSchemaVersion(ctx)
 ```
 
-### GetRecordSchemaContent
-Fetches the complete JSON schema. If no version is provided via `WithVersion()`, the default version from the server is used:
+### Cache behavior
+- Caching is disabled by default.
+- Enable dynamic caching via constructor option: `schema.New(url, schema.WithCache(true))`.
+- Dynamic caching stores only data that has been requested.
+- Clear in-memory cache with `s.ClearCache()`.
+
+### GetRecordJSONSchema
+Fetches the complete JSON schema. If no version is provided via `WithSchemaVersion()`, the default version from the server is used:
 ```go
 // Using default version
-schemaContent, err := s.GetRecordSchemaContent(ctx)
+schemaContent, err := s.GetRecordJSONSchema(ctx)
 
 // Using specific version
-schemaContent, err := s.GetRecordSchemaContent(ctx, schema.WithVersion("0.8.0"))
+schemaContent, err := s.GetRecordJSONSchema(ctx, schema.WithSchemaVersion("0.8.0"))
 ```
 
 ### Convenience Methods
-All convenience methods accept optional `WithVersion()` option. If omitted, the default version is used. These methods call the new taxonomy endpoints and return nested Go structs (`schema.SchemaCategories`):
+All convenience methods accept optional `WithSchemaVersion()` option. If omitted, the default version is used. These methods call the new taxonomy endpoints and return nested Go structs (`schema.Taxonomy`):
 - `GetSchemaSkills(ctx, ...SchemaOption)` - calls `/api/<version>/skill_categories`
 - `GetSchemaDomains(ctx, ...SchemaOption)` - calls `/api/<version>/domain_categories`
 - `GetSchemaModules(ctx, ...SchemaOption)` - calls `/api/<version>/module_categories`
@@ -336,7 +329,7 @@ Example:
 skills, err := s.GetSchemaSkills(ctx)
 
 // Using specific version
-skills, err := s.GetSchemaSkills(ctx, schema.WithVersion("0.7.0"))
+skills, err := s.GetSchemaSkills(ctx, schema.WithSchemaVersion("0.7.0"))
 ```
 
 # Validation Service
