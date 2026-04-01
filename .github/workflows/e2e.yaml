@@ -24,4 +24,4 @@ jobs:
 
       - name: Run End-to-End tests
         run: |
-          task e2e:test
+          task tests:test

@@ -26,7 +26,7 @@ Create a GitHub Copilot config from the OASF data model using the `RecordToGHCop
 You can pipe the output to a file wherever you want to save the config.
 
 ```bash
-cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
+cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
 ```
 
 Output:
@@ -68,7 +68,7 @@ Output:
 To extract A2A card from the OASF data model, use the `RecordToA2A` RPC method.
 
 ```bash
-cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
+cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
 ```
 
 Output:
@@ -108,7 +108,7 @@ To convert an MCP Registry server.json to an OASF record, use the `MCPToRecord` 
 **Note:** The MCP Registry server.json contains deployment metadata (packages, remotes, etc.), not runtime capabilities (tools, resources, prompts). Those are discovered via the MCP protocol when a client connects to the server.
 
 ```bash
-cat e2e/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/MCPToRecord
+cat tests/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/MCPToRecord
 ```
 
 Output:
@@ -371,7 +371,7 @@ The validation is performed by the OASF schema server using its own validation l
 
 **Using schema URL (required):**
 ```bash
-cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+cat tests/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
 
 ## Golang example
