@@ -18,6 +18,9 @@ service SchemaService {
   // GetRecordJSONSchema returns the full record JSON schema for a version.
   rpc GetRecordJSONSchema(GetRecordJSONSchemaRequest) returns (GetRecordJSONSchemaResponse);
 
+  // GetJSONSchema returns a JSON schema for a full schema URL.
+  rpc GetJSONSchema(GetJSONSchemaRequest) returns (GetJSONSchemaResponse);
+
   // GetSchemaSkills returns nested skill categories for a version.
   rpc GetSchemaSkills(GetSchemaSkillsRequest) returns (GetSchemaSkillsResponse);
 
@@ -61,6 +64,16 @@ message GetRecordJSONSchemaRequest {
 
 message GetRecordJSONSchemaResponse {
   // Full record schema represented as structured JSON.
+  google.protobuf.Struct schema = 1;
+}
+
+message GetJSONSchemaRequest {
+  // Full schema URL (for example https://schema.oasf.outshift.com/schema/1.0.0/objects/record).
+  string url = 1;
+}
+
+message GetJSONSchemaResponse {
+  // JSON schema represented as structured JSON.
   google.protobuf.Struct schema = 1;
 }
 
