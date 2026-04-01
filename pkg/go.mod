@@ -1,6 +1,6 @@
 module github.com/agntcy/oasf-sdk/pkg
 
-go 1.24.4
+go 1.26.1
 
 require (
 	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260128161637-a77f334c8c86.1
