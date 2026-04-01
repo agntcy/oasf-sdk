@@ -77,6 +77,18 @@ message GetJSONSchemaResponse {
   google.protobuf.Struct schema = 1;
 }
 
+// TaxonomyItem represents a single node in a nested OASF taxonomy tree.
+message TaxonomyItem {
+  int32 id = 1;
+  string name = 2;
+  string caption = 3;
+  string description = 4;
+  bool category = 5;
+  bool deprecated = 6;
+  // Child items keyed by their slug (for example "natural_language_processing").
+  map<string, TaxonomyItem> classes = 7;
+}
+
 message GetSchemaSkillsRequest {
   // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
   string schema_url = 1;
@@ -86,8 +98,8 @@ message GetSchemaSkillsRequest {
 }
 
 message GetSchemaSkillsResponse {
-  // Nested skill categories represented as structured JSON.
-  google.protobuf.Struct data = 1;
+  // Top-level skill categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
 }
 
 message GetSchemaDomainsRequest {
@@ -99,8 +111,8 @@ message GetSchemaDomainsRequest {
 }
 
 message GetSchemaDomainsResponse {
-  // Nested domain categories represented as structured JSON.
-  google.protobuf.Struct data = 1;
+  // Top-level domain categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
 }
 
 message GetSchemaModulesRequest {
@@ -112,8 +124,8 @@ message GetSchemaModulesRequest {
 }
 
 message GetSchemaModulesResponse {
-  // Nested module categories represented as structured JSON.
-  google.protobuf.Struct data = 1;
+  // Top-level module categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
 }
 
 message ClearSchemaCacheRequest {
