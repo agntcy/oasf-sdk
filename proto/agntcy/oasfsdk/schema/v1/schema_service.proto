@@ -15,8 +15,8 @@ service SchemaService {
   // GetAvailableSchemaVersions returns all schema versions supported by the schema server.
   rpc GetAvailableSchemaVersions(GetAvailableSchemaVersionsRequest) returns (GetAvailableSchemaVersionsResponse);
 
-  // GetRecordSchemaContent returns the full record JSON schema for a version.
-  rpc GetRecordSchemaContent(GetRecordSchemaContentRequest) returns (GetRecordSchemaContentResponse);
+  // GetRecordJSONSchema returns the full record JSON schema for a version.
+  rpc GetRecordJSONSchema(GetRecordJSONSchemaRequest) returns (GetRecordJSONSchemaResponse);
 
   // GetSchemaSkills returns nested skill categories for a version.
   rpc GetSchemaSkills(GetSchemaSkillsRequest) returns (GetSchemaSkillsResponse);
@@ -26,6 +26,9 @@ service SchemaService {
 
   // GetSchemaModules returns nested module categories for a version.
   rpc GetSchemaModules(GetSchemaModulesRequest) returns (GetSchemaModulesResponse);
+
+  // ClearSchemaCache clears cached schema data for the provided schema URL.
+  rpc ClearSchemaCache(ClearSchemaCacheRequest) returns (ClearSchemaCacheResponse);
 }
 
 message GetDefaultSchemaVersionRequest {
@@ -48,7 +51,7 @@ message GetAvailableSchemaVersionsResponse {
   repeated string versions = 1;
 }
 
-message GetRecordSchemaContentRequest {
+message GetRecordJSONSchemaRequest {
   // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
   string schema_url = 1;
 
@@ -56,7 +59,7 @@ message GetRecordSchemaContentRequest {
   string schema_version = 2;
 }
 
-message GetRecordSchemaContentResponse {
+message GetRecordJSONSchemaResponse {
   // Full record schema represented as structured JSON.
   google.protobuf.Struct schema = 1;
 }
@@ -98,4 +101,14 @@ message GetSchemaModulesRequest {
 message GetSchemaModulesResponse {
   // Nested module categories represented as structured JSON.
   google.protobuf.Struct data = 1;
+}
+
+message ClearSchemaCacheRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+}
+
+message ClearSchemaCacheResponse {
+  // True when cache was cleared successfully.
+  bool cleared = 1;
 }

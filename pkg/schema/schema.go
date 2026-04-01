@@ -12,13 +12,16 @@ import (
 	"net/http"
 	"slices"
 	"strings"
-	"sync/atomic"
+	"sync"
 	"time"
 )
 
 const (
 	defaultHTTPTimeoutSeconds = 30
 	apiVersionsPath           = "/api/versions"
+	skillCategoriesEndpoint   = "skill_categories"
+	domainCategoriesEndpoint  = "domain_categories"
+	moduleCategoriesEndpoint  = "module_categories"
 )
 
 // VersionsResponse represents the response from the api/versions endpoint.
@@ -56,10 +59,20 @@ type schemaCache struct {
 	schemaSkills            map[string]SchemaCategories
 	schemaDomains           map[string]SchemaCategories
 	schemaModules           map[string]SchemaCategories
+	jsonSchema              map[string]map[string]jsonSchemaCacheEntry
 }
 
-// SchemaOption is a function that configures schema options.
+type jsonSchemaCacheEntry struct {
+	schemaType SchemaType
+	name       string
+	data       []byte
+}
+
+// SchemaOption is a function that configures schema query options.
 type SchemaOption func(*schemaOptions)
+
+// ConstructorOption is a function that configures schema client behavior.
+type ConstructorOption func(*constructorOptions)
 
 // SchemaType represents the type of schema to fetch.
 type SchemaType string
@@ -75,6 +88,18 @@ const (
 	SchemaTypeDomains SchemaType = "domains"
 )
 
+type constructorOptions struct {
+	enableCache bool
+}
+
+// WithCache enables or disables dynamic in-memory caching.
+// Disabled by default.
+func WithCache(enabled bool) ConstructorOption {
+	return func(opts *constructorOptions) {
+		opts.enableCache = enabled
+	}
+}
+
 // schemaOptions holds the options for schema operations.
 type schemaOptions struct {
 	schemaVersion string
@@ -89,9 +114,11 @@ func WithSchemaVersion(schemaVersion string) SchemaOption {
 
 // Schema provides access to OASF schema definitions via API.
 type Schema struct {
-	schemaURL  string // Normalized schema URL
-	httpClient *http.Client
-	cache      atomic.Pointer[schemaCache]
+	schemaURL    string // Normalized schema URL
+	httpClient   *http.Client
+	cacheEnabled bool
+	cacheMu      sync.RWMutex
+	cache        *schemaCache
 }
 
 // normalizeURL normalizes a schema URL by removing trailing slashes and adding protocol if missing.
@@ -105,15 +132,27 @@ func normalizeURL(schemaURL string) string {
 }
 
 // New creates a new Schema instance with the given schema base URL.
-func New(schemaURL string) (*Schema, error) {
+func New(schemaURL string, opts ...ConstructorOption) (*Schema, error) {
 	if schemaURL == "" {
 		return nil, errors.New("schema URL is required")
 	}
 
+	options := &constructorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	return &Schema{
-		schemaURL: normalizeURL(schemaURL),
+		schemaURL:    normalizeURL(schemaURL),
+		cacheEnabled: options.enableCache,
 		httpClient: &http.Client{
 			Timeout: defaultHTTPTimeoutSeconds * time.Second,
+		},
+		cache: &schemaCache{
+			schemaSkills:  map[string]SchemaCategories{},
+			schemaDomains: map[string]SchemaCategories{},
+			schemaModules: map[string]SchemaCategories{},
+			jsonSchema:    map[string]map[string]jsonSchemaCacheEntry{},
 		},
 	}, nil
 }
@@ -133,6 +172,22 @@ func cloneCategories(src SchemaCategories) SchemaCategories {
 	}
 
 	return dst
+}
+
+func (s *Schema) extractVersions(resp *VersionsResponse) (string, []string, error) {
+	defaultSchemaVersion := resp.Default.SchemaVersion
+	if defaultSchemaVersion == "" {
+		return "", nil, errors.New("default schema version is missing from /api/versions response")
+	}
+
+	schemaVersions := make([]string, 0, len(resp.Versions))
+	for _, v := range resp.Versions {
+		if v.SchemaVersion != "" {
+			schemaVersions = append(schemaVersions, v.SchemaVersion)
+		}
+	}
+
+	return defaultSchemaVersion, schemaVersions, nil
 }
 
 // getVersionsResponse fetches the versions response from the server.
@@ -169,10 +224,16 @@ func (s *Schema) getVersionsResponse(ctx context.Context) (*VersionsResponse, er
 }
 
 // GetDefaultSchemaVersion returns the default schema version.
-// If cache exists, it is served from cache.
 func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
-	if cached := s.cache.Load(); cached != nil && cached.defaultSchemaVersion != "" {
-		return cached.defaultSchemaVersion, nil
+	if s.cacheEnabled {
+		s.cacheMu.RLock()
+
+		defaultSchemaVersion := s.cache.defaultSchemaVersion
+		s.cacheMu.RUnlock()
+
+		if defaultSchemaVersion != "" {
+			return defaultSchemaVersion, nil
+		}
 	}
 
 	versionsResp, err := s.getVersionsResponse(ctx)
@@ -180,19 +241,33 @@ func (s *Schema) GetDefaultSchemaVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	defaultSchemaVersion := versionsResp.Default.SchemaVersion
-	if defaultSchemaVersion == "" {
-		return "", errors.New("default schema version is missing from /api/versions response")
+	defaultSchemaVersion, schemaVersions, err := s.extractVersions(versionsResp)
+	if err != nil {
+		return "", err
+	}
+
+	if s.cacheEnabled {
+		s.cacheMu.Lock()
+		s.cache.defaultSchemaVersion = defaultSchemaVersion
+
+		s.cache.availableSchemaVersions = append([]string(nil), schemaVersions...)
+		s.cacheMu.Unlock()
 	}
 
 	return defaultSchemaVersion, nil
 }
 
 // GetAvailableSchemaVersions returns supported schema versions.
-// If cache exists, it is served from cache.
 func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, error) {
-	if cached := s.cache.Load(); cached != nil && len(cached.availableSchemaVersions) > 0 {
-		return append([]string(nil), cached.availableSchemaVersions...), nil
+	if s.cacheEnabled {
+		s.cacheMu.RLock()
+
+		cachedVersions := append([]string(nil), s.cache.availableSchemaVersions...)
+		s.cacheMu.RUnlock()
+
+		if len(cachedVersions) > 0 {
+			return cachedVersions, nil
+		}
 	}
 
 	versionsResp, err := s.getVersionsResponse(ctx)
@@ -200,12 +275,17 @@ func (s *Schema) GetAvailableSchemaVersions(ctx context.Context) ([]string, erro
 		return nil, err
 	}
 
-	schemaVersions := make([]string, 0, len(versionsResp.Versions))
-	for _, v := range versionsResp.Versions {
-		schemaVersion := v.SchemaVersion
-		if schemaVersion != "" {
-			schemaVersions = append(schemaVersions, schemaVersion)
-		}
+	defaultSchemaVersion, schemaVersions, err := s.extractVersions(versionsResp)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cacheEnabled {
+		s.cacheMu.Lock()
+		s.cache.defaultSchemaVersion = defaultSchemaVersion
+
+		s.cache.availableSchemaVersions = append([]string(nil), schemaVersions...)
+		s.cacheMu.Unlock()
 	}
 
 	return schemaVersions, nil
@@ -242,28 +322,30 @@ func (s *Schema) resolveVersion(ctx context.Context, schemaVersion string) (stri
 }
 
 func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (SchemaCategories, bool) {
-	cached := s.cache.Load()
-	if cached == nil {
+	if !s.cacheEnabled {
 		return nil, false
 	}
 
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+
 	switch endpoint {
-	case "skill_categories":
-		c, ok := cached.schemaSkills[schemaVersion]
+	case skillCategoriesEndpoint:
+		c, ok := s.cache.schemaSkills[schemaVersion]
 		if !ok {
 			return nil, false
 		}
 
 		return cloneCategories(c), true
-	case "domain_categories":
-		c, ok := cached.schemaDomains[schemaVersion]
+	case domainCategoriesEndpoint:
+		c, ok := s.cache.schemaDomains[schemaVersion]
 		if !ok {
 			return nil, false
 		}
 
 		return cloneCategories(c), true
-	case "module_categories":
-		c, ok := cached.schemaModules[schemaVersion]
+	case moduleCategoriesEndpoint:
+		c, ok := s.cache.schemaModules[schemaVersion]
 		if !ok {
 			return nil, false
 		}
@@ -271,6 +353,70 @@ func (s *Schema) getCachedCategories(endpoint string, schemaVersion string) (Sch
 		return cloneCategories(c), true
 	default:
 		return nil, false
+	}
+}
+
+func (s *Schema) setCachedCategories(endpoint string, schemaVersion string, categories SchemaCategories) {
+	if !s.cacheEnabled {
+		return
+	}
+
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+
+	switch endpoint {
+	case skillCategoriesEndpoint:
+		s.cache.schemaSkills[schemaVersion] = cloneCategories(categories)
+	case domainCategoriesEndpoint:
+		s.cache.schemaDomains[schemaVersion] = cloneCategories(categories)
+	case moduleCategoriesEndpoint:
+		s.cache.schemaModules[schemaVersion] = cloneCategories(categories)
+	}
+}
+
+func jsonSchemaCacheKey(schemaType SchemaType, name string) string {
+	return fmt.Sprintf("%s|%s", schemaType, name)
+}
+
+func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType SchemaType, name string) ([]byte, bool) {
+	if !s.cacheEnabled {
+		return nil, false
+	}
+
+	s.cacheMu.RLock()
+	defer s.cacheMu.RUnlock()
+
+	byVersion, ok := s.cache.jsonSchema[schemaVersion]
+	if !ok {
+		return nil, false
+	}
+
+	entry, ok := byVersion[jsonSchemaCacheKey(schemaType, name)]
+	if !ok {
+		return nil, false
+	}
+
+	return append([]byte(nil), entry.data...), true
+}
+
+func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType SchemaType, name string, data []byte) {
+	if !s.cacheEnabled {
+		return
+	}
+
+	s.cacheMu.Lock()
+	defer s.cacheMu.Unlock()
+
+	byVersion, ok := s.cache.jsonSchema[schemaVersion]
+	if !ok {
+		byVersion = map[string]jsonSchemaCacheEntry{}
+		s.cache.jsonSchema[schemaVersion] = byVersion
+	}
+
+	byVersion[jsonSchemaCacheKey(schemaType, name)] = jsonSchemaCacheEntry{
+		schemaType: schemaType,
+		name:       name,
+		data:       append([]byte(nil), data...),
 	}
 }
 
@@ -306,69 +452,20 @@ func (s *Schema) fetchCategoriesForVersion(ctx context.Context, version string, 
 	return categories, nil
 }
 
-// Cache preloads and snapshots supported versions and nested categories.
-// Snapshot is version-keyed and immutable until Cache is called again.
-func (s *Schema) Cache(ctx context.Context) error {
-	versionsResp, err := s.getVersionsResponse(ctx)
-	if err != nil {
-		return err
-	}
-
-	defaultSchemaVersion := versionsResp.Default.SchemaVersion
-	if defaultSchemaVersion == "" {
-		return errors.New("default schema version is missing from /api/versions response")
-	}
-
-	schemaVersions := make([]string, 0, len(versionsResp.Versions))
-	for _, v := range versionsResp.Versions {
-		schemaVersion := v.SchemaVersion
-		if schemaVersion != "" {
-			schemaVersions = append(schemaVersions, schemaVersion)
-		}
-	}
-
-	next := &schemaCache{
-		defaultSchemaVersion:    defaultSchemaVersion,
-		availableSchemaVersions: append([]string(nil), schemaVersions...),
-		schemaSkills:            make(map[string]SchemaCategories, len(schemaVersions)),
-		schemaDomains:           make(map[string]SchemaCategories, len(schemaVersions)),
-		schemaModules:           make(map[string]SchemaCategories, len(schemaVersions)),
-	}
-
-	for _, version := range schemaVersions {
-		skills, err := s.fetchCategoriesForVersion(ctx, version, "skill_categories")
-		if err != nil {
-			return fmt.Errorf("failed to cache skills for version %s: %w", version, err)
-		}
-
-		domains, err := s.fetchCategoriesForVersion(ctx, version, "domain_categories")
-		if err != nil {
-			return fmt.Errorf("failed to cache domains for version %s: %w", version, err)
-		}
-
-		modules, err := s.fetchCategoriesForVersion(ctx, version, "module_categories")
-		if err != nil {
-			return fmt.Errorf("failed to cache modules for version %s: %w", version, err)
-		}
-
-		next.schemaSkills[version] = cloneCategories(skills)
-		next.schemaDomains[version] = cloneCategories(domains)
-		next.schemaModules[version] = cloneCategories(modules)
-	}
-
-	s.cache.Store(next)
-
-	return nil
-}
-
-// ReloadCache refreshes the full cache snapshot.
-func (s *Schema) ReloadCache(ctx context.Context) error {
-	return s.Cache(ctx)
-}
-
 // ClearCache removes the current cache snapshot.
 func (s *Schema) ClearCache() {
-	s.cache.Store(nil)
+	if !s.cacheEnabled {
+		return
+	}
+
+	s.cacheMu.Lock()
+	s.cache = &schemaCache{
+		schemaSkills:  map[string]SchemaCategories{},
+		schemaDomains: map[string]SchemaCategories{},
+		schemaModules: map[string]SchemaCategories{},
+		jsonSchema:    map[string]map[string]jsonSchemaCacheEntry{},
+	}
+	s.cacheMu.Unlock()
 }
 
 // constructSchemaURL builds the schema URL from options.
@@ -377,9 +474,9 @@ func (s *Schema) constructSchemaURL(version string, schemaType SchemaType, name 
 	return fmt.Sprintf("%s/schema/%s/%s/%s", s.schemaURL, version, schemaType, name)
 }
 
-// GetSchema is a generic function to fetch schema content from the OASF API.
+// GetJSONSchema is a generic function to fetch JSON schema content from the OASF API.
 // It constructs the URL as /schema/<version>/<type>/<name>.
-func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name string, opts ...SchemaOption) ([]byte, error) {
+func (s *Schema) GetJSONSchema(ctx context.Context, schemaType SchemaType, name string, opts ...SchemaOption) ([]byte, error) {
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -388,6 +485,10 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 	schemaVersion, err := s.resolveVersion(ctx, options.schemaVersion)
 	if err != nil {
 		return nil, err
+	}
+
+	if cached, ok := s.getCachedJSONSchema(schemaVersion, schemaType, name); ok {
+		return cached, nil
 	}
 
 	schemaURL := s.constructSchemaURL(schemaVersion, schemaType, name)
@@ -416,6 +517,8 @@ func (s *Schema) GetSchema(ctx context.Context, schemaType SchemaType, name stri
 		return nil, fmt.Errorf("failed to read schema response from URL %s: %w", schemaURL, err)
 	}
 
+	s.setCachedJSONSchema(schemaVersion, schemaType, name, schemaData)
+
 	return schemaData, nil
 }
 
@@ -435,25 +538,32 @@ func (s *Schema) GetSchemaCategories(ctx context.Context, endpoint string, opts 
 		return categories, nil
 	}
 
-	return s.fetchCategoriesForVersion(ctx, version, endpoint)
+	categories, err := s.fetchCategoriesForVersion(ctx, version, endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	s.setCachedCategories(endpoint, version, categories)
+
+	return categories, nil
 }
 
-// GetRecordSchemaContent returns the raw JSON schema content for a given version.
-func (s *Schema) GetRecordSchemaContent(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
-	return s.GetSchema(ctx, SchemaTypeObjects, "record", opts...)
+// GetRecordJSONSchema returns the record JSON schema content for a given version.
+func (s *Schema) GetRecordJSONSchema(ctx context.Context, opts ...SchemaOption) ([]byte, error) {
+	return s.GetJSONSchema(ctx, SchemaTypeObjects, "record", opts...)
 }
 
 // GetSchemaSkills returns nested skill categories from /api/<version>/skill_categories.
 func (s *Schema) GetSchemaSkills(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, "skill_categories", opts...)
+	return s.GetSchemaCategories(ctx, skillCategoriesEndpoint, opts...)
 }
 
 // GetSchemaDomains returns nested domain categories from /api/<version>/domain_categories.
 func (s *Schema) GetSchemaDomains(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, "domain_categories", opts...)
+	return s.GetSchemaCategories(ctx, domainCategoriesEndpoint, opts...)
 }
 
 // GetSchemaModules returns nested module categories from /api/<version>/module_categories.
 func (s *Schema) GetSchemaModules(ctx context.Context, opts ...SchemaOption) (SchemaCategories, error) {
-	return s.GetSchemaCategories(ctx, "module_categories", opts...)
+	return s.GetSchemaCategories(ctx, moduleCategoriesEndpoint, opts...)
 }
