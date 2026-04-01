@@ -13,6 +13,7 @@ import (
 	typesv1alpha1 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha1"
 	typesv1alpha2 "buf.build/gen/go/agntcy/oasf/protocolbuffers/go/agntcy/oasf/types/v1alpha2"
 	"github.com/Masterminds/semver/v3"
+	"github.com/agntcy/oasf-sdk/pkg/record"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -139,4 +140,9 @@ func GetRecordSchemaVersion(record *structpb.Struct) (string, error) {
 	}
 
 	return fieldSchemaVersion.GetStringValue(), nil
+}
+
+// GetRecordModuleData returns the module data for the provided module name.
+func GetRecordModuleData(rec *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
+	return record.GetModuleData(rec, moduleName)
 }

@@ -26,7 +26,7 @@ Create a GitHub Copilot config from the OASF data model using the `RecordToGHCop
 You can pipe the output to a file wherever you want to save the config.
 
 ```bash
-cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
+cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToGHCopilot
 ```
 
 Output:
@@ -68,7 +68,7 @@ Output:
 To extract A2A card from the OASF data model, use the `RecordToA2A` RPC method.
 
 ```bash
-cat e2e/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
+cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToA2A
 ```
 
 Output:
@@ -108,7 +108,7 @@ To convert an MCP Registry server.json to an OASF record, use the `MCPToRecord` 
 **Note:** The MCP Registry server.json contains deployment metadata (packages, remotes, etc.), not runtime capabilities (tools, resources, prompts). Those are discovered via the MCP protocol when a client connects to the server.
 
 ```bash
-cat e2e/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/MCPToRecord
+cat tests/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/MCPToRecord
 ```
 
 Output:
@@ -258,7 +258,31 @@ func main() {
 	if err := json.Unmarshal(modulesData, &modulesMap); err != nil {
 		log.Fatalf("Failed to parse modules: %v", err)
 	}
-	fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+  fmt.Printf("Found %d modules in schema\n", len(modulesMap))
+
+  // Get the Agent Skills module schema (includes the data field)
+  agentSkillsSchema, err := s.GetSchema(ctx, schema.SchemaTypeModules, "agentskills", schema.WithVersion("1.0.0"))
+  if err != nil {
+    log.Fatalf("Failed to get agent skills module schema: %v", err)
+  }
+
+  var agentSkillsMap map[string]interface{}
+  if err := json.Unmarshal(agentSkillsSchema, &agentSkillsMap); err != nil {
+    log.Fatalf("Failed to parse agent skills module schema: %v", err)
+  }
+  fmt.Printf("Agent skills module schema loaded\n")
+
+  // Get the Agent Skills manifest object schema
+  agentSkillsManifestSchema, err := s.GetSchema(ctx, schema.SchemaTypeObjects, "agentskills_manifest", schema.WithVersion("1.0.0"))
+  if err != nil {
+    log.Fatalf("Failed to get agent skills manifest schema: %v", err)
+  }
+
+  var agentSkillsManifestMap map[string]interface{}
+  if err := json.Unmarshal(agentSkillsManifestSchema, &agentSkillsManifestMap); err != nil {
+    log.Fatalf("Failed to parse agent skills manifest schema: %v", err)
+  }
+  fmt.Printf("Agent skills manifest schema loaded\n")
 }
 ```
 
@@ -319,6 +343,16 @@ All convenience methods accept optional `WithVersion()` option. If omitted, the 
 - `GetSchemaDomains(ctx, ...SchemaOption)` - Extracts domains definitions
 - `GetSchemaModules(ctx, ...SchemaOption)` - Extracts modules definitions
 
+### Accessing Agent Skills data from a record
+The translator package can render a spec-compliant `SKILL.md` directly from a record.
+```go
+skillMarkdown, err := translator.BuildSkillMarkdownFromRecord(record)
+if err != nil {
+  log.Fatalf("Failed to build SKILL.md: %v", err)
+}
+fmt.Printf("SKILL.md content:\n%s", skillMarkdown)
+```
+
 Example:
 ```go
 // Using default version
@@ -337,7 +371,7 @@ The validation is performed by the OASF schema server using its own validation l
 
 **Using schema URL (required):**
 ```bash
-cat e2e/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
+cat tests/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
 
 ## Golang example

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -276,9 +277,9 @@ func processMCPModule070080(mcpModule *structpb.Struct, servers map[string]MCPSe
 // Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
 func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) { //nolint:gocognit
 	// Get MCP module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, mcpModule := getModuleDataFromRecord(record, MCPModuleName) // "integration/mcp" (0.8.0, 1.0.0)
+	found, mcpModule := recordutil.GetModuleData(record, MCPModuleName) // "integration/mcp" (0.8.0, 1.0.0)
 	if !found {
-		found, mcpModule = getModuleDataFromRecord(record, "runtime/mcp") // 0.7.0 compatibility
+		found, mcpModule = recordutil.GetModuleData(record, "runtime/mcp") // 0.7.0 compatibility
 	}
 
 	if !found {

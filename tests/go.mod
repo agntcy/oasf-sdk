@@ -1,4 +1,4 @@
-module github.com/agntcy/oasf-sdk/e2e
+module github.com/agntcy/oasf-sdk/tests
 
 go 1.26.1
 

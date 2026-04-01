@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -16,9 +17,9 @@ import (
 // from the A2A protocol definition to prevent schema drift.
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 	// Get A2A module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, a2aModule := getModuleDataFromRecord(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
+	found, a2aModule := recordutil.GetModuleData(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
 	if !found {
-		found, a2aModule = getModuleDataFromRecord(record, "runtime/a2a") // 0.7.0 compatibility
+		found, a2aModule = recordutil.GetModuleData(record, "runtime/a2a") // 0.7.0 compatibility
 	}
 
 	if !found {

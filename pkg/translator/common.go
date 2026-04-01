@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/Masterminds/semver/v3"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // Constants for repeated strings.
@@ -60,31 +59,4 @@ func validateMajorVersion(versionStr string) error {
 	}
 
 	return nil
-}
-
-func getModuleDataFromRecord(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
-	// Find module by exact name match
-	modules, ok := record.GetFields()["modules"]
-	if !ok {
-		return false, nil
-	}
-
-	for _, module := range modules.GetListValue().GetValues() {
-		moduleStruct := module.GetStructValue()
-		if moduleStruct == nil {
-			continue
-		}
-
-		nameField := moduleStruct.GetFields()["name"]
-		if nameField == nil {
-			continue
-		}
-
-		// Exact match required (e.g., "integration/a2a")
-		if nameField.GetStringValue() == moduleName {
-			return true, moduleStruct.GetFields()["data"].GetStructValue()
-		}
-	}
-
-	return false, nil
 }

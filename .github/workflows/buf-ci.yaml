@@ -17,8 +17,8 @@ jobs:
   buf:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-action@v1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: bufbuild/buf-action@91da6f6a1a2c877c182debad24ca0a8a9d848be7 # v1
         with:
           token: ${{ secrets.BUF_TOKEN }}
           input: proto
