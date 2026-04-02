@@ -9,3 +9,5 @@ require (
 )
 
 require github.com/Masterminds/semver/v3 v3.4.0
+
+require golang.org/x/sync v0.14.0

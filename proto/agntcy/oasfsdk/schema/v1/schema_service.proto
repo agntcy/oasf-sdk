@@ -1,0 +1,126 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package agntcy.oasfsdk.schema.v1;
+
+import "google/protobuf/struct.proto";
+
+// SchemaService provides methods to fetch schema metadata and taxonomy categories.
+service SchemaService {
+  // GetDefaultSchemaVersion returns the default schema version configured by the schema server.
+  rpc GetDefaultSchemaVersion(GetDefaultSchemaVersionRequest) returns (GetDefaultSchemaVersionResponse);
+
+  // GetAvailableSchemaVersions returns all schema versions supported by the schema server.
+  rpc GetAvailableSchemaVersions(GetAvailableSchemaVersionsRequest) returns (GetAvailableSchemaVersionsResponse);
+
+  // GetRecordJSONSchema returns the full record JSON schema for a version.
+  rpc GetRecordJSONSchema(GetRecordJSONSchemaRequest) returns (GetRecordJSONSchemaResponse);
+
+  // GetJSONSchema returns a JSON schema for a full schema URL.
+  rpc GetJSONSchema(GetJSONSchemaRequest) returns (GetJSONSchemaResponse);
+
+  // GetSchemaSkills returns nested skill categories for a version.
+  rpc GetSchemaSkills(GetSchemaSkillsRequest) returns (GetSchemaSkillsResponse);
+
+  // GetSchemaDomains returns nested domain categories for a version.
+  rpc GetSchemaDomains(GetSchemaDomainsRequest) returns (GetSchemaDomainsResponse);
+
+  // GetSchemaModules returns nested module categories for a version.
+  rpc GetSchemaModules(GetSchemaModulesRequest) returns (GetSchemaModulesResponse);
+}
+
+message GetDefaultSchemaVersionRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+}
+
+message GetDefaultSchemaVersionResponse {
+  // Default schema version returned by the schema server.
+  string version = 1;
+}
+
+message GetAvailableSchemaVersionsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+}
+
+message GetAvailableSchemaVersionsResponse {
+  // List of schema versions supported by the schema server.
+  repeated string versions = 1;
+}
+
+message GetRecordJSONSchemaRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetRecordJSONSchemaResponse {
+  // Full record schema represented as structured JSON.
+  google.protobuf.Struct schema = 1;
+}
+
+message GetJSONSchemaRequest {
+  // Full schema URL (for example https://schema.oasf.outshift.com/schema/1.0.0/objects/record).
+  string url = 1;
+}
+
+message GetJSONSchemaResponse {
+  // JSON schema represented as structured JSON.
+  google.protobuf.Struct schema = 1;
+}
+
+// TaxonomyItem represents a single node in a nested OASF taxonomy tree.
+message TaxonomyItem {
+  int32 id = 1;
+  string name = 2;
+  string caption = 3;
+  string description = 4;
+  bool category = 5;
+  bool deprecated = 6;
+  // Child items keyed by their slug (for example "natural_language_processing").
+  map<string, TaxonomyItem> classes = 7;
+}
+
+message GetSchemaSkillsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaSkillsResponse {
+  // Top-level skill categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
+}
+
+message GetSchemaDomainsRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaDomainsResponse {
+  // Top-level domain categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
+}
+
+message GetSchemaModulesRequest {
+  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
+  string schema_url = 1;
+
+  // Optional schema version. If empty, the schema server default is used.
+  string schema_version = 2;
+}
+
+message GetSchemaModulesResponse {
+  // Top-level module categories keyed by slug.
+  map<string, TaxonomyItem> items = 1;
+}
