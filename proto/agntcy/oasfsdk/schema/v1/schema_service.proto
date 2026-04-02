@@ -29,9 +29,6 @@ service SchemaService {
 
   // GetSchemaModules returns nested module categories for a version.
   rpc GetSchemaModules(GetSchemaModulesRequest) returns (GetSchemaModulesResponse);
-
-  // ClearSchemaCache clears cached schema data for the provided schema URL.
-  rpc ClearSchemaCache(ClearSchemaCacheRequest) returns (ClearSchemaCacheResponse);
 }
 
 message GetDefaultSchemaVersionRequest {
@@ -126,14 +123,4 @@ message GetSchemaModulesRequest {
 message GetSchemaModulesResponse {
   // Top-level module categories keyed by slug.
   map<string, TaxonomyItem> items = 1;
-}
-
-message ClearSchemaCacheRequest {
-  // URL of the OASF schema server (for example https://schema.oasf.outshift.com).
-  string schema_url = 1;
-}
-
-message ClearSchemaCacheResponse {
-  // True when cache was cleared successfully.
-  bool cleared = 1;
 }
