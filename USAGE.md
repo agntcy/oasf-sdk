@@ -30,6 +30,7 @@ cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -p
 ```
 
 Output:
+
 ```json
 {
   "data": {
@@ -72,6 +73,7 @@ cat tests/fixtures/translation_0.8.0_record.json | jq '{record: .}' | grpcurl -p
 ```
 
 Output:
+
 ```json
 {
   "data": {
@@ -80,12 +82,8 @@ Output:
         "pushNotifications": false,
         "streaming": true
       },
-      "defaultInputModes": [
-        "text"
-      ],
-      "defaultOutputModes": [
-        "text"
-      ],
+      "defaultInputModes": ["text"],
+      "defaultOutputModes": ["text"],
       "description": "An agent that performs web searches and extracts information.",
       "name": "example-agent",
       "skills": [
@@ -112,6 +110,7 @@ cat tests/fixtures/translation_mcp.json | jq '{data: .}' | grpcurl -plaintext -d
 ```
 
 Output:
+
 ```json
 {
   "record": {
@@ -177,6 +176,7 @@ go get github.com/agntcy/oasf-sdk/pkg@v0.0.9
 ```
 
 Package based usage:
+
 ```go
 package main
 
@@ -265,11 +265,13 @@ func main() {
 ## Supported Schema Versions
 
 The schema package supports the following versions:
+
 - `0.7.0` - Uses `/schema/0.7.0/objects/record` endpoint
 - `0.8.0` - Uses `/schema/0.8.0/objects/record` endpoint
 - `1.0.0` - Uses `/schema/1.0.0/objects/record` endpoint
 
 You can get the list of supported versions programmatically by fetching from the server:
+
 ```go
 s, err := schema.New("https://schema.oasf.outshift.com")
 if err != nil {
@@ -286,19 +288,24 @@ if err != nil {
 ## API Methods
 
 ### GetDefaultSchemaVersion
+
 Returns the default schema version from the server. The version is cached after the first fetch:
+
 ```go
 defaultVersion, err := s.GetDefaultSchemaVersion(ctx)
 ```
 
 ### Cache behavior
+
 - Caching is disabled by default.
 - Enable dynamic caching via constructor option: `schema.New(url, schema.WithCache(true))`.
 - Dynamic caching stores only data that has been requested.
 - Clear in-memory cache with `s.ClearCache()`.
 
 ### GetRecordJSONSchema
+
 Fetches the complete JSON schema. If no version is provided via `WithSchemaVersion()`, the default version from the server is used:
+
 ```go
 // Using default version
 schemaContent, err := s.GetRecordJSONSchema(ctx)
@@ -308,13 +315,17 @@ schemaContent, err := s.GetRecordJSONSchema(ctx, schema.WithSchemaVersion("0.8.0
 ```
 
 ### Convenience Methods
+
 All convenience methods accept optional `WithSchemaVersion()` option. If omitted, the default version is used. These methods call the new taxonomy endpoints and return nested Go structs (`schema.Taxonomy`):
+
 - `GetSchemaSkills(ctx, ...SchemaOption)` - calls `/api/<version>/skill_categories`
 - `GetSchemaDomains(ctx, ...SchemaOption)` - calls `/api/<version>/domain_categories`
 - `GetSchemaModules(ctx, ...SchemaOption)` - calls `/api/<version>/module_categories`
 
 ### Accessing Agent Skills data from a record
+
 The translator package can render a spec-compliant `SKILL.md` directly from a record.
+
 ```go
 skillMarkdown, err := translator.BuildSkillMarkdownFromRecord(record)
 if err != nil {
@@ -324,12 +335,118 @@ fmt.Printf("SKILL.md content:\n%s", skillMarkdown)
 ```
 
 Example:
+
 ```go
 // Using default version
 skills, err := s.GetSchemaSkills(ctx)
 
 // Using specific version
 skills, err := s.GetSchemaSkills(ctx, schema.WithSchemaVersion("0.7.0"))
+```
+
+## gRPC API example
+
+The SDK server also exposes the schema functionality via gRPC.
+
+**Get default schema version:**
+
+```bash
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetDefaultSchemaVersion
+```
+
+**Get available schema versions:**
+
+```bash
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetAvailableSchemaVersions
+```
+
+**Get record schema (specific version):**
+
+```bash
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com","schema_version":"0.8.0"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetRecordJSONSchema
+```
+
+**Get a JSON schema by full URL:**
+
+```bash
+grpcurl -plaintext \
+  -d '{"url":"https://schema.oasf.outshift.com/schema/1.0.0/skills/contextual_comprehension"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetJSONSchema
+```
+
+**Get nested skill/domain/module categories:**
+
+```bash
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com","schema_version":"0.8.0"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetSchemaSkills
+
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com","schema_version":"0.8.0"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetSchemaDomains
+
+grpcurl -plaintext \
+  -d '{"schema_url":"https://schema.oasf.outshift.com","schema_version":"0.8.0"}' \
+  localhost:31234 \
+  agntcy.oasfsdk.schema.v1.SchemaService/GetSchemaModules
+```
+
+## Golang gRPC client example
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/schema/v1/schemav1grpc"
+	schemav1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/schema/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+func main() {
+	conn, err := grpc.NewClient("localhost:31234", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := schemav1grpc.NewSchemaServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	defaultResp, err := client.GetDefaultSchemaVersion(ctx, &schemav1.GetDefaultSchemaVersionRequest{
+		SchemaUrl: "https://schema.oasf.outshift.com",
+	})
+	if err != nil {
+		log.Fatalf("GetDefaultSchemaVersion failed: %v", err)
+	}
+	log.Printf("Default schema version: %s", defaultResp.GetVersion())
+
+	skillsResp, err := client.GetSchemaSkills(ctx, &schemav1.GetSchemaSkillsRequest{
+		SchemaUrl:     "https://schema.oasf.outshift.com",
+		SchemaVersion: "0.8.0",
+	})
+	if err != nil {
+		log.Fatalf("GetSchemaSkills failed: %v", err)
+	}
+	log.Printf("Top-level skill categories: %d", len(skillsResp.GetItems()))
+}
 ```
 
 # Validation Service
@@ -340,6 +457,7 @@ The validation is performed by the OASF schema server using its own validation l
 ## gRPC API example
 
 **Using schema URL (required):**
+
 ```bash
 cat tests/fixtures/valid_0.8.0_record.json | jq '{record: ., schema_url: "https://schema.oasf.outshift.com"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.validation.v1.ValidationService/ValidateRecord
 ```
@@ -353,6 +471,7 @@ go get buf.build/gen/go/agntcy/oasf-sdk/grpc/go@v1.5.1-20251029125108-823ea6fabc
 ```
 
 Package based usage:
+
 ```go
 package main
 
@@ -432,6 +551,7 @@ func main() {
 ```
 
 Service based usage:
+
 ```go
 package main
 
@@ -620,96 +740,100 @@ npm install @buf/agntcy_oasf-sdk.grpc_node@1.13.0-20250917120021-8b2bf93bf8dc.2
 ```
 
 ```javascript
-const grpc = require('@grpc/grpc-js');
-const { ValidationServiceClient } = require('@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_grpc_pb');
-const { ValidateRecordRequest } = require('@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_pb');
-const { Struct } = require('google-protobuf/google/protobuf/struct_pb');
+const grpc = require("@grpc/grpc-js");
+const {
+  ValidationServiceClient,
+} = require("@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_grpc_pb");
+const {
+  ValidateRecordRequest,
+} = require("@buf/agntcy_oasf-sdk.grpc_node/agntcy/oasfsdk/validation/v1/validation_service_pb");
+const { Struct } = require("google-protobuf/google/protobuf/struct_pb");
 
 async function validateRecord() {
-    // Sample OASF record to validate
-    const recordData = {
-        name: "example.org/my-agent",
-        schema_version: "0.8.0",
-        version: "v1.0.0",
-        description: "An example agent for demonstration",
-        authors: ["Your Name <your.email@example.com>"],
-        created_at: "2025-01-01T00:00:00Z",
-        previous_record_cid: "2883dcaa-ae90-11f0-9e37-5e1f5302e045",
-        domains: [
-            {
-                id: 101,
-                name: "technology/internet_of_things"
-            }
-        ],
-        locators: [
-            {
-                type: "docker_image",
-                url: "ghcr.io/example/my-agent:latest"
-            }
-        ],
-        skills: [
-            {
-                name: "natural_language_processing/natural_language_understanding",
-                id: 101
-            }
-        ]
-    };
+  // Sample OASF record to validate
+  const recordData = {
+    name: "example.org/my-agent",
+    schema_version: "0.8.0",
+    version: "v1.0.0",
+    description: "An example agent for demonstration",
+    authors: ["Your Name <your.email@example.com>"],
+    created_at: "2025-01-01T00:00:00Z",
+    previous_record_cid: "2883dcaa-ae90-11f0-9e37-5e1f5302e045",
+    domains: [
+      {
+        id: 101,
+        name: "technology/internet_of_things",
+      },
+    ],
+    locators: [
+      {
+        type: "docker_image",
+        url: "ghcr.io/example/my-agent:latest",
+      },
+    ],
+    skills: [
+      {
+        name: "natural_language_processing/natural_language_understanding",
+        id: 101,
+      },
+    ],
+  };
 
-    // Create gRPC client
-    const client = new ValidationServiceClient(
-        'localhost:31234',
-        grpc.credentials.createInsecure()
-    );
+  // Create gRPC client
+  const client = new ValidationServiceClient(
+    "localhost:31234",
+    grpc.credentials.createInsecure(),
+  );
 
-    // Convert JavaScript object to protobuf Struct using the proper method
-    const recordStruct = Struct.fromJavaScript(recordData);
+  // Convert JavaScript object to protobuf Struct using the proper method
+  const recordStruct = Struct.fromJavaScript(recordData);
 
-    // Create validation request
-    const request = new ValidateRecordRequest();
-    request.setRecord(recordStruct);
-    // Schema URL is required
-    request.setSchemaUrl("https://schema.oasf.outshift.com");
+  // Create validation request
+  const request = new ValidateRecordRequest();
+  request.setRecord(recordStruct);
+  // Schema URL is required
+  request.setSchemaUrl("https://schema.oasf.outshift.com");
 
-    return new Promise((resolve, reject) => {
-        client.validateRecord(request, (error, response) => {
-            if (error) {
-                console.error('gRPC error:', error);
-                reject(error);
-                return;
-            }
+  return new Promise((resolve, reject) => {
+    client.validateRecord(request, (error, response) => {
+      if (error) {
+        console.error("gRPC error:", error);
+        reject(error);
+        return;
+      }
 
-            // Print results
-            console.log(`Valid: ${response.getIsValid()}`);
-            const errors = response.getErrorsList();
-            if (errors && errors.length > 0) {
-                console.log('Errors:');
-                errors.forEach(err => {
-                    console.log(`  - ${err}`);
-                });
-            } else {
-                console.log('No validation errors found!');
-            }
-            const warnings = response.getWarningsList();
-            if (warnings && warnings.length > 0) {
-                console.log('Warnings:');
-                warnings.forEach(warn => {
-                    console.log(`  - ${warn}`);
-                });
-            }
-
-            resolve(response);
+      // Print results
+      console.log(`Valid: ${response.getIsValid()}`);
+      const errors = response.getErrorsList();
+      if (errors && errors.length > 0) {
+        console.log("Errors:");
+        errors.forEach((err) => {
+          console.log(`  - ${err}`);
         });
+      } else {
+        console.log("No validation errors found!");
+      }
+      const warnings = response.getWarningsList();
+      if (warnings && warnings.length > 0) {
+        console.log("Warnings:");
+        warnings.forEach((warn) => {
+          console.log(`  - ${warn}`);
+        });
+      }
+
+      resolve(response);
     });
+  });
 }
 
 // Run the validation
 validateRecord()
-    .then(() => {
-        console.log('Validation completed successfully');
-        process.exit(0);
-    })
-    .catch((error) => {
-        console.error('Validation failed:', error);
-        process.exit(1);
-    });
+  .then(() => {
+    console.log("Validation completed successfully");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Validation failed:", error);
+    process.exit(1);
+  });
 ```
