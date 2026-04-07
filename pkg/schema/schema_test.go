@@ -227,7 +227,7 @@ func TestGetJSONSchema(t *testing.T) {
 	tests := []struct {
 		name        string
 		version     string
-		typ         entityType
+		typ         EntityType
 		schemaName  string
 		expectError bool
 	}{

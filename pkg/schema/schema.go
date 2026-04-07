@@ -63,7 +63,7 @@ type schemaCache struct {
 }
 
 type jsonSchemaCacheEntry struct {
-	schemaType entityType
+	schemaType EntityType
 	name       string
 	data       []byte
 }
@@ -74,18 +74,18 @@ type SchemaOption func(*schemaOptions)
 // ConstructorOption is a function that configures schema client behavior.
 type ConstructorOption func(*constructorOptions)
 
-// entityType represents the type of schema to fetch.
-type entityType string
+// EntityType represents the type of schema to fetch.
+type EntityType string
 
 const (
 	// EntityTypeObjects represents object schemas (agent, record).
-	EntityTypeObjects entityType = "objects"
+	EntityTypeObjects EntityType = "objects"
 	// EntityTypeModules represents module schemas.
-	EntityTypeModules entityType = "modules"
+	EntityTypeModules EntityType = "modules"
 	// EntityTypeSkills represents skill schemas.
-	EntityTypeSkills entityType = "skills"
+	EntityTypeSkills EntityType = "skills"
 	// EntityTypeDomains represents domain schemas.
-	EntityTypeDomains entityType = "domains"
+	EntityTypeDomains EntityType = "domains"
 )
 
 type constructorOptions struct {
@@ -381,11 +381,11 @@ func (s *Schema) setCachedTaxonomy(endpoint string, schemaVersion string, catego
 	}
 }
 
-func jsonSchemaCacheKey(schemaType entityType, name string) string {
+func jsonSchemaCacheKey(schemaType EntityType, name string) string {
 	return fmt.Sprintf("%s|%s", schemaType, name)
 }
 
-func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType entityType, name string) ([]byte, bool) {
+func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType EntityType, name string) ([]byte, bool) {
 	if !s.cacheEnabled {
 		return nil, false
 	}
@@ -406,7 +406,7 @@ func (s *Schema) getCachedJSONSchema(schemaVersion string, schemaType entityType
 	return append([]byte(nil), entry.data...), true
 }
 
-func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType entityType, name string, data []byte) {
+func (s *Schema) setCachedJSONSchema(schemaVersion string, schemaType EntityType, name string, data []byte) {
 	if !s.cacheEnabled {
 		return
 	}
@@ -477,13 +477,13 @@ func (s *Schema) ClearCache() {
 
 // constructSchemaURL builds the schema URL from options.
 // Format: /schema/<version>/<type>/<name>.
-func (s *Schema) constructSchemaURL(version string, schemaType entityType, name string) string {
+func (s *Schema) constructSchemaURL(version string, schemaType EntityType, name string) string {
 	return fmt.Sprintf("%s/schema/%s/%s/%s", s.schemaURL, version, schemaType, name)
 }
 
 // GetJSONSchema is a generic function to fetch JSON schema content from the OASF API.
 // It constructs the URL as /schema/<version>/<type>/<name>.
-func (s *Schema) GetJSONSchema(ctx context.Context, schemaType entityType, name string, opts ...SchemaOption) ([]byte, error) {
+func (s *Schema) GetJSONSchema(ctx context.Context, schemaType EntityType, name string, opts ...SchemaOption) ([]byte, error) {
 	options := &schemaOptions{}
 	for _, opt := range opts {
 		opt(options)

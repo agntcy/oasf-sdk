@@ -3,13 +3,13 @@ module github.com/agntcy/oasf-sdk/server
 go 1.26.1
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.6.0-20260115113053-9b110d5996b7.1
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260128161637-a77f334c8c86.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.6.1-20260402143721-5fd9f22378bc.1
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260402143721-5fd9f22378bc.1
 	github.com/agntcy/oasf-sdk/pkg v1.0.4
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
-	google.golang.org/grpc v1.75.1
+	google.golang.org/grpc v1.78.0
 )
 
 require (
@@ -29,10 +29,10 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
