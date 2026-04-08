@@ -7,8 +7,9 @@ version: 1.0.0
 allowed-tools: Read Bash(jq:*)
 metadata:
   author: example-org
-  version: "1.0.0"
+  version: 1.0.0
 ---
+
 # PDF Processing Skill
 
 Use this skill when handling PDFs.

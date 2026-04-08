@@ -85,3 +85,15 @@ var translationDirMCPRecord []byte
 
 //go:embed fixtures/expected_dir_mcp_gh_copilot_output.json
 var expectedDirMCPGHCopilotOutput []byte
+
+//go:embed fixtures/translation_skill.json
+var translationSkillMarkdown []byte
+
+//go:embed fixtures/expected_skilltorecord_output.json
+var expectedSkillToRecordOutput []byte
+
+//go:embed fixtures/translation_agentskills_record.json
+var translationAgentSkillsRecord []byte
+
+//go:embed fixtures/expected_recordtoskill_output.md
+var expectedRecordToSkillOutput []byte
