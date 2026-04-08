@@ -23,6 +23,12 @@ service TranslationService {
 
   // MCPToRecord generates a Record from an MCP Registry entry.
   rpc MCPToRecord(MCPToRecordRequest) returns (MCPToRecordResponse);
+
+  // SkillMarkdownToRecord generates a Record from a SKILL.md file content.
+  rpc SkillMarkdownToRecord(SkillMarkdownToRecordRequest) returns (SkillMarkdownToRecordResponse);
+
+  // RecordToSkillMarkdown generates a SKILL.md file content from a Record.
+  rpc RecordToSkillMarkdown(RecordToSkillMarkdownRequest) returns (RecordToSkillMarkdownResponse);
 }
 
 message RecordToGHCopilotRequest {
@@ -73,4 +79,24 @@ message MCPToRecordRequest {
 message MCPToRecordResponse {
   // The generated Record object in a structured format.
   google.protobuf.Struct record = 1;
+}
+
+message SkillMarkdownToRecordRequest {
+  // The SKILL.md content wrapped as {"skillMarkdown": "<content>"} to be converted to a Record object.
+  google.protobuf.Struct data = 1;
+}
+
+message SkillMarkdownToRecordResponse {
+  // The generated Record object in a structured format.
+  google.protobuf.Struct record = 1;
+}
+
+message RecordToSkillMarkdownRequest {
+  // The Record object to be converted into SKILL.md content.
+  google.protobuf.Struct record = 1;
+}
+
+message RecordToSkillMarkdownResponse {
+  // The generated SKILL.md content as a plain string.
+  string data = 1;
 }
