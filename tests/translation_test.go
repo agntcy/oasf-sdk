@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // normalizeMapOrder recursively normalizes map order by sorting keys for deterministic comparison.
@@ -637,10 +636,7 @@ func TestRecordToSkillMarkdown(t *testing.T) {
 		t.Fatalf("Failed to decode agentskills record: %v", err)
 	}
 
-	// Extract the body from the skill_body field of the module data for the WithBody option.
-	body := extractSkillBody(record)
-
-	actualMarkdown, err := translator.RecordToSkillMarkdown(record, translator.WithBody(body))
+	actualMarkdown, err := translator.RecordToSkillMarkdown(record)
 	if err != nil {
 		t.Fatalf("RecordToSkillMarkdown() error: %v", err)
 	}
@@ -651,30 +647,6 @@ func TestRecordToSkillMarkdown(t *testing.T) {
 	if actualMarkdown != expectedMarkdown {
 		t.Fatalf("Markdown mismatch.\nExpected:\n%s\nActual:\n%s", expectedMarkdown, actualMarkdown)
 	}
-}
-
-// extractSkillBody retrieves the skill_body field from the agentskills module data in a record.
-func extractSkillBody(record *structpb.Struct) string {
-	modulesVal, ok := record.GetFields()["modules"]
-	if !ok {
-		return ""
-	}
-
-	for _, modVal := range modulesVal.GetListValue().GetValues() {
-		mod := modVal.GetStructValue()
-		if mod == nil {
-			continue
-		}
-
-		if mod.GetFields()["name"].GetStringValue() == "agentskills" {
-			data := mod.GetFields()["data"].GetStructValue()
-			if data != nil {
-				return data.GetFields()["skill_body"].GetStringValue()
-			}
-		}
-	}
-
-	return ""
 }
 
 func mustMarshalIndent(v any) string {

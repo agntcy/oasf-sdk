@@ -17,11 +17,10 @@
           "description": "Extract PDF text and merge files. Use when handling PDFs.",
           "frontmatter_metadata": {
             "author": "example-org",
-            "version": "1.0.0"
+            "version": "1.0"
           },
           "license": "Apache-2.0",
-          "name": "pdf-processing",
-          "version": "1.0.0"
+          "name": "pdf-processing"
         }
       },
       "name": "agentskills"
@@ -30,5 +29,5 @@
   "name": "pdf-processing",
   "schema_version": "1.0.0",
   "skills": [],
-  "version": "1.0.0"
+  "version": "1.0"
 }

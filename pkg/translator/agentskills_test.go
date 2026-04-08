@@ -10,6 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// buildAgentSkillsRecord constructs a minimal OASF record with an agentskills module
+// containing the provided manifest fields and body.
 func buildAgentSkillsRecord(t *testing.T, manifestMap map[string]any, body string) *structpb.Struct {
 	t.Helper()
 
@@ -18,16 +20,20 @@ func buildAgentSkillsRecord(t *testing.T, manifestMap map[string]any, body strin
 		t.Fatalf("Failed to build manifest struct: %v", err)
 	}
 
+	moduleData := map[string]any{
+		"skill_file":     "SKILL.md",
+		"skill_manifest": manifestStruct.AsMap(),
+	}
+	if body != "" {
+		moduleData["skill_body"] = body
+	}
+
 	record, err := structpb.NewStruct(map[string]any{
 		"schema_version": "1.0.0",
 		"modules": []any{
 			map[string]any{
 				"name": AgentSkillsModuleName,
-				"data": map[string]any{
-					"skill_file":     "SKILL.md",
-					"skill_manifest": manifestStruct.AsMap(),
-					"skill_body":     body,
-				},
+				"data": moduleData,
 			},
 		},
 	})
@@ -39,55 +45,57 @@ func buildAgentSkillsRecord(t *testing.T, manifestMap map[string]any, body strin
 }
 
 func TestRecordToSkillMarkdown(t *testing.T) {
+	// Spec fields only: name, description, license, compatibility, allowed-tools, metadata.
+	// version lives inside metadata, not as a top-level frontmatter key.
 	manifestMap := map[string]any{
 		"name":          "pdf-processing",
 		"description":   "Extract PDF text and merge files.",
 		"license":       "Apache-2.0",
 		"compatibility": "Requires python3",
-		"version":       "1.0.0",
 		"allowed_tools": []any{"Read", "Bash(jq:*)"},
 		"frontmatter_metadata": map[string]any{
-			"author": "example-org",
+			"author":  "example-org",
+			"version": "1.0",
 		},
 	}
 
 	record := buildAgentSkillsRecord(t, manifestMap, "Use this skill when handling PDFs.")
 
-	markdown, err := RecordToSkillMarkdown(record, WithBody("Use this skill when handling PDFs."))
+	markdown, err := RecordToSkillMarkdown(record)
 	if err != nil {
 		t.Fatalf("RecordToSkillMarkdown() error: %v", err)
 	}
 
-	if !strings.Contains(markdown, "name: pdf-processing") {
-		t.Fatalf("Expected name in frontmatter")
+	checks := []struct {
+		contains bool
+		fragment string
+		label    string
+	}{
+		{true, "name: pdf-processing", "name"},
+		{true, "description: Extract PDF text and merge files.", "description"},
+		{true, "license: Apache-2.0", "license"},
+		{true, "compatibility: Requires python3", "compatibility"},
+		{true, "allowed-tools: Read Bash(jq:*)", "allowed-tools"},
+		{true, "metadata:", "metadata section"},
+		{true, "author: example-org", "metadata author"},
+		{true, "version: 1.0", "metadata version"},
+		{false, "\nversion: ", "no top-level version key"},
+		{true, "Use this skill when handling PDFs.", "body"},
 	}
 
-	if !strings.Contains(markdown, "description: Extract PDF text and merge files.") {
-		t.Fatalf("Expected description in frontmatter")
-	}
-
-	if !strings.Contains(markdown, "license: Apache-2.0") {
-		t.Fatalf("Expected license in frontmatter")
-	}
-
-	if !strings.Contains(markdown, "allowed-tools: Read Bash(jq:*)") {
-		t.Fatalf("Expected allowed-tools in frontmatter")
-	}
-
-	if !strings.Contains(markdown, "metadata:") {
-		t.Fatalf("Expected metadata section")
-	}
-
-	if !strings.Contains(markdown, "version: 1.0.0") {
-		t.Fatalf("Expected version included")
-	}
-
-	if !strings.Contains(markdown, "Use this skill when handling PDFs.") {
-		t.Fatalf("Expected body content")
+	for _, c := range checks {
+		got := strings.Contains(markdown, c.fragment)
+		if got != c.contains {
+			if c.contains {
+				t.Errorf("Expected %s in output, not found.\nmarkdown:\n%s", c.label, markdown)
+			} else {
+				t.Errorf("Expected %s NOT in output, but found it.\nmarkdown:\n%s", c.label, markdown)
+			}
+		}
 	}
 }
 
-func TestRecordToSkillMarkdownMissingFields(t *testing.T) {
+func TestRecordToSkillMarkdownMissingDescription(t *testing.T) {
 	record := buildAgentSkillsRecord(t, map[string]any{
 		"name": "missing-description",
 	}, "")
@@ -114,15 +122,16 @@ func TestRecordToSkillMarkdownNoModule(t *testing.T) {
 }
 
 func TestSkillMarkdownToRecord(t *testing.T) {
+	// version is inside metadata per spec, not a top-level frontmatter key.
 	skillMD := `---
 name: pdf-processing
 description: Extract PDF text and merge files.
 license: Apache-2.0
 compatibility: Requires python3
-version: 1.0.0
 allowed-tools: Read Bash(jq:*)
 metadata:
   author: example-org
+  version: "1.0"
 ---
 Use this skill when handling PDFs.
 `
@@ -139,63 +148,86 @@ Use this skill when handling PDFs.
 		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
 	}
 
-	if record == nil {
-		t.Fatalf("Expected non-nil record")
-	}
-
-	// Verify top-level fields.
 	fields := record.GetFields()
+
 	if fields["name"].GetStringValue() != "pdf-processing" {
 		t.Errorf("Expected record name 'pdf-processing', got %q", fields["name"].GetStringValue())
 	}
 
-	if fields["description"].GetStringValue() != "Extract PDF text and merge files." {
-		t.Errorf("Expected record description, got %q", fields["description"].GetStringValue())
+	// Record version should be derived from metadata["version"].
+	if fields["version"].GetStringValue() != "1.0" {
+		t.Errorf("Expected record version '1.0', got %q", fields["version"].GetStringValue())
 	}
 
-	if fields["version"].GetStringValue() != "1.0.0" {
-		t.Errorf("Expected record version '1.0.0', got %q", fields["version"].GetStringValue())
+	// Record authors should be derived from metadata["author"].
+	authorVals := fields["authors"].GetListValue().GetValues()
+	if len(authorVals) != 1 || authorVals[0].GetStringValue() != "example-org" {
+		t.Errorf("Expected authors = [\"example-org\"], got %v", authorVals)
 	}
 
-	// Verify agentskills module.
 	found, moduleData := findModule(record, AgentSkillsModuleName)
 	if !found || moduleData == nil {
 		t.Fatalf("Expected agentskills module in record")
 	}
 
-	manifestVal := moduleData.GetFields()["skill_manifest"]
-	if manifestVal == nil {
-		t.Fatalf("Expected skill_manifest in module data")
-	}
-
-	manifest := manifestVal.GetStructValue()
+	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
 	if manifest == nil {
 		t.Fatalf("Expected skill_manifest to be a struct")
 	}
 
-	manifestFields := manifest.GetFields()
+	mf := manifest.GetFields()
 
-	if manifestFields["name"].GetStringValue() != "pdf-processing" {
+	if mf["name"].GetStringValue() != "pdf-processing" {
 		t.Errorf("Expected manifest name 'pdf-processing'")
 	}
 
-	if manifestFields["license"].GetStringValue() != "Apache-2.0" {
+	if mf["license"].GetStringValue() != "Apache-2.0" {
 		t.Errorf("Expected manifest license 'Apache-2.0'")
 	}
 
-	if manifestFields["version"].GetStringValue() != "1.0.0" {
-		t.Errorf("Expected manifest version '1.0.0'")
+	// version must NOT appear as a top-level manifest field.
+	if _, hasVersion := mf["version"]; hasVersion {
+		t.Errorf("version must not be a top-level manifest field per spec; it belongs in frontmatter_metadata")
+	}
+
+	// version must be in frontmatter_metadata.
+	meta := mf["frontmatter_metadata"].GetStructValue()
+	if meta == nil {
+		t.Fatalf("Expected frontmatter_metadata struct")
+	}
+
+	if meta.GetFields()["version"].GetStringValue() != "1.0" {
+		t.Errorf("Expected frontmatter_metadata.version = '1.0'")
+	}
+}
+
+func TestSkillMarkdownToRecordNoVersionInMetadata(t *testing.T) {
+	skillMD := `---
+name: simple-skill
+description: A simple skill with no version.
+---
+Do something useful.
+`
+
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input)
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	// Should fall back to defaultVersion.
+	if record.GetFields()["version"].GetStringValue() != defaultVersion {
+		t.Errorf("Expected default version %q when metadata has no version", defaultVersion)
 	}
 }
 
 func TestSkillMarkdownToRecordMissingName(t *testing.T) {
-	skillMD := `---
-description: Only description, no name.
----
-`
-
 	input, err := structpb.NewStruct(map[string]any{
-		"skillMarkdown": skillMD,
+		"skillMarkdown": "---\ndescription: Only description, no name.\n---\n",
 	})
 	if err != nil {
 		t.Fatalf("Failed to build input: %v", err)
