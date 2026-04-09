@@ -4,6 +4,8 @@
 package translator
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"maps"
@@ -16,14 +18,19 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const AgentSkillsModuleName = "agentskills"
+const agentSkillsMediaType = "application/agent-skills+md"
 
-// RecordToSkillMarkdown renders a spec-compliant SKILL.md from a record containing
-// the agentskills module. The body is read from the skill_body field in the module data.
+const (
+	AgentSkillsModuleName = "core/language_model/agentskills"
+	agentSkillsModuleID   = 10302
+)
+
+// RecordToSkillMarkdown returns the full SKILL.md content for a record containing
+// the agentskills module (name: "core/language_model/agentskills").
 //
-// The SKILL.md frontmatter contains exactly the fields defined by the Agent Skills
-// specification: name, description, license, compatibility, metadata, and allowed-tools.
-// There is no top-level version field in the spec; version belongs inside metadata.
+// If the module has an artifact with base64-encoded data, the original SKILL.md
+// (including its body) is decoded and returned directly. Otherwise the SKILL.md
+// is reconstructed from the stored manifest (frontmatter only, no body).
 func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 	if record == nil {
 		return "", errors.New("record is nil")
@@ -32,6 +39,16 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 	found, moduleData := recordutil.GetModuleData(record, AgentSkillsModuleName)
 	if !found || moduleData == nil {
 		return "", errors.New("agentskills module not found in record")
+	}
+
+	// Prefer returning the full original SKILL.md from the artifact when available.
+	if artifactData := getArtifactData(record, AgentSkillsModuleName); artifactData != "" {
+		decoded, err := base64.StdEncoding.DecodeString(artifactData)
+		if err != nil {
+			return "", fmt.Errorf("failed to decode artifact data: %w", err)
+		}
+
+		return string(decoded), nil
 	}
 
 	manifestField := moduleData.GetFields()["skill_manifest"]
@@ -53,9 +70,21 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 	}
 
 	license := getString(manifestMap, "license")
-	compatibility := getString(manifestMap, "compatibility")
+	// version is stored in the manifest for the record but is NOT a spec frontmatter field;
+	// surface it back under metadata.version so the SKILL.md stays spec-compliant.
+	version := getString(manifestMap, "version")
+	// compatibility is stored as []string in the schema; join with ", " for the SKILL.md scalar.
+	compatibilityItems := getStringSlice(manifestMap, "compatibility")
+	compatibility := strings.Join(compatibilityItems, ", ")
 	allowedTools := getStringSlice(manifestMap, "allowed_tools")
 	metadata := getStringMap(manifestMap, "frontmatter_metadata")
+
+	// Ensure version appears in metadata (not as a top-level frontmatter key per spec).
+	if version != "" {
+		if _, ok := metadata["version"]; !ok {
+			metadata["version"] = version
+		}
+	}
 
 	lines := []string{"---"}
 	lines = append(lines, "name: "+yamlScalar(name))
@@ -89,14 +118,7 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 	}
 
 	lines = append(lines, "---")
-
-	// Read body from skill_body in module data.
-	body := strings.TrimSpace(moduleData.GetFields()["skill_body"].GetStringValue())
-	if body != "" {
-		lines = append(lines, "", body)
-	} else {
-		lines = append(lines, "")
-	}
+	lines = append(lines, "")
 
 	return strings.Join(lines, "\n") + "\n", nil
 }
@@ -105,9 +127,8 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 // The input must be wrapped as {"skillMarkdown": "<content>"}.
 // Generates records using the specified schema version (via WithVersion option) or the default schema version.
 //
-// The spec-defined frontmatter fields are: name, description, license, compatibility,
-// metadata, and allowed-tools. There is no top-level version field; version should live
-// inside metadata if needed.
+// The SKILL.md body is not stored in the record because the agentskills_data schema
+// has no field for it. Only the frontmatter fields are persisted.
 func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption) (*structpb.Struct, error) {
 	mdVal, ok := skillData.GetFields()["skillMarkdown"]
 	if !ok {
@@ -119,15 +140,18 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 		return nil, errors.New("'skillMarkdown' is empty")
 	}
 
-	name, description, license, compatibility, allowedTools, metadata, body, err := parseSkillMarkdownContent(content)
+	name, description, license, compatibility, allowedTools, metadata, err := parseSkillMarkdownContent(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse SKILL.md content: %w", err)
 	}
 
-	// Derive record-level version from metadata["version"] if present, else use default.
+	// version is not a spec frontmatter field; source it from metadata["version"].
+	version := metadata["version"]
+
+	// Derive record-level version from metadata["version"], else default.
 	recordVersion := defaultVersion
-	if v, ok := metadata["version"]; ok && v != "" {
-		recordVersion = v
+	if version != "" {
+		recordVersion = version
 	}
 
 	// Derive authors from metadata["author"] if present.
@@ -140,7 +164,7 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
-	// Build skill_manifest struct fields using only spec-defined frontmatter keys.
+	// Build skill_manifest fields matching the agentskills_manifest schema.
 	manifestFields := map[string]*structpb.Value{
 		"name":        {Kind: &structpb.Value_StringValue{StringValue: name}},
 		"description": {Kind: &structpb.Value_StringValue{StringValue: description}},
@@ -150,8 +174,21 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 		manifestFields["license"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: license}}
 	}
 
+	if version != "" {
+		manifestFields["version"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: version}}
+	}
+
+	// compatibility is array of string in the schema; store as a single-element array.
 	if compatibility != "" {
-		manifestFields["compatibility"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: compatibility}}
+		manifestFields["compatibility"] = &structpb.Value{
+			Kind: &structpb.Value_ListValue{
+				ListValue: &structpb.ListValue{
+					Values: []*structpb.Value{
+						{Kind: &structpb.Value_StringValue{StringValue: compatibility}},
+					},
+				},
+			},
+		}
 	}
 
 	if len(allowedTools) > 0 {
@@ -176,7 +213,7 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 		}
 	}
 
-	// Build module data.
+	// Build agentskills_data (only schema-defined fields: skill_file, skill_manifest).
 	moduleDataFields := map[string]*structpb.Value{
 		"skill_file": {Kind: &structpb.Value_StringValue{StringValue: "SKILL.md"}},
 		"skill_manifest": {
@@ -184,14 +221,27 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 		},
 	}
 
-	if body != "" {
-		moduleDataFields["skill_body"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: body}}
+	// Build module.artifact: store the full SKILL.md (including body) as base64-encoded data.
+	contentBytes := []byte(content)
+	encoded := base64.StdEncoding.EncodeToString(contentBytes)
+	sum := sha256.Sum256(contentBytes)
+	digest := fmt.Sprintf("sha256:%x", sum)
+
+	artifactStruct := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"media_type": {Kind: &structpb.Value_StringValue{StringValue: agentSkillsMediaType}},
+			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(contentBytes))}},
+			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
+			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
+		},
 	}
 
 	agentSkillsModule := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"name": {Kind: &structpb.Value_StringValue{StringValue: AgentSkillsModuleName}},
-			"data": {Kind: &structpb.Value_StructValue{StructValue: &structpb.Struct{Fields: moduleDataFields}}},
+			"name":     {Kind: &structpb.Value_StringValue{StringValue: AgentSkillsModuleName}},
+			"id":       {Kind: &structpb.Value_NumberValue{NumberValue: agentSkillsModuleID}},
+			"data":     {Kind: &structpb.Value_StructValue{StructValue: &structpb.Struct{Fields: moduleDataFields}}},
+			"artifact": {Kind: &structpb.Value_StructValue{StructValue: artifactStruct}},
 		},
 	}
 
@@ -241,17 +291,16 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 	return record, nil
 }
 
-// parseSkillMarkdownContent parses a SKILL.md and returns its spec-defined components.
-// Spec fields: name, description, license, compatibility, allowed-tools, metadata.
-// There is no top-level version field in the spec.
-func parseSkillMarkdownContent(content string) (name, description, license, compatibility string, allowedTools []string, metadata map[string]string, body string, err error) {
+// parseSkillMarkdownContent parses a SKILL.md and returns its spec-defined frontmatter fields.
+// Spec frontmatter fields: name, description, license, compatibility, allowed-tools, metadata.
+// There is no top-level version field in the spec; version lives inside metadata.
+func parseSkillMarkdownContent(content string) (name, description, license, compatibility string, allowedTools []string, metadata map[string]string, err error) {
 	sections := strings.SplitN(content, "---", 3)
 	if len(sections) < 3 {
-		return "", "", "", "", nil, nil, "", errors.New("invalid SKILL.md: missing frontmatter delimiters")
+		return "", "", "", "", nil, nil, errors.New("invalid SKILL.md: missing frontmatter delimiters")
 	}
 
 	frontmatter := strings.TrimSpace(sections[1])
-	body = strings.TrimSpace(sections[2])
 	metadata = map[string]string{}
 
 	lines := strings.Split(frontmatter, "\n")
@@ -292,10 +341,10 @@ func parseSkillMarkdownContent(content string) (name, description, license, comp
 	}
 
 	if name == "" || description == "" {
-		return "", "", "", "", nil, nil, "", errors.New("SKILL.md must include name and description in frontmatter")
+		return "", "", "", "", nil, nil, errors.New("SKILL.md must include name and description in frontmatter")
 	}
 
-	return name, description, license, compatibility, allowedTools, metadata, body, nil
+	return name, description, license, compatibility, allowedTools, metadata, nil
 }
 
 // splitYAMLKeyValue splits a YAML "key: value" line and unquotes quoted values.
@@ -389,4 +438,33 @@ func yamlScalar(value string) string {
 	}
 
 	return value
+}
+
+// getArtifactData returns the base64-encoded artifact data string from the named module,
+// or empty string if absent.
+func getArtifactData(record *structpb.Struct, moduleName string) string {
+	modulesVal, ok := record.GetFields()["modules"]
+	if !ok {
+		return ""
+	}
+
+	for _, modVal := range modulesVal.GetListValue().GetValues() {
+		mod := modVal.GetStructValue()
+		if mod == nil {
+			continue
+		}
+
+		if mod.GetFields()["name"].GetStringValue() != moduleName {
+			continue
+		}
+
+		artifact := mod.GetFields()["artifact"].GetStructValue()
+		if artifact == nil {
+			return ""
+		}
+
+		return artifact.GetFields()["data"].GetStringValue()
+	}
+
+	return ""
 }
