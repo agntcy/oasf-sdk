@@ -3,7 +3,7 @@
 
 module-sets:
   oasf-sdk:
-    version: v1.0.4
+    version: v1.0.5
     modules:
       - github.com/agntcy/oasf-sdk/tests
       - github.com/agntcy/oasf-sdk/pkg
