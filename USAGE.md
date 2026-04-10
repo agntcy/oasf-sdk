@@ -165,6 +165,79 @@ Output:
 }
 ```
 
+## Agent Skills (SKILL.md)
+
+The Agent Skills translator converts between SKILL.md files (used by Claude and other AI coding assistants) and OASF records.
+
+### SKILL.md to OASF Record
+
+To convert a SKILL.md file to an OASF record, wrap the file content in a `skillMarkdown` field and call `SkillMarkdownToRecord`:
+
+```bash
+jq -n --rawfile md tests/fixtures/translation_skill.json '{"data": {"skillMarkdown": $md}}' \
+  | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/SkillMarkdownToRecord
+```
+
+Or using the fixture directly:
+
+```bash
+cat tests/fixtures/translation_skill.json | jq '{data: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/SkillMarkdownToRecord
+```
+
+Output:
+
+```json
+{
+  "record": {
+    "name": "pdf-processing",
+    "schema_version": "1.0.0",
+    "version": "1.0.0",
+    "description": "Extract PDF text and merge files. Use when handling PDFs.",
+    "authors": [],
+    "created_at": "2025-01-01T00:00:00Z",
+    "skills": [],
+    "domains": [],
+    "modules": [
+      {
+        "name": "agentskills",
+        "data": {
+          "skill_file": "SKILL.md",
+          "skill_manifest": {
+            "name": "pdf-processing",
+            "description": "Extract PDF text and merge files. Use when handling PDFs.",
+            "license": "Apache-2.0",
+            "compatibility": "Requires python3",
+            "version": "1.0.0",
+            "allowed_tools": ["Read", "Bash(jq:*)"],
+            "frontmatter_metadata": {
+              "author": "example-org",
+              "version": "1.0.0"
+            }
+          },
+          "skill_body": "# PDF Processing Skill\n\nUse this skill when handling PDFs."
+        }
+      }
+    ]
+  }
+}
+```
+
+### OASF Record to SKILL.md
+
+To render a SKILL.md from an OASF record that contains an `agentskills` module, use `RecordToSkillMarkdown`:
+
+```bash
+cat tests/fixtures/translation_agentskills_record.json | jq '{record: .}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToSkillMarkdown
+```
+
+Output:
+
+```json
+{
+  "data": "---\nname: pdf-processing\ndescription: Extract PDF text and merge files. Use when handling PDFs.\nlicense: Apache-2.0\ncompatibility: Requires python3\nversion: 1.0.0\nallowed-tools: Read Bash(jq:*)\nmetadata:\n  author: example-org\n  version: 1.0.0\n---\n"
+}
+```
+
 # Schema Service
 
 The OASF SDK Schema Service provides access to OASF schema definitions, allowing you to fetch schema content and extract specific sections like skills, domains, and modules from the schema.

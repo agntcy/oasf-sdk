@@ -7,16 +7,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
-	"testing"
 	"time"
 
 	"buf.build/gen/go/agntcy/oasf-sdk/grpc/go/agntcy/oasfsdk/translation/v1/translationv1grpc"
 	translationv1 "buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go/agntcy/oasfsdk/translation/v1"
 	"github.com/agntcy/oasf-sdk/pkg/decoder"
-	"github.com/agntcy/oasf-sdk/pkg/translator"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
@@ -580,80 +577,63 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualOutput).To(Equal(expectedOutput), "SSE minimal OASF record should match expected output")
 		})
 	})
+	Context("Agent Skills Translation", func() {
+		It("should convert SKILL.md to OASF record matching expected output", func() { //nolint:dupl
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedSkillData, err := decoder.JsonToProto(translationSkillMarkdown)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode skill markdown data")
+
+			req := &translationv1.SkillMarkdownToRecordRequest{Data: encodedSkillData}
+
+			resp, err := client.SkillMarkdownToRecord(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "SkillMarkdownToRecord should not fail")
+			Expect(resp.GetRecord()).NotTo(BeNil(), "Expected OASF record in response")
+
+			actualJSON, err := json.MarshalIndent(resp.GetRecord().AsMap(), "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			var expectedOutput map[string]any
+
+			err = json.Unmarshal(expectedSkillToRecordOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			var actualOutput map[string]any
+
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			// created_at is dynamically generated; verify it exists and is valid RFC3339, then exclude from comparison.
+			actualCreatedAt, ok := actualOutput["created_at"].(string)
+			Expect(ok).To(BeTrue(), "created_at should be present")
+			Expect(actualCreatedAt).NotTo(BeEmpty(), "created_at should not be empty")
+			_, err = time.Parse(time.RFC3339, actualCreatedAt)
+			Expect(err).NotTo(HaveOccurred(), "created_at should be valid RFC3339 timestamp")
+
+			delete(actualOutput, "created_at")
+			delete(expectedOutput, "created_at")
+			delete(expectedOutput, "_comment_created_at")
+
+			Expect(actualOutput).To(Equal(expectedOutput), "OASF record should match expected output")
+		})
+
+		It("should convert OASF record to SKILL.md matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationAgentSkillsRecord)
+			Expect(err).NotTo(HaveOccurred(), "Failed to decode agentskills record")
+
+			req := &translationv1.RecordToSkillMarkdownRequest{Record: encodedRecord}
+
+			resp, err := client.RecordToSkillMarkdown(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToSkillMarkdown should not fail")
+
+			expectedMarkdown := strings.TrimSpace(string(expectedRecordToSkillOutput))
+			actualMarkdown := strings.TrimSpace(resp.GetData())
+
+			Expect(actualMarkdown).To(Equal(expectedMarkdown), "SKILL.md should match expected output")
+		})
+	})
 })
-
-func TestSkillMarkdownToRecord(t *testing.T) {
-	encodedSkillData, err := decoder.JsonToProto(translationSkillMarkdown)
-	if err != nil {
-		t.Fatalf("Failed to encode skill markdown data: %v", err)
-	}
-
-	record, err := translator.SkillMarkdownToRecord(encodedSkillData)
-	if err != nil {
-		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
-	}
-
-	actualJSON, err := json.MarshalIndent(record.AsMap(), "", "  ")
-	if err != nil {
-		t.Fatalf("Failed to marshal record to JSON: %v", err)
-	}
-
-	var expectedOutput map[string]any
-
-	if err := json.Unmarshal(expectedSkillToRecordOutput, &expectedOutput); err != nil {
-		t.Fatalf("Failed to unmarshal expected output: %v", err)
-	}
-
-	var actualOutput map[string]any
-
-	if err := json.Unmarshal(actualJSON, &actualOutput); err != nil {
-		t.Fatalf("Failed to unmarshal actual output: %v", err)
-	}
-
-	// created_at is dynamically generated; verify it exists and is valid RFC3339, then exclude from comparison.
-	actualCreatedAt, ok := actualOutput["created_at"].(string)
-	if !ok || actualCreatedAt == "" {
-		t.Fatalf("created_at should be present and non-empty")
-	}
-
-	if _, err := time.Parse(time.RFC3339, actualCreatedAt); err != nil {
-		t.Fatalf("created_at should be valid RFC3339 timestamp: %v", err)
-	}
-
-	delete(actualOutput, "created_at")
-	delete(expectedOutput, "created_at")
-	delete(expectedOutput, "_comment_created_at")
-
-	if !reflect.DeepEqual(actualOutput, expectedOutput) {
-		t.Fatalf("Record mismatch.\nExpected:\n%s\nActual:\n%s",
-			mustMarshalIndent(expectedOutput), mustMarshalIndent(actualOutput))
-	}
-}
-
-func TestRecordToSkillMarkdown(t *testing.T) {
-	record, err := decoder.JsonToProto(translationAgentSkillsRecord)
-	if err != nil {
-		t.Fatalf("Failed to decode agentskills record: %v", err)
-	}
-
-	actualMarkdown, err := translator.RecordToSkillMarkdown(record)
-	if err != nil {
-		t.Fatalf("RecordToSkillMarkdown() error: %v", err)
-	}
-
-	expectedMarkdown := strings.TrimSpace(string(expectedRecordToSkillOutput))
-	actualMarkdown = strings.TrimSpace(actualMarkdown)
-
-	if actualMarkdown != expectedMarkdown {
-		t.Fatalf("Markdown mismatch.\nExpected:\n%s\nActual:\n%s", expectedMarkdown, actualMarkdown)
-	}
-}
-
-func mustMarshalIndent(v any) string {
-	b, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Sprintf("<marshal error: %v>", err)
-	}
-
-	return string(b)
-}
