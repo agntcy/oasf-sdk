@@ -3,8 +3,8 @@ module github.com/agntcy/oasf-sdk/server
 go 1.26.1
 
 require (
-	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.6.1-20260402143721-5fd9f22378bc.1
-	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260402143721-5fd9f22378bc.1
+	buf.build/gen/go/agntcy/oasf-sdk/grpc/go v1.6.1-20260410103700-b5956310ea54.1
+	buf.build/gen/go/agntcy/oasf-sdk/protocolbuffers/go v1.36.11-20260410103700-b5956310ea54.1
 	github.com/agntcy/oasf-sdk/pkg v1.0.4
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c
 	github.com/spf13/cobra v1.10.1

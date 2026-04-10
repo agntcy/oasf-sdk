@@ -81,3 +81,27 @@ func (t *translationCtrl) MCPToRecord(_ context.Context, req *translationv1.MCPT
 
 	return &translationv1.MCPToRecordResponse{Record: result}, nil
 }
+
+// SkillMarkdownToRecord implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) SkillMarkdownToRecord(_ context.Context, req *translationv1.SkillMarkdownToRecordRequest) (*translationv1.SkillMarkdownToRecordResponse, error) {
+	slog.Info("Received SkillMarkdownToRecord request")
+
+	result, err := translator.SkillMarkdownToRecord(req.GetData())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate record from SKILL.md: %w", err)
+	}
+
+	return &translationv1.SkillMarkdownToRecordResponse{Record: result}, nil
+}
+
+// RecordToSkillMarkdown implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) RecordToSkillMarkdown(_ context.Context, req *translationv1.RecordToSkillMarkdownRequest) (*translationv1.RecordToSkillMarkdownResponse, error) {
+	slog.Info("Received RecordToSkillMarkdown request")
+
+	result, err := translator.RecordToSkillMarkdown(req.GetRecord())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate SKILL.md from record: %w", err)
+	}
+
+	return &translationv1.RecordToSkillMarkdownResponse{Data: result}, nil
+}
