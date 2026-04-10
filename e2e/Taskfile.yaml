@@ -14,7 +14,7 @@ tasks:
   ##
   ## Tests
   ##
-  test:setup:
+  e2e:setup:
     desc: Setup the test kind cluster and install the helm chart on it
     deps:
       - deps:kubectl
@@ -32,16 +32,16 @@ tasks:
       - echo "Waiting for deployment to be ready..."
       - "{{.KUBECTL_BIN}} rollout status deployment/oasf-sdk --timeout=20s"
 
-  test:tear-down:
+  e2e:tear-down:
     desc: Tear down the e2e kind cluster
     cmds:
       - "{{.KIND_BIN}} delete cluster --name {{.CLUSTER_NAME}}"
 
-  test:
+  e2e:
     desc: Run the E2E tests
     cmds:
-      - defer: { task: test:tear-down }
-      - task: test:setup
+      - defer: { task: e2e:tear-down }
+      - task: e2e:setup
       - go test ./... -v --count=1
 
   ##

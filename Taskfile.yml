@@ -23,9 +23,9 @@ vars:
   HELM_BIN: "{{ .BIN_DIR }}/helm-{{.HELM_VERSION}}"
 
 includes:
-  tests:
-    taskfile: ./tests/Taskfile.yaml
-    dir: ./tests
+  test:
+    taskfile: ./e2e/Taskfile.yaml
+    dir: ./e2e
 
 tasks:
   default:
@@ -63,14 +63,20 @@ tasks:
         cmd: |
           GOOS={{ .ITEM.OS }} GOARCH={{ .ITEM.ARCH }} BINARY_NAME=oasf-sdk-{{ .ITEM.OS }}-{{ .ITEM.ARCH }} BIN_DIR={{ .BIN_DIR }} task compile
 
-  test:
-    desc: Run Go unit tests for all modules (excludes tests)
+  test:unit:
+    desc: Run Go unit tests for all modules (excludes e2e)
     vars:
       GO_MOD_DIR:
-        sh: find . -name go.mod -not -path "./tests/*" -exec dirname {} \;
+        sh: find . -name go.mod -not -path "./e2e/*" -exec dirname {} \;
     cmds:
       - for: { var: GO_MOD_DIR }
         cmd: echo "Running tests in {{.ITEM}}" && cd {{.ITEM}} && go test -v ./...
+
+  test:
+    desc: Run all tests (unit and e2e)
+    cmds:
+      - task: test:unit
+      - task: test:e2e
 
   build:
     desc: Build image for host platform
