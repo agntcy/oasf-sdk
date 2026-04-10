@@ -140,6 +140,12 @@ Use this skill when handling PDFs.
 		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
 	}
 
+	assertSkillRecord(t, record)
+}
+
+func assertSkillRecord(t *testing.T, record *structpb.Struct) {
+	t.Helper()
+
 	fields := record.GetFields()
 
 	if fields["name"].GetStringValue() != "pdf-processing" {
@@ -156,6 +162,12 @@ Use this skill when handling PDFs.
 	if len(authorVals) != 1 || authorVals[0].GetStringValue() != "example-org" {
 		t.Errorf("Expected authors = [\"example-org\"], got %v", authorVals)
 	}
+
+	assertSkillModule(t, record)
+}
+
+func assertSkillModule(t *testing.T, record *structpb.Struct) {
+	t.Helper()
 
 	found, moduleData := findModule(record, AgentSkillsModuleName)
 	if !found || moduleData == nil {
