@@ -1,0 +1,44 @@
+{
+  "authors": [
+    "example-org"
+  ],
+  "created_at": "2025-01-01T00:00:00Z",
+  "description": "Extract PDF text and merge files. Use when handling PDFs.",
+  "domains": [],
+  "modules": [
+    {
+      "id": 10302,
+      "artifact": {
+        "data": "LS0tCm5hbWU6IHBkZi1wcm9jZXNzaW5nCmRlc2NyaXB0aW9uOiBFeHRyYWN0IFBERiB0ZXh0IGFuZCBtZXJnZSBmaWxlcy4gVXNlIHdoZW4gaGFuZGxpbmcgUERGcy4KbGljZW5zZTogQXBhY2hlLTIuMApjb21wYXRpYmlsaXR5OiBSZXF1aXJlcyBweXRob24zCmFsbG93ZWQtdG9vbHM6IFJlYWQgQmFzaChqcToqKQptZXRhZGF0YToKICBhdXRob3I6IGV4YW1wbGUtb3JnCiAgdmVyc2lvbjogIjEuMCIKLS0tCiMgUERGIFByb2Nlc3NpbmcgU2tpbGwKClVzZSB0aGlzIHNraWxsIHdoZW4gaGFuZGxpbmcgUERGcy4K",
+        "digest": "sha256:d5de35a17d15c7fca2d9793bf3c75976449d8d07a08064f2fe67477901c8de4d",
+        "media_type": "application/agent-skills+md",
+        "size": 291
+      },
+      "data": {
+        "skill_file": "SKILL.md",
+        "skill_manifest": {
+          "allowed_tools": [
+            "Read",
+            "Bash(jq:*)"
+          ],
+          "compatibility": [
+            "Requires python3"
+          ],
+          "description": "Extract PDF text and merge files. Use when handling PDFs.",
+          "frontmatter_metadata": {
+            "author": "example-org",
+            "version": "1.0"
+          },
+          "license": "Apache-2.0",
+          "name": "pdf-processing",
+          "version": "1.0"
+        }
+      },
+      "name": "core/language_model/agentskills"
+    }
+  ],
+  "name": "pdf-processing",
+  "schema_version": "1.0.0",
+  "skills": [],
+  "version": "1.0"
+}

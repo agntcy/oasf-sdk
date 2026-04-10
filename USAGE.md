@@ -324,12 +324,26 @@ All convenience methods accept optional `WithSchemaVersion()` option. If omitted
 
 ### Accessing Agent Skills data from a record
 
-The translator package can render a spec-compliant `SKILL.md` directly from a record.
+The translator package can convert between SKILL.md content and OASF records directly.
+
+Convert a SKILL.md to a record:
 
 ```go
-skillMarkdown, err := translator.BuildSkillMarkdownFromRecord(record)
+skillData, _ := structpb.NewStruct(map[string]any{
+  "skillMarkdown": "---\nname: my-skill\ndescription: Does something.\n---\nBody here.\n",
+})
+record, err := translator.SkillMarkdownToRecord(skillData)
 if err != nil {
-  log.Fatalf("Failed to build SKILL.md: %v", err)
+  log.Fatalf("Failed to convert SKILL.md to record: %v", err)
+}
+```
+
+Render a SKILL.md from a record:
+
+```go
+skillMarkdown, err := translator.RecordToSkillMarkdown(record)
+if err != nil {
+  log.Fatalf("Failed to render SKILL.md from record: %v", err)
 }
 fmt.Printf("SKILL.md content:\n%s", skillMarkdown)
 ```

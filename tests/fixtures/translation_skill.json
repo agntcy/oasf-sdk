@@ -1,0 +1,3 @@
+{
+  "skillMarkdown": "---\nname: pdf-processing\ndescription: Extract PDF text and merge files. Use when handling PDFs.\nlicense: Apache-2.0\ncompatibility: Requires python3\nallowed-tools: Read Bash(jq:*)\nmetadata:\n  author: example-org\n  version: \"1.0\"\n---\n# PDF Processing Skill\n\nUse this skill when handling PDFs.\n"
+}

@@ -6,14 +6,9 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"maps"
-	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -26,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // normalizeMapOrder recursively normalizes map order by sorting keys for deterministic comparison.
@@ -588,184 +582,78 @@ var _ = Describe("Translation Service E2E", func() {
 	})
 })
 
-func TestSkillMarkdownRoundTrip(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("fixtures", "SKILL.md"))
+func TestSkillMarkdownToRecord(t *testing.T) {
+	encodedSkillData, err := decoder.JsonToProto(translationSkillMarkdown)
 	if err != nil {
-		t.Fatalf("Failed to read SKILL.md: %v", err)
+		t.Fatalf("Failed to encode skill markdown data: %v", err)
 	}
 
-	originalManifest, originalBody, err := parseSkillMarkdown(string(content))
+	record, err := translator.SkillMarkdownToRecord(encodedSkillData)
 	if err != nil {
-		t.Fatalf("Failed to parse SKILL.md: %v", err)
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
 	}
 
-	recordStruct, err := structpb.NewStruct(map[string]any{
-		"schema_version": "1.0.0",
-		"modules": []any{
-			map[string]any{
-				"name": "agentskills",
-				"data": map[string]any{
-					"skill_file":     "SKILL.md",
-					"skill_manifest": manifestToStruct(originalManifest),
-				},
-			},
-		},
-	})
+	actualJSON, err := json.MarshalIndent(record.AsMap(), "", "  ")
 	if err != nil {
-		t.Fatalf("Failed to build record struct: %v", err)
+		t.Fatalf("Failed to marshal record to JSON: %v", err)
 	}
 
-	rebuiltMarkdown, err := translator.BuildSkillMarkdownFromRecord(recordStruct, translator.WithBody(originalBody))
-	if err != nil {
-		t.Fatalf("BuildSkillMarkdownFromRecord() error: %v", err)
+	var expectedOutput map[string]any
+
+	if err := json.Unmarshal(expectedSkillToRecordOutput, &expectedOutput); err != nil {
+		t.Fatalf("Failed to unmarshal expected output: %v", err)
 	}
 
-	rebuiltManifest, rebuiltBody, err := parseSkillMarkdown(rebuiltMarkdown)
-	if err != nil {
-		t.Fatalf("Failed to parse rebuilt SKILL.md: %v", err)
+	var actualOutput map[string]any
+
+	if err := json.Unmarshal(actualJSON, &actualOutput); err != nil {
+		t.Fatalf("Failed to unmarshal actual output: %v", err)
 	}
 
-	if !reflect.DeepEqual(normalizeManifest(originalManifest), normalizeManifest(rebuiltManifest)) {
-		original := normalizeManifest(originalManifest)
-		rebuilt := normalizeManifest(rebuiltManifest)
-		t.Fatalf("Manifest mismatch after roundtrip\noriginal: %#v\nrebuilt: %#v", original, rebuilt)
+	// created_at is dynamically generated; verify it exists and is valid RFC3339, then exclude from comparison.
+	actualCreatedAt, ok := actualOutput["created_at"].(string)
+	if !ok || actualCreatedAt == "" {
+		t.Fatalf("created_at should be present and non-empty")
 	}
 
-	if strings.TrimSpace(originalBody) != strings.TrimSpace(rebuiltBody) {
-		t.Fatalf("Body mismatch after roundtrip")
+	if _, err := time.Parse(time.RFC3339, actualCreatedAt); err != nil {
+		t.Fatalf("created_at should be valid RFC3339 timestamp: %v", err)
+	}
+
+	delete(actualOutput, "created_at")
+	delete(expectedOutput, "created_at")
+	delete(expectedOutput, "_comment_created_at")
+
+	if !reflect.DeepEqual(actualOutput, expectedOutput) {
+		t.Fatalf("Record mismatch.\nExpected:\n%s\nActual:\n%s",
+			mustMarshalIndent(expectedOutput), mustMarshalIndent(actualOutput))
 	}
 }
 
-type skillManifest struct {
-	Name          string
-	Description   string
-	License       string
-	Compatibility string
-	Version       string
-	AllowedTools  []string
-	Metadata      map[string]string
+func TestRecordToSkillMarkdown(t *testing.T) {
+	record, err := decoder.JsonToProto(translationAgentSkillsRecord)
+	if err != nil {
+		t.Fatalf("Failed to decode agentskills record: %v", err)
+	}
+
+	actualMarkdown, err := translator.RecordToSkillMarkdown(record)
+	if err != nil {
+		t.Fatalf("RecordToSkillMarkdown() error: %v", err)
+	}
+
+	expectedMarkdown := strings.TrimSpace(string(expectedRecordToSkillOutput))
+	actualMarkdown = strings.TrimSpace(actualMarkdown)
+
+	if actualMarkdown != expectedMarkdown {
+		t.Fatalf("Markdown mismatch.\nExpected:\n%s\nActual:\n%s", expectedMarkdown, actualMarkdown)
+	}
 }
 
-func parseSkillMarkdown(content string) (skillManifest, string, error) {
-	sections := strings.Split(content, "---")
-	if len(sections) < 3 {
-		return skillManifest{}, "", ErrInvalidFrontmatter
+func mustMarshalIndent(v any) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("<marshal error: %v>", err)
 	}
 
-	frontmatter := strings.TrimSpace(sections[1])
-	body := strings.TrimSpace(strings.Join(sections[2:], "---"))
-
-	manifest := skillManifest{Metadata: map[string]string{}}
-
-	lines := strings.Split(frontmatter, "\n")
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line != "" {
-			if line == "metadata:" {
-				for i+1 < len(lines) {
-					next := lines[i+1]
-					if !strings.HasPrefix(next, "  ") {
-						break
-					}
-
-					i++
-					key, value := splitKeyValue(strings.TrimSpace(next))
-					manifest.Metadata[key] = value
-				}
-			} else {
-				key, value := splitKeyValue(line)
-				switch key {
-				case "name":
-					manifest.Name = value
-				case "description":
-					manifest.Description = value
-				case "license":
-					manifest.License = value
-				case "compatibility":
-					manifest.Compatibility = value
-				case "version":
-					manifest.Version = value
-				case "allowed-tools":
-					manifest.AllowedTools = strings.Fields(value)
-				}
-			}
-		}
-	}
-
-	return manifest, body, nil
-}
-
-var ErrInvalidFrontmatter = errors.New("invalid frontmatter")
-
-func splitKeyValue(line string) (string, string) {
-	parts := strings.SplitN(line, ":", 2)
-	key := strings.TrimSpace(parts[0])
-	value := ""
-
-	if len(parts) > 1 {
-		value = strings.TrimSpace(parts[1])
-	}
-
-	if strings.HasPrefix(value, "\"") {
-		if unquoted, err := strconv.Unquote(value); err == nil {
-			value = unquoted
-		}
-	}
-
-	return key, value
-}
-
-func manifestToStruct(manifest skillManifest) map[string]any {
-	data := map[string]any{
-		"name":        manifest.Name,
-		"description": manifest.Description,
-	}
-
-	if manifest.License != "" {
-		data["license"] = manifest.License
-	}
-
-	if manifest.Compatibility != "" {
-		data["compatibility"] = manifest.Compatibility
-	}
-
-	if manifest.Version != "" {
-		data["version"] = manifest.Version
-	}
-
-	if len(manifest.AllowedTools) > 0 {
-		allowed := make([]any, 0, len(manifest.AllowedTools))
-		for _, tool := range manifest.AllowedTools {
-			allowed = append(allowed, tool)
-		}
-
-		data["allowed_tools"] = allowed
-	}
-
-	if len(manifest.Metadata) > 0 {
-		metadata := map[string]any{}
-		for key, value := range manifest.Metadata {
-			metadata[key] = value
-		}
-
-		data["frontmatter_metadata"] = metadata
-	}
-
-	return data
-}
-
-func normalizeManifest(manifest skillManifest) skillManifest {
-	copyManifest := manifest
-	copyManifest.Metadata = map[string]string{}
-	maps.Copy(copyManifest.Metadata, manifest.Metadata)
-
-	if copyManifest.Version != "" {
-		if _, ok := copyManifest.Metadata["version"]; !ok {
-			copyManifest.Metadata["version"] = copyManifest.Version
-		}
-	}
-
-	sort.Strings(copyManifest.AllowedTools)
-
-	return copyManifest
+	return string(b)
 }
