@@ -4,11 +4,8 @@
 package translator
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
@@ -35,19 +32,8 @@ func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 	}
 
 	// Prefer the original card JSON from the artifact when available (lossless round-trip).
-	if artifact := a2aModule.GetFields()["artifact"].GetStructValue(); artifact != nil {
-		if artifactData := artifact.GetFields()["data"].GetStringValue(); artifactData != "" {
-			decoded, err := base64.StdEncoding.DecodeString(artifactData)
-			if err == nil {
-				var raw map[string]any
-				if err2 := json.Unmarshal(decoded, &raw); err2 == nil {
-					s, err3 := structpb.NewStruct(raw)
-					if err3 == nil {
-						return s, nil
-					}
-				}
-			}
-		}
+	if s := structFromArtifactData(a2aModule); s != nil {
+		return s, nil
 	}
 
 	a2aModuleData := a2aModule.GetFields()["data"].GetStructValue()
@@ -161,9 +147,12 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 		},
 	}
 
-	if artifactStruct := buildA2AArtifact(A2ACardStruct); artifactStruct != nil {
-		A2AModuleFields["artifact"] = &structpb.Value{
-			Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+	raw, err := json.Marshal(A2ACardStruct.AsMap())
+	if err == nil {
+		if artifactStruct := buildArtifactDescriptor(raw, a2aMediaType); artifactStruct != nil {
+			A2AModuleFields["artifact"] = &structpb.Value{
+				Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+			}
 		}
 	}
 
@@ -239,25 +228,3 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 }
 
 const a2aMediaType = "application/json"
-
-// buildA2AArtifact creates an artifact struct containing the original A2A card JSON
-// (base64-encoded) for lossless round-trip support.
-func buildA2AArtifact(cardStruct *structpb.Struct) *structpb.Struct {
-	raw, err := json.Marshal(cardStruct.AsMap())
-	if err != nil {
-		return nil
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(raw)
-	sum := sha256.Sum256(raw)
-	digest := fmt.Sprintf("sha256:%x", sum)
-
-	return &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"media_type": {Kind: &structpb.Value_StringValue{StringValue: a2aMediaType}},
-			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(raw))}},
-			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
-			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
-		},
-	}
-}

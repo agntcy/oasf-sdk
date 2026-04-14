@@ -4,8 +4,6 @@
 package translator
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -805,9 +803,11 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 		},
 	}
 
-	if artifactStruct := buildMCPArtifact(mcpDataWithoutSchema); artifactStruct != nil {
-		mcpModuleFields["artifact"] = &structpb.Value{
-			Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+	if rawMCP, err := json.Marshal(mcpDataWithoutSchema.AsMap()); err == nil {
+		if artifactStruct := buildArtifactDescriptor(rawMCP, mcpMediaType); artifactStruct != nil {
+			mcpModuleFields["artifact"] = &structpb.Value{
+				Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+			}
 		}
 	}
 
@@ -939,25 +939,3 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 }
 
 const mcpMediaType = "application/json"
-
-// buildMCPArtifact creates an artifact struct containing the original MCP server JSON
-// (base64-encoded) for lossless round-trip support.
-func buildMCPArtifact(mcpServerStruct *structpb.Struct) *structpb.Struct {
-	raw, err := json.Marshal(mcpServerStruct.AsMap())
-	if err != nil {
-		return nil
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(raw)
-	sum := sha256.Sum256(raw)
-	digest := fmt.Sprintf("sha256:%x", sum)
-
-	return &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"media_type": {Kind: &structpb.Value_StringValue{StringValue: mcpMediaType}},
-			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(raw))}},
-			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
-			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
-		},
-	}
-}
