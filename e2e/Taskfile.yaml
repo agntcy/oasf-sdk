@@ -42,7 +42,7 @@ tasks:
     cmds:
       - defer: { task: e2e:tear-down }
       - task: e2e:setup
-      - go test ./... -v --count=1
+      - go test ./... -v --count=1 -args --ginkgo.v
 
   ##
   ## Dependencies
