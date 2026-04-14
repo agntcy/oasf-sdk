@@ -106,6 +106,45 @@ func TestMCPToRecord_ContainsMCPModule(t *testing.T) {
 	}
 }
 
+func TestMCPToRecord_ModuleHasArtifact(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, nil))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	for _, mod := range record.GetFields()["modules"].GetListValue().GetValues() {
+		ms := mod.GetStructValue()
+		if ms.GetFields()["name"].GetStringValue() != translator.MCPModuleName {
+			continue
+		}
+
+		artifact := ms.GetFields()["artifact"].GetStructValue()
+		if artifact == nil {
+			t.Fatal("expected artifact in MCP module")
+		}
+
+		if artifact.GetFields()["media_type"].GetStringValue() != "application/json" {
+			t.Errorf("expected artifact media_type 'application/json', got %q", artifact.GetFields()["media_type"].GetStringValue())
+		}
+
+		if artifact.GetFields()["data"].GetStringValue() == "" {
+			t.Error("expected non-empty artifact data")
+		}
+
+		if artifact.GetFields()["digest"].GetStringValue() == "" {
+			t.Error("expected non-empty artifact digest")
+		}
+
+		if artifact.GetFields()["size"].GetNumberValue() == 0 {
+			t.Error("expected non-zero artifact size")
+		}
+
+		return
+	}
+
+	t.Errorf("MCP module not found in record")
+}
+
 func TestMCPToRecord_RepositoryLocator(t *testing.T) {
 	record, err := translator.MCPToRecord(minimalMCPInput(t, map[string]any{
 		"repository": map[string]any{

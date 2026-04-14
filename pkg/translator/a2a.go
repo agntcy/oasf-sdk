@@ -4,7 +4,11 @@
 package translator
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
@@ -15,6 +19,11 @@ import (
 // Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
 // Returns the A2A card data as a structpb.Struct, preserving all fields
 // from the A2A protocol definition to prevent schema drift.
+//
+// Priority:
+//  1. module.artifact.data (base64-encoded original JSON) – lossless round-trip
+//  2. module.data.card_data – structured card data stored in the module
+//  3. module.data (fallback for older schema versions)
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 	// Get A2A module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
 	found, a2aModule := recordutil.GetModuleData(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
@@ -24,6 +33,20 @@ func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
 
 	if !found {
 		return nil, errors.New("A2A module not found in record")
+	}
+
+	// Prefer the original JSON from the artifact when available (lossless round-trip).
+	if artifactData := getA2AArtifactData(record, A2AModuleName); artifactData != "" {
+		decoded, err := base64.StdEncoding.DecodeString(artifactData)
+		if err == nil {
+			var raw map[string]any
+			if err2 := json.Unmarshal(decoded, &raw); err2 == nil {
+				s, err3 := structpb.NewStruct(raw)
+				if err3 == nil {
+					return s, nil
+				}
+			}
+		}
 	}
 
 	if cardDataVal, ok := a2aModule.GetFields()["card_data"]; ok {
@@ -128,16 +151,25 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 		},
 	}
 
+	// Build module fields and attach the artifact containing the original A2A card JSON.
+	A2AModuleFields := map[string]*structpb.Value{
+		"name": {
+			Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
+		},
+		"data": {
+			Kind: &structpb.Value_StructValue{StructValue: A2AModuleData},
+		},
+	}
+
+	if artifactStruct := buildA2AArtifact(A2ACardStruct); artifactStruct != nil {
+		A2AModuleFields["artifact"] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+		}
+	}
+
 	// Create the A2A module with schema-compliant data
 	A2AModule := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
-			},
-			"data": {
-				Kind: &structpb.Value_StructValue{StructValue: A2AModuleData},
-			},
-		},
+		Fields: A2AModuleFields,
 	}
 
 	// Create the modules list
@@ -204,4 +236,58 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 	}
 
 	return record, nil
+}
+
+const a2aMediaType = "application/json"
+
+// buildA2AArtifact creates an artifact struct containing the original A2A card JSON
+// (base64-encoded) for lossless round-trip support.
+func buildA2AArtifact(cardStruct *structpb.Struct) *structpb.Struct {
+	raw, err := json.Marshal(cardStruct.AsMap())
+	if err != nil {
+		return nil
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(raw)
+	sum := sha256.Sum256(raw)
+	digest := fmt.Sprintf("sha256:%x", sum)
+
+	return &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"media_type": {Kind: &structpb.Value_StringValue{StringValue: a2aMediaType}},
+			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(raw))}},
+			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
+			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
+		},
+	}
+}
+
+// getA2AArtifactData returns the base64-encoded artifact data string from the named module,
+// or empty string if absent. Unlike getArtifactData in agentskills.go, this looks at the
+// module struct directly (not via GetModuleData which returns only the data field).
+func getA2AArtifactData(record *structpb.Struct, moduleName string) string {
+	modulesVal, ok := record.GetFields()["modules"]
+	if !ok {
+		return ""
+	}
+
+	for _, modVal := range modulesVal.GetListValue().GetValues() {
+		mod := modVal.GetStructValue()
+		if mod == nil {
+			continue
+		}
+
+		if mod.GetFields()["name"].GetStringValue() != moduleName {
+			continue
+		}
+
+		artifact := mod.GetFields()["artifact"].GetStructValue()
+		if artifact == nil {
+			return ""
+		}
+
+		return artifact.GetFields()["data"].GetStringValue()
+	}
+
+	return ""
 }

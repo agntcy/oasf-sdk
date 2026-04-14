@@ -50,6 +50,12 @@
           ]
         }
       },
+      "artifact": {
+        "media_type": "application/json",
+        "size": 318,
+        "digest": "sha256:583ea833f4d1e050c745575c209a5360110395e764eee4252e4d7d02462c7c1b",
+        "data": "eyJkZXNjcmlwdGlvbiI6IkFuIE1DUCBzZXJ2ZXIgZm9yIGFuYWx5emluZyBQQ0FQIGZpbGVzLiIsIm5hbWUiOiJhaS5tY3BjYXAvbWNwY2FwIiwicGFja2FnZXMiOlt7ImlkZW50aWZpZXIiOiJtY3BjYXAiLCJyZWdpc3RyeUJhc2VVcmwiOiJodHRwczovL3B5cGkub3JnIiwicmVnaXN0cnlUeXBlIjoicHlwaSIsInRyYW5zcG9ydCI6eyJ0eXBlIjoic3RkaW8ifSwidmVyc2lvbiI6IjAuNC40In1dLCJyZXBvc2l0b3J5Ijp7InNvdXJjZSI6ImdpdGh1YiIsInVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tY3BjYXAvbWNwY2FwIn0sInZlcnNpb24iOiIwLjYuMCJ9"
+      },
       "name": "integration/mcp"
     }
   ],

@@ -4,6 +4,9 @@
 package translator
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -790,16 +793,25 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 
 	mcpModuleData := &structpb.Struct{Fields: mcpDataFields}
 
+	// Build artifact from the original MCP server JSON (without $schema).
+	mcpModuleFields := map[string]*structpb.Value{
+		"name": {
+			Kind: &structpb.Value_StringValue{StringValue: MCPModuleName},
+		},
+		"data": {
+			Kind: &structpb.Value_StructValue{StructValue: mcpModuleData},
+		},
+	}
+
+	if artifactStruct := buildMCPArtifact(mcpDataWithoutSchema); artifactStruct != nil {
+		mcpModuleFields["artifact"] = &structpb.Value{
+			Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+		}
+	}
+
 	// Create the MCP module with schema-compliant data
 	mcpModule := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{StringValue: MCPModuleName},
-			},
-			"data": {
-				Kind: &structpb.Value_StructValue{StructValue: mcpModuleData},
-			},
-		},
+		Fields: mcpModuleFields,
 	}
 
 	// Create the modules list
@@ -922,4 +934,28 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 	}
 
 	return record, nil
+}
+
+const mcpMediaType = "application/json"
+
+// buildMCPArtifact creates an artifact struct containing the original MCP server JSON
+// (base64-encoded) for lossless round-trip support.
+func buildMCPArtifact(mcpServerStruct *structpb.Struct) *structpb.Struct {
+	raw, err := json.Marshal(mcpServerStruct.AsMap())
+	if err != nil {
+		return nil
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(raw)
+	sum := sha256.Sum256(raw)
+	digest := fmt.Sprintf("sha256:%x", sum)
+
+	return &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"media_type": {Kind: &structpb.Value_StringValue{StringValue: mcpMediaType}},
+			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(raw))}},
+			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
+			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
+		},
+	}
 }

@@ -129,6 +129,91 @@ func TestA2AToRecord_ContainsA2AModule(t *testing.T) {
 	}
 }
 
+func TestA2AToRecord_ModuleHasArtifact(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{
+		"a2aCard": map[string]any{"name": "agent", "description": "desc"},
+	})
+	if err != nil {
+		t.Fatalf("failed to build input: %v", err)
+	}
+
+	record, err := translator.A2AToRecord(input)
+	if err != nil {
+		t.Fatalf("A2AToRecord() error: %v", err)
+	}
+
+	for _, mod := range record.GetFields()["modules"].GetListValue().GetValues() {
+		ms := mod.GetStructValue()
+		if ms.GetFields()["name"].GetStringValue() != translator.A2AModuleName {
+			continue
+		}
+
+		artifact := ms.GetFields()["artifact"].GetStructValue()
+		if artifact == nil {
+			t.Fatal("expected artifact in A2A module")
+		}
+
+		if artifact.GetFields()["media_type"].GetStringValue() != "application/json" {
+			t.Errorf("expected artifact media_type 'application/json', got %q", artifact.GetFields()["media_type"].GetStringValue())
+		}
+
+		if artifact.GetFields()["data"].GetStringValue() == "" {
+			t.Error("expected non-empty artifact data")
+		}
+
+		if artifact.GetFields()["digest"].GetStringValue() == "" {
+			t.Error("expected non-empty artifact digest")
+		}
+
+		if artifact.GetFields()["size"].GetNumberValue() == 0 {
+			t.Error("expected non-zero artifact size")
+		}
+
+		return
+	}
+
+	t.Errorf("A2A module not found in record")
+}
+
+func TestRecordToA2A_UsesArtifactFirst(t *testing.T) {
+	// Build a record that has both an artifact and card_data.
+	// The artifact should take precedence.
+	import64 := "eyJuYW1lIjoiZnJvbS1hcnRpZmFjdCJ9" // base64({"name":"from-artifact"})
+
+	record, err := structpb.NewStruct(map[string]any{
+		"schema_version": "1.0.0",
+		"modules": []any{
+			map[string]any{
+				"name": translator.A2AModuleName,
+				"artifact": map[string]any{
+					"media_type": "application/json",
+					"data":       import64,
+					"size":       float64(18),
+					"digest":     "sha256:dummy",
+				},
+				"data": map[string]any{
+					"card_data": map[string]any{
+						"name": "from-card-data",
+					},
+					"card_schema_version": "v1.0.0",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to build record: %v", err)
+	}
+
+	a2a, err := translator.RecordToA2A(record)
+	if err != nil {
+		t.Fatalf("RecordToA2A() error: %v", err)
+	}
+
+	if a2a.GetFields()["name"].GetStringValue() != "from-artifact" {
+		t.Errorf("expected name 'from-artifact' from artifact, got %q", a2a.GetFields()["name"].GetStringValue())
+	}
+}
+
 func TestA2AToRecord_InvalidWrappedCard(t *testing.T) {
 	// "a2aCard" key exists but is not a struct value
 	s := &structpb.Struct{

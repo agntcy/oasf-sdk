@@ -53,6 +53,12 @@
         },
         "card_schema_version": "v1.0.0"
       },
+      "artifact": {
+        "media_type": "application/json",
+        "size": 657,
+        "digest": "sha256:5d66e7c2e5341a1d758bf349522189660c7091a51255a9f9ad25c284091b298c",
+        "data": "eyJjYXBhYmlsaXRpZXMiOnsic3RyZWFtaW5nIjp0cnVlfSwiZGVmYXVsdElucHV0TW9kZXMiOlsidGV4dCIsInRleHQvcGxhaW4iXSwiZGVmYXVsdE91dHB1dE1vZGVzIjpbInRleHQiLCJ0ZXh0L3BsYWluIl0sImRlc2NyaXB0aW9uIjoiSGVscHMgd2l0aCBjcmVhdGluZyBidXJnZXIgb3JkZXJzIiwibmFtZSI6ImJ1cmdlcl9zZWxsZXJfYWdlbnQiLCJwcm90b2NvbFZlcnNpb25zIjpbIjAuMi42Il0sInByb3ZpZGVyIjp7Im9yZ2FuaXphdGlvbiI6IkV4YW1wbGUgT3JnYW5pemF0aW9uIiwidXJsIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSJ9LCJza2lsbHMiOlt7ImRlc2NyaXB0aW9uIjoiSGVscHMgd2l0aCBjcmVhdGluZyBidXJnZXIgb3JkZXJzIiwiZXhhbXBsZXMiOlsiSSB3YW50IHRvIG9yZGVyIDIgY2xhc3NpYyBjaGVlc2VidXJnZXJzIl0sImlkIjoiY3JlYXRlX2J1cmdlcl9vcmRlciIsIm5hbWUiOiJCdXJnZXIgT3JkZXIgQ3JlYXRpb24gVG9vbCIsInRhZ3MiOlsiYnVyZ2VyIG9yZGVyIGNyZWF0aW9uIl19XSwic3VwcG9ydGVkSW50ZXJmYWNlcyI6W3sicHJvdG9jb2xCaW5kaW5nIjoiSFRUUCtKU09OIiwidXJsIjoiaHR0cHM6Ly9idXJnZXItYWdlbnQtMTA5NzkwNjEwMzMwLnVzLWNlbnRyYWwxLnJ1bi5hcHAifV0sInZlcnNpb24iOiIxLjAuMCJ9"
+      },
       "name": "integration/a2a"
     }
   ],
