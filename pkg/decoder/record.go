@@ -142,7 +142,7 @@ func GetRecordSchemaVersion(record *structpb.Struct) (string, error) {
 	return fieldSchemaVersion.GetStringValue(), nil
 }
 
-// GetRecordModuleData returns the module data for the provided module name.
-func GetRecordModuleData(rec *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
-	return record.GetModuleData(rec, moduleName)
+// GetRecordModule returns the full module struct for the provided module name.
+func GetRecordModule(rec *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
+	return record.GetModule(rec, moduleName)
 }

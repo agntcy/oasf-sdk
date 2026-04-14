@@ -20,45 +20,45 @@ import (
 // Returns the A2A card data as a structpb.Struct, preserving all fields
 // from the A2A protocol definition to prevent schema drift.
 //
-// Priority:
-//  1. module.artifact.data (base64-encoded original JSON) – lossless round-trip
-//  2. module.data.card_data – structured card data stored in the module
-//  3. module.data (fallback for older schema versions)
+// Extraction priority:
+//  1. module.artifact.data – base64-encoded original card JSON written by A2AToRecord; decoded for lossless round-trip.
+//  2. module.data.card_data – card stored as a structured object inside the module data (all schema versions).
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
-	// Get A2A module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, a2aModule := recordutil.GetModuleData(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
+	// Try "integration/a2a" (0.8.0, 1.0.0) first, then fall back to "runtime/a2a" (0.7.0).
+	found, a2aModule := recordutil.GetModule(record, A2AModuleName)
 	if !found {
-		found, a2aModule = recordutil.GetModuleData(record, "runtime/a2a") // 0.7.0 compatibility
+		found, a2aModule = recordutil.GetModule(record, "runtime/a2a")
 	}
 
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
 
-	// Prefer the original JSON from the artifact when available (lossless round-trip).
-	if artifactData := getA2AArtifactData(record, A2AModuleName); artifactData != "" {
-		decoded, err := base64.StdEncoding.DecodeString(artifactData)
-		if err == nil {
-			var raw map[string]any
-			if err2 := json.Unmarshal(decoded, &raw); err2 == nil {
-				s, err3 := structpb.NewStruct(raw)
-				if err3 == nil {
-					return s, nil
+	// Prefer the original card JSON from the artifact when available (lossless round-trip).
+	if artifact := a2aModule.GetFields()["artifact"].GetStructValue(); artifact != nil {
+		if artifactData := artifact.GetFields()["data"].GetStringValue(); artifactData != "" {
+			decoded, err := base64.StdEncoding.DecodeString(artifactData)
+			if err == nil {
+				var raw map[string]any
+				if err2 := json.Unmarshal(decoded, &raw); err2 == nil {
+					s, err3 := structpb.NewStruct(raw)
+					if err3 == nil {
+						return s, nil
+					}
 				}
 			}
 		}
 	}
 
-	if cardDataVal, ok := a2aModule.GetFields()["card_data"]; ok {
-		cardData := cardDataVal.GetStructValue()
-		if cardData != nil && len(cardData.GetFields()) > 0 {
+	a2aModuleData := a2aModule.GetFields()["data"].GetStructValue()
+
+	if cardDataVal, ok := a2aModuleData.GetFields()["card_data"]; ok {
+		if cardData := cardDataVal.GetStructValue(); cardData != nil && len(cardData.GetFields()) > 0 {
 			return cardData, nil
 		}
 	}
 
-	// Fallback: return the module data directly (for records where card data is at the top level)
-	// This handles older schema versions where card data might be at the top level
-	return a2aModule, nil
+	return nil, errors.New("A2A card data not found in module")
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
@@ -260,34 +260,4 @@ func buildA2AArtifact(cardStruct *structpb.Struct) *structpb.Struct {
 			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
 		},
 	}
-}
-
-// getA2AArtifactData returns the base64-encoded artifact data string from the named module,
-// or empty string if absent. Unlike getArtifactData in agentskills.go, this looks at the
-// module struct directly (not via GetModuleData which returns only the data field).
-func getA2AArtifactData(record *structpb.Struct, moduleName string) string {
-	modulesVal, ok := record.GetFields()["modules"]
-	if !ok {
-		return ""
-	}
-
-	for _, modVal := range modulesVal.GetListValue().GetValues() {
-		mod := modVal.GetStructValue()
-		if mod == nil {
-			continue
-		}
-
-		if mod.GetFields()["name"].GetStringValue() != moduleName {
-			continue
-		}
-
-		artifact := mod.GetFields()["artifact"].GetStructValue()
-		if artifact == nil {
-			return ""
-		}
-
-		return artifact.GetFields()["data"].GetStringValue()
-	}
-
-	return ""
 }

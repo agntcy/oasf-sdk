@@ -280,15 +280,15 @@ func TestRecordToA2A_MissingModule(t *testing.T) {
 	}
 }
 
-func TestRecordToA2A_FallbackToModuleData(t *testing.T) {
-	// No card_data — should fall back to returning module data directly
+func TestRecordToA2A_MissingCardData(t *testing.T) {
+	// Module exists but has no card_data and no artifact — should return an error.
 	record, err := structpb.NewStruct(map[string]any{
 		"schema_version": "1.0.0",
 		"modules": []any{
 			map[string]any{
 				"name": "integration/a2a",
 				"data": map[string]any{
-					"name": "fallback-agent",
+					"card_schema_version": "v1.0.0",
 				},
 			},
 		},
@@ -297,12 +297,8 @@ func TestRecordToA2A_FallbackToModuleData(t *testing.T) {
 		t.Fatalf("failed to build record: %v", err)
 	}
 
-	a2a, err := translator.RecordToA2A(record)
-	if err != nil {
-		t.Fatalf("RecordToA2A() error: %v", err)
-	}
-
-	if a2a == nil {
-		t.Error("expected non-nil result for fallback path")
+	_, err = translator.RecordToA2A(record)
+	if err == nil {
+		t.Error("expected error when card_data is absent and no artifact is present")
 	}
 }

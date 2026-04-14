@@ -5,8 +5,9 @@ package record
 
 import "google.golang.org/protobuf/types/known/structpb"
 
-// GetModuleData returns the module data for the provided module name.
-func GetModuleData(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
+// GetModule returns the full module struct for the provided module name.
+// The returned struct contains all module fields (e.g. "name", "data", "artifact", "id").
+func GetModule(record *structpb.Struct, moduleName string) (bool, *structpb.Struct) {
 	if record == nil {
 		return false, nil
 	}
@@ -28,7 +29,7 @@ func GetModuleData(record *structpb.Struct, moduleName string) (bool, *structpb.
 		}
 
 		if nameField.GetStringValue() == moduleName {
-			return true, moduleStruct.GetFields()["data"].GetStructValue()
+			return true, moduleStruct
 		}
 	}
 

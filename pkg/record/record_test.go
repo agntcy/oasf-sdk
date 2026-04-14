@@ -24,7 +24,7 @@ func makeRecord(t *testing.T, modules []any) *structpb.Struct {
 	return s
 }
 
-func TestGetModuleData_Found(t *testing.T) {
+func TestGetModule_Found(t *testing.T) {
 	rec := makeRecord(t, []any{
 		map[string]any{
 			"name": "integration/mcp",
@@ -32,13 +32,18 @@ func TestGetModuleData_Found(t *testing.T) {
 		},
 	})
 
-	found, data := record.GetModuleData(rec, "integration/mcp")
+	found, mod := record.GetModule(rec, "integration/mcp")
 	if !found {
 		t.Fatal("expected module to be found")
 	}
 
+	if mod == nil {
+		t.Fatal("expected non-nil module")
+	}
+
+	data := mod.GetFields()["data"].GetStructValue()
 	if data == nil {
-		t.Fatal("expected non-nil module data")
+		t.Fatal("expected non-nil data in module")
 	}
 
 	if data.GetFields()["key"].GetStringValue() != "value" {
@@ -46,7 +51,35 @@ func TestGetModuleData_Found(t *testing.T) {
 	}
 }
 
-func TestGetModuleData_NotFound(t *testing.T) {
+func TestGetModule_ReturnsWholeModule(t *testing.T) {
+	rec := makeRecord(t, []any{
+		map[string]any{
+			"name":     "integration/mcp",
+			"id":       float64(42),
+			"data":     map[string]any{"key": "value"},
+			"artifact": map[string]any{"media_type": "application/json"},
+		},
+	})
+
+	found, mod := record.GetModule(rec, "integration/mcp")
+	if !found {
+		t.Fatal("expected module to be found")
+	}
+
+	if mod.GetFields()["name"].GetStringValue() != "integration/mcp" {
+		t.Error("expected name field in module")
+	}
+
+	if mod.GetFields()["id"].GetNumberValue() != 42 {
+		t.Error("expected id field in module")
+	}
+
+	if mod.GetFields()["artifact"].GetStructValue() == nil {
+		t.Error("expected artifact field in module")
+	}
+}
+
+func TestGetModule_NotFound(t *testing.T) {
 	rec := makeRecord(t, []any{
 		map[string]any{
 			"name": "integration/a2a",
@@ -54,41 +87,41 @@ func TestGetModuleData_NotFound(t *testing.T) {
 		},
 	})
 
-	found, data := record.GetModuleData(rec, "integration/mcp")
+	found, mod := record.GetModule(rec, "integration/mcp")
 	if found {
 		t.Error("expected module not to be found")
 	}
 
-	if data != nil {
-		t.Error("expected nil data when module not found")
+	if mod != nil {
+		t.Error("expected nil module when not found")
 	}
 }
 
-func TestGetModuleData_EmptyModules(t *testing.T) {
+func TestGetModule_EmptyModules(t *testing.T) {
 	rec := makeRecord(t, []any{})
 
-	found, data := record.GetModuleData(rec, "integration/mcp")
+	found, mod := record.GetModule(rec, "integration/mcp")
 	if found {
 		t.Error("expected no match in empty modules list")
 	}
 
-	if data != nil {
-		t.Error("expected nil data for empty modules list")
+	if mod != nil {
+		t.Error("expected nil module for empty modules list")
 	}
 }
 
-func TestGetModuleData_NilRecord(t *testing.T) {
-	found, data := record.GetModuleData(nil, "integration/mcp")
+func TestGetModule_NilRecord(t *testing.T) {
+	found, mod := record.GetModule(nil, "integration/mcp")
 	if found {
 		t.Error("expected false for nil record")
 	}
 
-	if data != nil {
-		t.Error("expected nil data for nil record")
+	if mod != nil {
+		t.Error("expected nil module for nil record")
 	}
 }
 
-func TestGetModuleData_MultipleModules(t *testing.T) {
+func TestGetModule_MultipleModules(t *testing.T) {
 	rec := makeRecord(t, []any{
 		map[string]any{
 			"name": "integration/a2a",
@@ -100,28 +133,29 @@ func TestGetModuleData_MultipleModules(t *testing.T) {
 		},
 	})
 
-	found, data := record.GetModuleData(rec, "integration/mcp")
+	found, mod := record.GetModule(rec, "integration/mcp")
 	if !found {
 		t.Fatal("expected mcp module to be found")
 	}
 
+	data := mod.GetFields()["data"].GetStructValue()
 	if data.GetFields()["mcp_field"].GetStringValue() != "mcp_value" {
-		t.Error("returned wrong module data")
+		t.Error("returned wrong module")
 	}
 }
 
-func TestGetModuleData_NoModulesField(t *testing.T) {
+func TestGetModule_NoModulesField(t *testing.T) {
 	s, err := structpb.NewStruct(map[string]any{"schema_version": "1.0.0"})
 	if err != nil {
 		t.Fatalf("failed to build struct: %v", err)
 	}
 
-	found, data := record.GetModuleData(s, "integration/mcp")
+	found, mod := record.GetModule(s, "integration/mcp")
 	if found {
 		t.Error("expected false when modules field is absent")
 	}
 
-	if data != nil {
-		t.Error("expected nil data when modules field is absent")
+	if mod != nil {
+		t.Error("expected nil module when modules field is absent")
 	}
 }

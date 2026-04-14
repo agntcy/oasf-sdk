@@ -42,20 +42,24 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 		return "", errors.New("record is nil")
 	}
 
-	found, moduleData := recordutil.GetModuleData(record, AgentSkillsModuleName)
-	if !found || moduleData == nil {
+	found, moduleStruct := recordutil.GetModule(record, AgentSkillsModuleName)
+	if !found || moduleStruct == nil {
 		return "", errors.New("agentskills module not found in record")
 	}
 
 	// Prefer returning the full original SKILL.md from the artifact when available.
-	if artifactData := getArtifactData(record, AgentSkillsModuleName); artifactData != "" {
-		decoded, err := base64.StdEncoding.DecodeString(artifactData)
-		if err != nil {
-			return "", fmt.Errorf("failed to decode artifact data: %w", err)
-		}
+	if artifact := moduleStruct.GetFields()["artifact"].GetStructValue(); artifact != nil {
+		if artifactData := artifact.GetFields()["data"].GetStringValue(); artifactData != "" {
+			decoded, err := base64.StdEncoding.DecodeString(artifactData)
+			if err != nil {
+				return "", fmt.Errorf("failed to decode artifact data: %w", err)
+			}
 
-		return string(decoded), nil
+			return string(decoded), nil
+		}
 	}
+
+	moduleData := moduleStruct.GetFields()["data"].GetStructValue()
 
 	return buildSkillMarkdownFromManifest(moduleData)
 }
@@ -477,31 +481,3 @@ func yamlScalar(value string) string {
 	return value
 }
 
-// getArtifactData returns the base64-encoded artifact data string from the named module,
-// or empty string if absent.
-func getArtifactData(record *structpb.Struct, moduleName string) string {
-	modulesVal, ok := record.GetFields()["modules"]
-	if !ok {
-		return ""
-	}
-
-	for _, modVal := range modulesVal.GetListValue().GetValues() {
-		mod := modVal.GetStructValue()
-		if mod == nil {
-			continue
-		}
-
-		if mod.GetFields()["name"].GetStringValue() != moduleName {
-			continue
-		}
-
-		artifact := mod.GetFields()["artifact"].GetStructValue()
-		if artifact == nil {
-			return ""
-		}
-
-		return artifact.GetFields()["data"].GetStringValue()
-	}
-
-	return ""
-}

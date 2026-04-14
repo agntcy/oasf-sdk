@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func TestGetRecordModuleData(t *testing.T) {
+func TestGetRecordModule(t *testing.T) {
 	recordMap := map[string]any{
 		"schema_version": "1.0.0",
 		"modules": []any{
@@ -30,13 +30,18 @@ func TestGetRecordModuleData(t *testing.T) {
 		t.Fatalf("Failed to build record struct: %v", err)
 	}
 
-	found, data := GetRecordModuleData(recordStruct, "agentskills")
+	found, mod := GetRecordModule(recordStruct, "agentskills")
 	if !found {
-		t.Fatalf("Expected agentskills module data to be found")
+		t.Fatalf("Expected agentskills module to be found")
 	}
 
+	if mod == nil {
+		t.Fatalf("Expected agentskills module to be non-nil")
+	}
+
+	data := mod.GetFields()["data"].GetStructValue()
 	if data == nil {
-		t.Fatalf("Expected agentskills module data to be non-nil")
+		t.Fatalf("Expected non-nil data in module")
 	}
 
 	if _, ok := data.GetFields()["skill_file"]; !ok {
@@ -44,7 +49,7 @@ func TestGetRecordModuleData(t *testing.T) {
 	}
 }
 
-func TestGetRecordModuleDataMissing(t *testing.T) {
+func TestGetRecordModuleMissing(t *testing.T) {
 	recordMap := map[string]any{
 		"schema_version": "1.0.0",
 		"modules":        []any{},
@@ -55,12 +60,12 @@ func TestGetRecordModuleDataMissing(t *testing.T) {
 		t.Fatalf("Failed to build record struct: %v", err)
 	}
 
-	found, data := GetRecordModuleData(recordStruct, "agentskills")
+	found, mod := GetRecordModule(recordStruct, "agentskills")
 	if found {
-		t.Fatalf("Expected agentskills module data to be missing")
+		t.Fatalf("Expected agentskills module to be missing")
 	}
 
-	if data != nil {
-		t.Fatalf("Expected agentskills module data to be nil")
+	if mod != nil {
+		t.Fatalf("Expected nil module when not found")
 	}
 }
