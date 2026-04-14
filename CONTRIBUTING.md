@@ -36,10 +36,13 @@ We expect new pull requests to include tests for any affected behavior, and, as
 we follow semantic versioning, we may reserve breaking changes until the next
 major version release.
 
+## Testing Strategy
 
-## Developer’s Certificate of Origin
+Unit tests live in `pkg/` alongside the code they test and are run with `task test:unit`. They call Go functions directly, cover all paths including error cases, and do not use fixture files. E2E tests live in `e2e/`, require a running server (`task test:e2e`), and own the fixture files in `e2e/fixtures/`. Each E2E test covers one happy-path RPC call driven by a fixture pair; edge cases belong in unit tests.
 
-To improve tracking of who did what, we have introduced a “sign-off” procedure.
+## Developer's Certificate of Origin
+
+To improve tracking of who did what, we have introduced a "sign-off" procedure.
 The sign-off is a line at the end of the explanation for the commit, which
 certifies that you wrote it or otherwise have the right to pass it on as open
 source work. We use the Developer Certificate of Origin (see
