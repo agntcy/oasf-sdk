@@ -31,6 +31,12 @@
           ]
         }
       },
+      "artifact": {
+        "media_type": "application/json",
+        "size": 176,
+        "digest": "sha256:3b665ad3d5ff40420d9afa3b9a65630c83daf854760f1926019af8f4baebca02",
+        "data": "eyJkZXNjcmlwdGlvbiI6IkdvTWFyYmxlIE1DUCBBUEkgU2VydmVyIiwibmFtZSI6ImFpLmdvbWFyYmxlL21jcC1hcGkiLCJyZW1vdGVzIjpbeyJ0eXBlIjoic3NlIiwidXJsIjoiaHR0cHM6Ly9hcHBzLmdvbWFyYmxlLmFpL21jcC1hcGkvc3NlIn1dLCJyZXBvc2l0b3J5Ijp7fSwidmVyc2lvbiI6IjEuMC4wIn0="
+      },
       "name": "integration/mcp"
     }
   ],

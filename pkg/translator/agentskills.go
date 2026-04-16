@@ -4,8 +4,6 @@
 package translator
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"maps"
@@ -42,20 +40,17 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 		return "", errors.New("record is nil")
 	}
 
-	found, moduleData := recordutil.GetModuleData(record, AgentSkillsModuleName)
-	if !found || moduleData == nil {
+	found, moduleStruct := recordutil.GetModule(record, AgentSkillsModuleName)
+	if !found || moduleStruct == nil {
 		return "", errors.New("agentskills module not found in record")
 	}
 
 	// Prefer returning the full original SKILL.md from the artifact when available.
-	if artifactData := getArtifactData(record, AgentSkillsModuleName); artifactData != "" {
-		decoded, err := base64.StdEncoding.DecodeString(artifactData)
-		if err != nil {
-			return "", fmt.Errorf("failed to decode artifact data: %w", err)
-		}
-
-		return string(decoded), nil
+	if raw := artifactDataBytes(moduleStruct); raw != nil {
+		return string(raw), nil
 	}
+
+	moduleData := moduleStruct.GetFields()["data"].GetStructValue()
 
 	return buildSkillMarkdownFromManifest(moduleData)
 }
@@ -167,7 +162,7 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 	authors := buildAuthors(parsed.metadata)
 	manifestFields := buildManifestFields(parsed, version)
 	moduleDataFields := buildModuleDataFields(manifestFields)
-	artifactStruct := buildArtifactStruct(content)
+	artifactStruct := buildArtifactDescriptor([]byte(content), agentSkillsMediaType)
 	agentSkillsModule := buildAgentSkillsModule(moduleDataFields, artifactStruct)
 
 	options := &translatorOptions{}
@@ -254,22 +249,6 @@ func buildModuleDataFields(manifestFields map[string]*structpb.Value) map[string
 		"skill_file": {Kind: &structpb.Value_StringValue{StringValue: "SKILL.md"}},
 		"skill_manifest": {
 			Kind: &structpb.Value_StructValue{StructValue: &structpb.Struct{Fields: manifestFields}},
-		},
-	}
-}
-
-func buildArtifactStruct(content string) *structpb.Struct {
-	contentBytes := []byte(content)
-	encoded := base64.StdEncoding.EncodeToString(contentBytes)
-	sum := sha256.Sum256(contentBytes)
-	digest := fmt.Sprintf("sha256:%x", sum)
-
-	return &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"media_type": {Kind: &structpb.Value_StringValue{StringValue: agentSkillsMediaType}},
-			"size":       {Kind: &structpb.Value_NumberValue{NumberValue: float64(len(contentBytes))}},
-			"digest":     {Kind: &structpb.Value_StringValue{StringValue: digest}},
-			"data":       {Kind: &structpb.Value_StringValue{StringValue: encoded}},
 		},
 	}
 }
@@ -475,33 +454,4 @@ func yamlScalar(value string) string {
 	}
 
 	return value
-}
-
-// getArtifactData returns the base64-encoded artifact data string from the named module,
-// or empty string if absent.
-func getArtifactData(record *structpb.Struct, moduleName string) string {
-	modulesVal, ok := record.GetFields()["modules"]
-	if !ok {
-		return ""
-	}
-
-	for _, modVal := range modulesVal.GetListValue().GetValues() {
-		mod := modVal.GetStructValue()
-		if mod == nil {
-			continue
-		}
-
-		if mod.GetFields()["name"].GetStringValue() != moduleName {
-			continue
-		}
-
-		artifact := mod.GetFields()["artifact"].GetStructValue()
-		if artifact == nil {
-			return ""
-		}
-
-		return artifact.GetFields()["data"].GetStringValue()
-	}
-
-	return ""
 }

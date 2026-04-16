@@ -51,6 +51,12 @@
           ]
         }
       },
+      "artifact": {
+        "media_type": "application/json",
+        "size": 406,
+        "digest": "sha256:a8fd11387315b980de85143f681b52593111d074cf091f6f6c065c97d323d846",
+        "data": "eyJkZXNjcmlwdGlvbiI6Ik1lbW9yeSBmb3IgZGVlcCBjb252ZXJzYXRpb25hbCBjb250ZXh0IGFjcm9zcyBhbnkgcGxhdGZvcm0iLCJuYW1lIjoiYWkubWVtaW5hbC9tZW1pbmFsIiwicmVtb3RlcyI6W3siaGVhZGVycyI6W3siZGVzY3JpcHRpb24iOiJCZWFyZXIgdG9rZW4gZm9yIGF1dGhlbnRpY2F0aW9uIChPQXV0aCBvciBQZXJzb25hbCBBY2Nlc3MgVG9rZW4pIiwiaXNTZWNyZXQiOnRydWUsIm5hbWUiOiJBdXRob3JpemF0aW9uIn1dLCJ0eXBlIjoic3RyZWFtYWJsZS1odHRwIiwidXJsIjoiaHR0cHM6Ly9tZW1pbmFsLmFpL21jcCJ9XSwicmVwb3NpdG9yeSI6eyJzb3VyY2UiOiJnaXRodWIiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vbWVtaW5hbC9tZW1pbmFsLW1jcCJ9LCJ2ZXJzaW9uIjoiMS4wLjAifQ=="
+      },
       "name": "integration/mcp"
     }
   ],

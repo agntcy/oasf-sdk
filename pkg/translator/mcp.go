@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -277,14 +278,16 @@ func processMCPModule070080(mcpModule *structpb.Struct, servers map[string]MCPSe
 // Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
 func RecordToGHCopilot(record *structpb.Struct) (*GHCopilotMCPConfig, error) { //nolint:gocognit
 	// Get MCP module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, mcpModule := recordutil.GetModuleData(record, MCPModuleName) // "integration/mcp" (0.8.0, 1.0.0)
+	found, mcpModuleStruct := recordutil.GetModule(record, MCPModuleName) // "integration/mcp" (0.8.0, 1.0.0)
 	if !found {
-		found, mcpModule = recordutil.GetModuleData(record, "runtime/mcp") // 0.7.0 compatibility
+		found, mcpModuleStruct = recordutil.GetModule(record, "runtime/mcp") // 0.7.0 compatibility
 	}
 
 	if !found {
 		return nil, errors.New("MCP module not found in record")
 	}
+
+	mcpModule := mcpModuleStruct.GetFields()["data"].GetStructValue()
 
 	servers := make(map[string]MCPServer)
 	inputs := []MCPInput{}
@@ -790,16 +793,27 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 
 	mcpModuleData := &structpb.Struct{Fields: mcpDataFields}
 
+	// Build artifact from the original MCP server JSON (without $schema).
+	mcpModuleFields := map[string]*structpb.Value{
+		"name": {
+			Kind: &structpb.Value_StringValue{StringValue: MCPModuleName},
+		},
+		"data": {
+			Kind: &structpb.Value_StructValue{StructValue: mcpModuleData},
+		},
+	}
+
+	if rawMCP, err := json.Marshal(mcpDataWithoutSchema.AsMap()); err == nil {
+		if artifactStruct := buildArtifactDescriptor(rawMCP, mcpMediaType); artifactStruct != nil {
+			mcpModuleFields["artifact"] = &structpb.Value{
+				Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+			}
+		}
+	}
+
 	// Create the MCP module with schema-compliant data
 	mcpModule := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{StringValue: MCPModuleName},
-			},
-			"data": {
-				Kind: &structpb.Value_StructValue{StructValue: mcpModuleData},
-			},
-		},
+		Fields: mcpModuleFields,
 	}
 
 	// Create the modules list
@@ -923,3 +937,5 @@ func MCPToRecord(mcpData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 
 	return record, nil
 }
+
+const mcpMediaType = "application/json"

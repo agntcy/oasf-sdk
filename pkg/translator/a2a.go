@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -15,27 +16,35 @@ import (
 // Supports OASF versions 0.7.0, 0.8.0, and 1.0.0.
 // Returns the A2A card data as a structpb.Struct, preserving all fields
 // from the A2A protocol definition to prevent schema drift.
+//
+// Extraction priority:
+//  1. module.artifact.data – base64-encoded original card JSON written by A2AToRecord; decoded for lossless round-trip.
+//  2. module.data.card_data – card stored as a structured object inside the module data (all schema versions).
 func RecordToA2A(record *structpb.Struct) (*structpb.Struct, error) {
-	// Get A2A module - try 0.8.0/1.0.0 name first, then fall back to 0.7.0 for backward compatibility
-	found, a2aModule := recordutil.GetModuleData(record, A2AModuleName) // "integration/a2a" (0.8.0, 1.0.0)
+	// Try "integration/a2a" (0.8.0, 1.0.0) first, then fall back to "runtime/a2a" (0.7.0).
+	found, a2aModule := recordutil.GetModule(record, A2AModuleName)
 	if !found {
-		found, a2aModule = recordutil.GetModuleData(record, "runtime/a2a") // 0.7.0 compatibility
+		found, a2aModule = recordutil.GetModule(record, "runtime/a2a")
 	}
 
 	if !found {
 		return nil, errors.New("A2A module not found in record")
 	}
 
-	if cardDataVal, ok := a2aModule.GetFields()["card_data"]; ok {
-		cardData := cardDataVal.GetStructValue()
-		if cardData != nil && len(cardData.GetFields()) > 0 {
+	// Prefer the original card JSON from the artifact when available (lossless round-trip).
+	if s := structFromArtifactData(a2aModule); s != nil {
+		return s, nil
+	}
+
+	a2aModuleData := a2aModule.GetFields()["data"].GetStructValue()
+
+	if cardDataVal, ok := a2aModuleData.GetFields()["card_data"]; ok {
+		if cardData := cardDataVal.GetStructValue(); cardData != nil && len(cardData.GetFields()) > 0 {
 			return cardData, nil
 		}
 	}
 
-	// Fallback: return the module data directly (for records where card data is at the top level)
-	// This handles older schema versions where card data might be at the top level
-	return a2aModule, nil
+	return nil, errors.New("A2A card data not found in module")
 }
 
 // A2AToRecord translates an A2A card data back into an OASF-compliant record format.
@@ -128,16 +137,28 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 		},
 	}
 
+	// Build module fields and attach the artifact containing the original A2A card JSON.
+	A2AModuleFields := map[string]*structpb.Value{
+		"name": {
+			Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
+		},
+		"data": {
+			Kind: &structpb.Value_StructValue{StructValue: A2AModuleData},
+		},
+	}
+
+	raw, err := json.Marshal(A2ACardStruct.AsMap())
+	if err == nil {
+		if artifactStruct := buildArtifactDescriptor(raw, a2aMediaType); artifactStruct != nil {
+			A2AModuleFields["artifact"] = &structpb.Value{
+				Kind: &structpb.Value_StructValue{StructValue: artifactStruct},
+			}
+		}
+	}
+
 	// Create the A2A module with schema-compliant data
 	A2AModule := &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"name": {
-				Kind: &structpb.Value_StringValue{StringValue: A2AModuleName},
-			},
-			"data": {
-				Kind: &structpb.Value_StructValue{StructValue: A2AModuleData},
-			},
-		},
+		Fields: A2AModuleFields,
 	}
 
 	// Create the modules list
@@ -205,3 +226,5 @@ func A2AToRecord(a2aData *structpb.Struct, opts ...TranslatorOption) (*structpb.
 
 	return record, nil
 }
+
+const a2aMediaType = "application/json"
