@@ -1,0 +1,11 @@
+repos:
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        description: Run golangci-lint with auto-fix on staged Go files.
+        entry: task lint:golangci-lint FIX=true
+        language: system
+        pass_filenames: false
+        types: [go]
+        require_serial: true
