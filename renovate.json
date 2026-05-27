@@ -26,5 +26,7 @@
     }
   ],
   "semanticCommits": "enabled",
-  "labels": ["dependencies"]
+  "labels": ["dependencies"],
+  "minimumReleaseAge": "7 days",
+  "prCreation": "not-pending"
 }
