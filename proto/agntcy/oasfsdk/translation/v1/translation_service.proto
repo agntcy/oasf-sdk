@@ -29,6 +29,9 @@ service TranslationService {
 
   // RecordToSkillMarkdown generates a SKILL.md file content from a Record.
   rpc RecordToSkillMarkdown(RecordToSkillMarkdownRequest) returns (RecordToSkillMarkdownResponse);
+
+  // RecordToCatalog generates an AI Catalog entry from a Record.
+  rpc RecordToCatalog(RecordToCatalogRequest) returns (RecordToCatalogResponse);
 }
 
 message RecordToGHCopilotRequest {
@@ -99,4 +102,27 @@ message RecordToSkillMarkdownRequest {
 message RecordToSkillMarkdownResponse {
   // The generated SKILL.md content as a plain string.
   string data = 1;
+}
+
+message RecordToCatalogRequest {
+  // The Record object to be converted into an AI Catalog entry.
+  google.protobuf.Struct record = 1;
+
+  // The content identifier (CID) embedded in the entry URN
+  // ("urn:ai:<host>:cid:<cid>"). Required: the raw OASF record does not
+  // carry its own CID, so the caller MUST supply one.
+  string cid = 2;
+
+  // Optional authority segment of the entry URN. Defaults to "agntcy.org"
+  // when empty.
+  string host = 3;
+
+  // Optional AI Catalog spec version embedded in the nested catalog of a
+  // multi-module (container) record. Defaults to "1.0" when empty.
+  string spec_version = 4;
+}
+
+message RecordToCatalogResponse {
+  // The generated AI Catalog entry in a structured format.
+  google.protobuf.Struct data = 1;
 }
