@@ -105,3 +105,7 @@ func (t *translationCtrl) RecordToSkillMarkdown(_ context.Context, req *translat
 
 	return &translationv1.RecordToSkillMarkdownResponse{Data: result}, nil
 }
+
+// TODO(catalog-grpc): add a RecordToCatalog handler here once the proto
+// bindings are generated and published to the BSR (after this PR merges) and
+// server/go.mod is bumped to the new buf.build/gen module version.

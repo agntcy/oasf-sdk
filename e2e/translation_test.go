@@ -636,4 +636,12 @@ var _ = Describe("Translation Service E2E", func() {
 			Expect(actualMarkdown).To(Equal(expectedMarkdown), "SKILL.md should match expected output")
 		})
 	})
+
+	// TODO(catalog-grpc): add an "AI Catalog Projection" Context here once the
+	// RecordToCatalog bindings are generated and e2e/go.mod is bumped. It
+	// should call client.RecordToCatalog with a request carrying a record plus
+	// a cid (and optionally host / spec version), then assert the projected
+	// entry against a new expected_catalog_output.json fixture. Both that
+	// fixture and a translation_catalog_record.json input must be added to
+	// e2e/fixtures and embedded in embed_test.go.
 })
