@@ -106,6 +106,23 @@ func (t *translationCtrl) RecordToSkillMarkdown(_ context.Context, req *translat
 	return &translationv1.RecordToSkillMarkdownResponse{Data: result}, nil
 }
 
-// TODO(catalog-grpc): add a RecordToCatalog handler here once the proto
-// bindings are generated and published to the BSR (after this PR merges) and
-// server/go.mod is bumped to the new buf.build/gen module version.
+// RecordToCatalog implements translationv1grpc.TranslationServiceServer.
+func (t *translationCtrl) RecordToCatalog(_ context.Context, req *translationv1.RecordToCatalogRequest) (*translationv1.RecordToCatalogResponse, error) {
+	slog.Info("Received RecordToCatalog request")
+
+	opts := []translator.CatalogOption{translator.WithCatalogCID(req.GetCid())}
+	if host := req.GetHost(); host != "" {
+		opts = append(opts, translator.WithCatalogHost(host))
+	}
+
+	if version := req.GetSpecVersion(); version != "" {
+		opts = append(opts, translator.WithCatalogSpecVersion(version))
+	}
+
+	result, err := translator.RecordToCatalog(req.GetRecord(), opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate AI Catalog entry from record: %w", err)
+	}
+
+	return &translationv1.RecordToCatalogResponse{Data: result}, nil
+}
