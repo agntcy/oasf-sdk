@@ -240,7 +240,7 @@ Output:
 
 ## AI Catalog
 
-Project an OASF record onto its AI Catalog entry using the `RecordToCatalog` RPC method. A single known integration module (`integration/mcp`, `integration/a2a`, `core/language_model/agentskills`) yields a leaf entry; multiple modules yield an `application/ai-catalog+json` container with one nested entry per module. A `cid` is required; `host` (defaults to `agntcy.org`) and `specVersion` (defaults to `1.0`) are optional.
+Project an OASF record onto its AI Catalog entry using the `RecordToCatalog` RPC method. A single known integration module (`integration/mcp`, `integration/a2a`, `core/language_model/agentskills`) yields a leaf entry; multiple modules yield an `application/ai-catalog+json` container with one nested entry per module. A `cid` is required; `host` (defaults to `org.agntcy`) and `specVersion` (defaults to `1.0`) are optional.
 
 **Note:** Available once the proto bindings are generated and the server handler is wired (follow-up to this PR).
 
@@ -253,7 +253,7 @@ Output:
 ```json
 {
   "data": {
-    "identifier": "urn:ai:agntcy.org:cid:baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64",
+    "identifier": "urn:ai:org.agntcy:cid:baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64",
     "media_type": "application/a2a-agent-card+json",
     "display_name": "example-agent",
     "data": {}

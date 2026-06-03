@@ -26,7 +26,7 @@ const (
 	// DefaultCatalogURNHost is the authority segment used in entry URNs
 	// ("urn:ai:<host>:cid:<cid>[:<suffix>]") when no host is supplied via
 	// WithCatalogHost.
-	DefaultCatalogURNHost = "agntcy.org"
+	DefaultCatalogURNHost = "org.agntcy"
 
 	// DefaultCatalogSpecVersion is the AI Catalog spec version embedded in
 	// the nested catalog produced for multi-module records.

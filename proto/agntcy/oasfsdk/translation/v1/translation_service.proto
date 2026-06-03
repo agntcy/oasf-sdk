@@ -113,7 +113,7 @@ message RecordToCatalogRequest {
   // carry its own CID, so the caller MUST supply one.
   string cid = 2;
 
-  // Optional authority segment of the entry URN. Defaults to "agntcy.org"
+  // Optional authority segment of the entry URN. Defaults to "org.agntcy"
   // when empty.
   string host = 3;
 

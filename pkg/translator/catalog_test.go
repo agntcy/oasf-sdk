@@ -57,7 +57,10 @@ func entryTags(entry *structpb.Struct) []string {
 	return out
 }
 
-const testCID = "baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64"
+const (
+	testCID     = "baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64"
+	testBaseURN = "urn:ai:org.agntcy:cid:" + testCID
+)
 
 func TestRecordToCatalog_MCPLeaf(t *testing.T) {
 	moduleData := map[string]any{
@@ -86,7 +89,7 @@ func TestRecordToCatalog_MCPLeaf(t *testing.T) {
 		t.Fatalf("RecordToCatalog() error: %v", err)
 	}
 
-	if got, want := entryString(t, entry, "identifier"), "urn:ai:agntcy.org:cid:"+testCID; got != want {
+	if got, want := entryString(t, entry, "identifier"), testBaseURN; got != want {
 		t.Errorf("identifier = %q, want %q", got, want)
 	}
 
@@ -148,7 +151,7 @@ func TestRecordToCatalog_A2ALeaf(t *testing.T) {
 		t.Errorf("media_type = %q, want %q", got, translator.A2ACatalogMediaType)
 	}
 
-	if got, want := entryString(t, entry, "identifier"), "urn:ai:agntcy.org:cid:"+testCID; got != want {
+	if got, want := entryString(t, entry, "identifier"), testBaseURN; got != want {
 		t.Errorf("identifier = %q, want %q", got, want)
 	}
 }
@@ -208,7 +211,7 @@ func TestRecordToCatalog_MultiModuleContainer(t *testing.T) {
 		t.Errorf("media_type = %q, want %q", got, translator.CatalogContainerMediaType)
 	}
 
-	if got, want := entryString(t, entry, "identifier"), "urn:ai:agntcy.org:cid:"+testCID; got != want {
+	if got, want := entryString(t, entry, "identifier"), testBaseURN; got != want {
 		t.Errorf("identifier = %q, want %q", got, want)
 	}
 
@@ -233,7 +236,7 @@ func TestRecordToCatalog_MultiModuleContainer(t *testing.T) {
 
 	// Modules are sorted by name: "integration/a2a" < "integration/mcp".
 	first := entries.GetValues()[0].GetStructValue()
-	if got, want := first.GetFields()["identifier"].GetStringValue(), "urn:ai:agntcy.org:cid:"+testCID+":a2a"; got != want {
+	if got, want := first.GetFields()["identifier"].GetStringValue(), testBaseURN+":a2a"; got != want {
 		t.Errorf("first nested identifier = %q, want %q", got, want)
 	}
 
@@ -251,7 +254,7 @@ func TestRecordToCatalog_MultiModuleContainer(t *testing.T) {
 	}
 
 	second := entries.GetValues()[1].GetStructValue()
-	if got, want := second.GetFields()["identifier"].GetStringValue(), "urn:ai:agntcy.org:cid:"+testCID+":mcp"; got != want {
+	if got, want := second.GetFields()["identifier"].GetStringValue(), testBaseURN+":mcp"; got != want {
 		t.Errorf("second nested identifier = %q, want %q", got, want)
 	}
 }
