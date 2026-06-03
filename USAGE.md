@@ -240,12 +240,10 @@ Output:
 
 ## AI Catalog
 
-Project an OASF record onto its AI Catalog entry using the `RecordToCatalog` RPC method. A single known integration module (`integration/mcp`, `integration/a2a`, `core/language_model/agentskills`) yields a leaf entry; multiple modules yield an `application/ai-catalog+json` container with one nested entry per module. A `cid` is required; `host` (defaults to `org.agntcy`) and `specVersion` (defaults to `1.0`) are optional.
-
-**Note:** Available once the proto bindings are generated and the server handler is wired (follow-up to this PR).
+Project an OASF record onto its AI Catalog entry using the `RecordToCatalog` RPC method. A single known integration module (`integration/mcp`, `integration/a2a`, `core/language_model/agentskills`) yields a leaf entry whose `media_type` matches the module and whose `data` is the module's structured data; multiple modules yield an `application/ai-catalog+json` container with one nested entry per module. A `cid` is required; `host` (defaults to `org.agntcy`) and `specVersion` (defaults to `1.0`) are optional.
 
 ```bash
-cat tests/fixtures/translation_0.8.0_record.json | jq '{record: ., cid: "baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToCatalog
+cat tests/fixtures/translation_catalog_record.json | jq '{record: ., cid: "baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64"}' | grpcurl -plaintext -d @ localhost:31234 agntcy.oasfsdk.translation.v1.TranslationService/RecordToCatalog
 ```
 
 Output:
@@ -254,9 +252,23 @@ Output:
 {
   "data": {
     "identifier": "urn:ai:org.agntcy:cid:baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64",
-    "media_type": "application/a2a-agent-card+json",
-    "display_name": "example-agent",
-    "data": {}
+    "media_type": "application/mcp-server+json",
+    "display_name": "example-mcp-agent",
+    "version": "1.0.0",
+    "description": "Example agent exposing an MCP server.",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "tags": [
+      "oasf:v1.0.0:skills:natural_language_processing/natural_language_generation",
+      "oasf:v1.0.0:domain:technology/software_engineering"
+    ],
+    "data": {
+      "servers": [
+        {
+          "name": "example",
+          "type": "local"
+        }
+      ]
+    }
   }
 }
 ```
