@@ -637,11 +637,37 @@ var _ = Describe("Translation Service E2E", func() {
 		})
 	})
 
-	// TODO(catalog-grpc): add an "AI Catalog Projection" Context here once the
-	// RecordToCatalog bindings are generated and e2e/go.mod is bumped. It
-	// should call client.RecordToCatalog with a request carrying a record plus
-	// a cid (and optionally host / spec version), then assert the projected
-	// entry against a new expected_catalog_output.json fixture. Both that
-	// fixture and a translation_catalog_record.json input must be added to
-	// e2e/fixtures and embedded in embed_test.go.
+	Context("AI Catalog Translation", func() {
+		It("should translate an MCP record into an AI Catalog leaf entry matching expected output", func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			encodedRecord, err := decoder.JsonToProto(translationCatalogRecord)
+			Expect(err).NotTo(HaveOccurred(), "Failed to encode catalog record")
+
+			req := &translationv1.RecordToCatalogRequest{
+				Record: encodedRecord,
+				Cid:    "baeareibxiiy45pg4bjwhbijgh35epzjhnh6lvaxts2qggcgssn3glzdh64",
+			}
+
+			resp, err := client.RecordToCatalog(ctx, req)
+			Expect(err).NotTo(HaveOccurred(), "RecordToCatalog should not fail")
+			Expect(resp.GetData()).NotTo(BeNil(), "Expected AI Catalog entry data in response")
+
+			actualJSON, err := json.MarshalIndent(map[string]any{"data": resp.GetData().AsMap()}, "", "  ")
+			Expect(err).NotTo(HaveOccurred(), "Failed to marshal response to JSON")
+
+			var expectedOutput map[string]any
+
+			err = json.Unmarshal(expectedCatalogOutput, &expectedOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal expected output")
+
+			var actualOutput map[string]any
+
+			err = json.Unmarshal(actualJSON, &actualOutput)
+			Expect(err).NotTo(HaveOccurred(), "Failed to unmarshal actual output")
+
+			Expect(actualOutput).To(Equal(expectedOutput), "AI Catalog entry should match expected output")
+		})
+	})
 })

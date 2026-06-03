@@ -1,0 +1,30 @@
+{
+  "name": "example-mcp-agent",
+  "version": "1.0.0",
+  "description": "Example agent exposing an MCP server.",
+  "schema_version": "1.0.0",
+  "created_at": "2026-01-01T00:00:00Z",
+  "skills": [
+    {
+      "name": "natural_language_processing/natural_language_generation"
+    }
+  ],
+  "domains": [
+    {
+      "name": "technology/software_engineering"
+    }
+  ],
+  "modules": [
+    {
+      "name": "integration/mcp",
+      "data": {
+        "servers": [
+          {
+            "name": "example",
+            "type": "local"
+          }
+        ]
+      }
+    }
+  ]
+}
