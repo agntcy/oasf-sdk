@@ -259,7 +259,7 @@ func knownCatalogModules(record *structpb.Struct) []catalogModule {
 
 // catalogTags assembles the OASF-taxonomy + annotation tag list shared by
 // leaf and container entries: one tag per skill and domain
-// ("oasf:v<schema>:skills:<name>" / "oasf:v<schema>:domain:<name>"),
+// ("oasf:v<schema>:skills:<name>" / "oasf:v<schema>:domains:<name>"),
 // followed by record annotations ("key" or "key=value").
 func catalogTags(record *structpb.Struct) []string {
 	schemaVer := strings.TrimPrefix(recordStringField(record, "schema_version"), "v")
@@ -278,7 +278,7 @@ func catalogTags(record *structpb.Struct) []string {
 	}
 
 	for _, d := range domains {
-		out = append(out, fmt.Sprintf("oasf:v%s:domain:%s", schemaVer, d))
+		out = append(out, fmt.Sprintf("oasf:v%s:domains:%s", schemaVer, d))
 	}
 
 	out = append(out, annotations...)

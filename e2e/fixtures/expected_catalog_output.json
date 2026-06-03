@@ -8,7 +8,7 @@
     "updated_at": "2026-01-01T00:00:00Z",
     "tags": [
       "oasf:v1.0.0:skills:natural_language_processing/natural_language_generation",
-      "oasf:v1.0.0:domain:technology/software_engineering"
+      "oasf:v1.0.0:domains:technology/software_engineering"
     ],
     "data": {
       "servers": [
