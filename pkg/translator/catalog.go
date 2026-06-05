@@ -158,20 +158,24 @@ func RecordToCatalog(record *structpb.Struct, opts ...CatalogOption) (*structpb.
 	}
 
 	// 2+ known modules — container whose data is a nested AI Catalog.
+	// Keys inside the nested catalog use camelCase because the data field
+	// is a google.protobuf.Value whose struct keys are serialized verbatim
+	// (the gateway's proto→JSON camelCase conversion only applies to known
+	// proto field names, not to opaque Value structs).
 	nested := make([]*structpb.Value, 0, len(modules))
 
 	for _, m := range modules {
 		moduleURN := catalogURN(options.host, cid, catalogModules[m.name].URNSuffix)
 
-		entry := moduleToCatalogEntry(m, moduleURN)
-		entry.Fields["display_name"] = catalogStringValue(moduleDisplayName(m, name))
+		entry := nestedCatalogEntry(m, moduleURN)
+		entry.Fields["displayName"] = catalogStringValue(moduleDisplayName(m, name))
 
 		nested = append(nested, structpb.NewStructValue(entry))
 	}
 
 	nestedCatalog := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"spec_version": catalogStringValue(options.specVersion),
+			"specVersion": catalogStringValue(options.specVersion),
 			"entries": {
 				Kind: &structpb.Value_ListValue{ListValue: &structpb.ListValue{Values: nested}},
 			},
@@ -210,6 +214,26 @@ func moduleToCatalogEntry(m catalogModule, identifier string) *structpb.Struct {
 		Fields: map[string]*structpb.Value{
 			"identifier": catalogStringValue(identifier),
 			"media_type": catalogStringValue(proj.MediaType),
+			"data":       structpb.NewStructValue(data),
+		},
+	}
+}
+
+// nestedCatalogEntry builds a catalog entry for a module inside a
+// multi-module container's data field. Keys use camelCase because the
+// container data is a google.protobuf.Value serialized verbatim.
+func nestedCatalogEntry(m catalogModule, identifier string) *structpb.Struct {
+	proj := catalogModules[m.name]
+
+	data := m.data
+	if data == nil {
+		data = &structpb.Struct{Fields: map[string]*structpb.Value{}}
+	}
+
+	return &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"identifier": catalogStringValue(identifier),
+			"mediaType":  catalogStringValue(proj.MediaType),
 			"data":       structpb.NewStructValue(data),
 		},
 	}

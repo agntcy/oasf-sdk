@@ -225,8 +225,8 @@ func TestRecordToCatalog_MultiModuleContainer(t *testing.T) {
 		t.Fatal("expected nested catalog data")
 	}
 
-	if got := nestedCatalog.GetFields()["spec_version"].GetStringValue(); got != translator.DefaultCatalogSpecVersion {
-		t.Errorf("spec_version = %q, want %q", got, translator.DefaultCatalogSpecVersion)
+	if got := nestedCatalog.GetFields()["specVersion"].GetStringValue(); got != translator.DefaultCatalogSpecVersion {
+		t.Errorf("specVersion = %q, want %q", got, translator.DefaultCatalogSpecVersion)
 	}
 
 	entries := nestedCatalog.GetFields()["entries"].GetListValue()
@@ -235,17 +235,19 @@ func TestRecordToCatalog_MultiModuleContainer(t *testing.T) {
 	}
 
 	// Modules are sorted by name: "integration/a2a" < "integration/mcp".
+	// Nested entries use camelCase keys since they live inside a
+	// google.protobuf.Value that is serialized verbatim.
 	first := entries.GetValues()[0].GetStructValue()
 	if got, want := first.GetFields()["identifier"].GetStringValue(), testBaseURN+":a2a"; got != want {
 		t.Errorf("first nested identifier = %q, want %q", got, want)
 	}
 
-	if got := first.GetFields()["display_name"].GetStringValue(); got != "multi-agent (A2A)" {
-		t.Errorf("first nested display_name = %q, want %q", got, "multi-agent (A2A)")
+	if got := first.GetFields()["displayName"].GetStringValue(); got != "multi-agent (A2A)" {
+		t.Errorf("first nested displayName = %q, want %q", got, "multi-agent (A2A)")
 	}
 
-	if got := first.GetFields()["media_type"].GetStringValue(); got != translator.A2ACatalogMediaType {
-		t.Errorf("first nested media_type = %q", got)
+	if got := first.GetFields()["mediaType"].GetStringValue(); got != translator.A2ACatalogMediaType {
+		t.Errorf("first nested mediaType = %q", got)
 	}
 
 	// Nested entries deliberately carry no tags.
