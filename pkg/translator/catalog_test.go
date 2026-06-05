@@ -122,7 +122,7 @@ func TestRecordToCatalog_MCPLeaf(t *testing.T) {
 	wantTags := []string{
 		"oasf:v1.0.0:skills:retrieval_augmented_generation/document_or_database_question_answering",
 		"oasf:v1.0.0:skills:retrieval_augmented_generation/retrieval_of_information",
-		"oasf:v1.0.0:domain:technology/cloud_computing",
+		"oasf:v1.0.0:domains:technology/cloud_computing",
 	}
 	if got := entryTags(entry); !slices.Equal(got, wantTags) {
 		t.Errorf("tags = %v, want %v", got, wantTags)
@@ -182,8 +182,8 @@ func TestRecordToCatalog_SkillLeaf(t *testing.T) {
 	}
 
 	wantTags := []string{
-		"oasf:v1.0.0:domain:technology/internet_of_things",
-		"oasf:v1.0.0:domain:technology/software_engineering",
+		"oasf:v1.0.0:domains:technology/internet_of_things",
+		"oasf:v1.0.0:domains:technology/software_engineering",
 	}
 	if got := entryTags(entry); !slices.Equal(got, wantTags) {
 		t.Errorf("tags = %v, want %v", got, wantTags)

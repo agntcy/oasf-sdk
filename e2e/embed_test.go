@@ -97,3 +97,9 @@ var translationAgentSkillsRecord []byte
 
 //go:embed fixtures/expected_recordtoskill_output.md
 var expectedRecordToSkillOutput []byte
+
+//go:embed fixtures/translation_catalog_record.json
+var translationCatalogRecord []byte
+
+//go:embed fixtures/expected_catalog_output.json
+var expectedCatalogOutput []byte
