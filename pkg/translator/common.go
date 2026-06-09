@@ -40,7 +40,9 @@ type TranslatorOption func(*translatorOptions)
 
 // translatorOptions holds the options for translation operations.
 type translatorOptions struct {
-	version string
+	version       string
+	recordVersion string
+	authors       []string
 }
 
 // WithVersion sets the schema version to use for translation.
@@ -49,6 +51,61 @@ func WithVersion(version string) TranslatorOption {
 	return func(opts *translatorOptions) {
 		opts.version = version
 	}
+}
+
+// WithRecordVersion sets the record version field, overriding any version from the source.
+func WithRecordVersion(version string) TranslatorOption {
+	return func(opts *translatorOptions) {
+		opts.recordVersion = version
+	}
+}
+
+// WithAuthors sets record authors, overriding any authors from the source.
+func WithAuthors(authors []string) TranslatorOption {
+	return func(opts *translatorOptions) {
+		opts.authors = append([]string{}, authors...)
+	}
+}
+
+func nonEmptyAuthors(authors []string) []string {
+	if len(authors) == 0 {
+		return nil
+	}
+
+	filtered := make([]string, 0, len(authors))
+	for _, author := range authors {
+		if author != "" {
+			filtered = append(filtered, author)
+		}
+	}
+
+	return filtered
+}
+
+// resolveRecordAuthors returns authors with precedence: WithAuthors > sourceAuthors > defaultAuthor.
+func resolveRecordAuthors(sourceAuthors, optionAuthors []string) []string {
+	if explicit := nonEmptyAuthors(optionAuthors); len(explicit) > 0 {
+		return explicit
+	}
+
+	if explicit := nonEmptyAuthors(sourceAuthors); len(explicit) > 0 {
+		return explicit
+	}
+
+	return []string{defaultAuthor}
+}
+
+// resolveRecordVersion returns version with precedence: WithRecordVersion > sourceVersion > defaultVersion.
+func resolveRecordVersion(sourceVersion, optionVersion string) string {
+	if optionVersion != "" {
+		return optionVersion
+	}
+
+	if sourceVersion != "" {
+		return sourceVersion
+	}
+
+	return defaultVersion
 }
 
 // buildArtifactDescriptor creates an OCI-like artifact descriptor struct from raw bytes.

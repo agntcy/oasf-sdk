@@ -446,7 +446,7 @@ if err != nil {
 }
 ```
 
-When `metadata.author` or `metadata.version` are absent from the SKILL.md frontmatter, the translator falls back to `authors: ["Unknown"]` and `version: "v1.0.0"`. You can override the author fallback with `translator.WithAuthors([]string{"ACME Corp"})`; metadata author always takes precedence.
+`WithAuthors` and `WithRecordVersion` override source-derived values when provided. Otherwise, `*ToRecord` functions resolve authors from the source (e.g. SKILL.md `metadata.author`, A2A provider organization, MCP namespace vendor) and fall back to `["Unknown"]`; record `version` defaults to `v1.0.0` when absent from the source. `WithVersion` sets the OASF `schema_version` separately.
 
 Render a SKILL.md from a record:
 

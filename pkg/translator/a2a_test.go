@@ -10,6 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const testAuthorACME = "ACME Corp"
+
 // --- A2AToRecord ---
 
 func TestA2AToRecord_WrappedFormat(t *testing.T) {
@@ -19,7 +21,7 @@ func TestA2AToRecord_WrappedFormat(t *testing.T) {
 			"description": "does things",
 			"version":     "2.0.0",
 			"provider": map[string]any{
-				"organization": "ACME Corp",
+				"organization": testAuthorACME,
 			},
 		},
 	})
@@ -47,8 +49,8 @@ func TestA2AToRecord_WrappedFormat(t *testing.T) {
 	}
 
 	authors := fields["authors"].GetListValue().GetValues()
-	if len(authors) == 0 || authors[0].GetStringValue() != "ACME Corp" {
-		t.Errorf("expected authors=['ACME Corp'], got %v", authors)
+	if len(authors) == 0 || authors[0].GetStringValue() != testAuthorACME {
+		t.Errorf("expected authors=[%q], got %v", testAuthorACME, authors)
 	}
 
 	if fields["schema_version"].GetStringValue() != translator.DefaultSchemaVersion {
@@ -57,6 +59,69 @@ func TestA2AToRecord_WrappedFormat(t *testing.T) {
 
 	if fields["created_at"].GetStringValue() == "" {
 		t.Error("expected non-empty created_at")
+	}
+}
+
+func TestA2AToRecord_AuthorsWithOption(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{
+		"name":        "unwrapped-agent",
+		"description": "direct card",
+	})
+	if err != nil {
+		t.Fatalf("failed to build input: %v", err)
+	}
+
+	record, err := translator.A2AToRecord(input, translator.WithAuthors([]string{testAuthorACME}))
+	if err != nil {
+		t.Fatalf("A2AToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != testAuthorACME {
+		t.Errorf("expected authors=[%q], got %v", testAuthorACME, authors)
+	}
+}
+
+func TestA2AToRecord_AuthorsWithOptionTakesPrecedence(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{
+		"name":        "my-agent",
+		"description": "does things",
+		"provider": map[string]any{
+			"organization": testAuthorACME,
+		},
+	})
+	if err != nil {
+		t.Fatalf("failed to build input: %v", err)
+	}
+
+	record, err := translator.A2AToRecord(input, translator.WithAuthors([]string{"Other Org"}))
+	if err != nil {
+		t.Fatalf("A2AToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != "Other Org" {
+		t.Errorf("expected WithAuthors to take precedence, got %v", authors)
+	}
+}
+
+func TestA2AToRecord_VersionWithOptionTakesPrecedence(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{
+		"name":        "my-agent",
+		"description": "does things",
+		"version":     "2.0.0",
+	})
+	if err != nil {
+		t.Fatalf("failed to build input: %v", err)
+	}
+
+	record, err := translator.A2AToRecord(input, translator.WithRecordVersion("9.9.9"))
+	if err != nil {
+		t.Fatalf("A2AToRecord() error: %v", err)
+	}
+
+	if record.GetFields()["version"].GetStringValue() != "9.9.9" {
+		t.Errorf("expected WithRecordVersion to take precedence, got %q", record.GetFields()["version"].GetStringValue())
 	}
 }
 
