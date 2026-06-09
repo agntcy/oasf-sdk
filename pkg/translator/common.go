@@ -21,6 +21,7 @@ const (
 	packageTypeNuGet    = "nuget"
 	packageTypeMCPB     = "mcpb"
 	defaultVersion      = "v1.0.0"
+	defaultAuthor       = "Unknown"
 	connectionTypeStdio = "stdio"
 	connectionTypeSSE   = "sse"
 	connectionTypeHTTP  = "streamable-http"

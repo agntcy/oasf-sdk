@@ -69,6 +69,20 @@ func TestMCPToRecord_BasicFields(t *testing.T) {
 	}
 }
 
+func TestMCPToRecord_AuthorUnknownFallback(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, map[string]any{
+		"name": "my-server",
+	}))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != "Unknown" {
+		t.Errorf("expected authors=['Unknown'], got %v", authors)
+	}
+}
+
 func TestMCPToRecord_AuthorFromNamespace(t *testing.T) {
 	record, err := translator.MCPToRecord(minimalMCPInput(t, nil))
 	if err != nil {

@@ -446,6 +446,8 @@ if err != nil {
 }
 ```
 
+When `metadata.author` or `metadata.version` are absent from the SKILL.md frontmatter, the translator falls back to `authors: ["Unknown"]` and `version: "v1.0.0"`. You can override the author fallback with `translator.WithAuthors([]string{"ACME Corp"})`; metadata author always takes precedence.
+
 Render a SKILL.md from a record:
 
 ```go

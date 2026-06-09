@@ -60,6 +60,26 @@ func TestA2AToRecord_WrappedFormat(t *testing.T) {
 	}
 }
 
+func TestA2AToRecord_AuthorUnknownFallback(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{
+		"name":        "unwrapped-agent",
+		"description": "direct card",
+	})
+	if err != nil {
+		t.Fatalf("failed to build input: %v", err)
+	}
+
+	record, err := translator.A2AToRecord(input)
+	if err != nil {
+		t.Fatalf("A2AToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != "Unknown" {
+		t.Errorf("expected authors=['Unknown'], got %v", authors)
+	}
+}
+
 func TestA2AToRecord_UnwrappedFormat(t *testing.T) {
 	input, err := structpb.NewStruct(map[string]any{
 		"name":        "unwrapped-agent",
