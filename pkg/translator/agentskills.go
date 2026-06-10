@@ -151,24 +151,24 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 		return nil, fmt.Errorf("failed to parse SKILL.md content: %w", err)
 	}
 
-	// version is not a spec frontmatter field; source it from metadata["version"].
-	version := parsed.metadata["version"]
-
-	recordVersion := defaultVersion
-	if version != "" {
-		recordVersion = version
-	}
-
-	authors := buildAuthors(parsed.metadata)
-	manifestFields := buildManifestFields(parsed, version)
-	moduleDataFields := buildModuleDataFields(manifestFields)
-	artifactStruct := buildArtifactDescriptor([]byte(content), agentSkillsMediaType)
-	agentSkillsModule := buildAgentSkillsModule(moduleDataFields, artifactStruct)
-
 	options := &translatorOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
+
+	// version is not a spec frontmatter field; source it from metadata["version"].
+	recordVersion := resolveRecordVersion(parsed.metadata["version"], options.recordVersion)
+
+	var sourceAuthors []string
+	if author := parsed.metadata["author"]; author != "" {
+		sourceAuthors = []string{author}
+	}
+
+	authors := authorsToValues(resolveRecordAuthors(sourceAuthors, options.authors))
+	manifestFields := buildManifestFields(parsed, recordVersion)
+	moduleDataFields := buildModuleDataFields(manifestFields)
+	artifactStruct := buildArtifactDescriptor([]byte(content), agentSkillsMediaType)
+	agentSkillsModule := buildAgentSkillsModule(moduleDataFields, artifactStruct)
 
 	targetVersion := DefaultSchemaVersion
 
@@ -183,14 +183,15 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 	return buildRecord(parsed.name, parsed.description, targetVersion, recordVersion, authors, agentSkillsModule), nil
 }
 
-func buildAuthors(metadata map[string]string) []*structpb.Value {
-	if author, ok := metadata["author"]; ok && author != "" {
-		return []*structpb.Value{
-			{Kind: &structpb.Value_StringValue{StringValue: author}},
-		}
+func authorsToValues(authors []string) []*structpb.Value {
+	values := make([]*structpb.Value, 0, len(authors))
+	for _, author := range authors {
+		values = append(values, &structpb.Value{
+			Kind: &structpb.Value_StringValue{StringValue: author},
+		})
 	}
 
-	return []*structpb.Value{}
+	return values
 }
 
 func buildManifestFields(parsed skillMarkdownFields, version string) map[string]*structpb.Value {
@@ -203,9 +204,7 @@ func buildManifestFields(parsed skillMarkdownFields, version string) map[string]
 		fields["license"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: parsed.license}}
 	}
 
-	if version != "" {
-		fields["version"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: version}}
-	}
+	fields["version"] = &structpb.Value{Kind: &structpb.Value_StringValue{StringValue: version}}
 
 	if parsed.compatibility != "" {
 		fields["compatibility"] = &structpb.Value{

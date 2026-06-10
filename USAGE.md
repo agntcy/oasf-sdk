@@ -446,6 +446,8 @@ if err != nil {
 }
 ```
 
+`WithAuthors` and `WithRecordVersion` override source-derived values when provided. Otherwise, `*ToRecord` functions resolve authors from the source (e.g. SKILL.md `metadata.author`, A2A provider organization, MCP namespace vendor) and fall back to `["Unknown"]`; record `version` defaults to `v1.0.0` when absent from the source. `WithVersion` sets the OASF `schema_version` separately.
+
 Render a SKILL.md from a record:
 
 ```go

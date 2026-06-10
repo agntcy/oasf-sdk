@@ -69,6 +69,59 @@ func TestMCPToRecord_BasicFields(t *testing.T) {
 	}
 }
 
+func TestMCPToRecord_AuthorsWithOption(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, map[string]any{
+		"name": "my-server",
+	}), translator.WithAuthors([]string{testAuthorACME}))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != testAuthorACME {
+		t.Errorf("expected authors=[%q], got %v", testAuthorACME, authors)
+	}
+}
+
+func TestMCPToRecord_AuthorsWithOptionTakesPrecedence(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, nil), translator.WithAuthors([]string{"Other Org"}))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != "Other Org" {
+		t.Errorf("expected WithAuthors to take precedence, got %v", authors)
+	}
+}
+
+func TestMCPToRecord_VersionWithOptionTakesPrecedence(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, map[string]any{
+		"version": "1.0.0",
+	}), translator.WithRecordVersion("9.9.9"))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	if record.GetFields()["version"].GetStringValue() != "9.9.9" {
+		t.Errorf("expected WithRecordVersion to take precedence, got %q", record.GetFields()["version"].GetStringValue())
+	}
+}
+
+func TestMCPToRecord_AuthorUnknownFallback(t *testing.T) {
+	record, err := translator.MCPToRecord(minimalMCPInput(t, map[string]any{
+		"name": "my-server",
+	}))
+	if err != nil {
+		t.Fatalf("MCPToRecord() error: %v", err)
+	}
+
+	authors := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authors) != 1 || authors[0].GetStringValue() != "Unknown" {
+		t.Errorf("expected authors=['Unknown'], got %v", authors)
+	}
+}
+
 func TestMCPToRecord_AuthorFromNamespace(t *testing.T) {
 	record, err := translator.MCPToRecord(minimalMCPInput(t, nil))
 	if err != nil {

@@ -10,6 +10,14 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+const minimalSkillMarkdown = `---
+name: simple-skill
+description: A simple skill.
+---
+`
+
+const testSkillMetadataVersion = "2.0"
+
 // buildAgentSkillsRecord constructs a minimal OASF record with an agentskills module
 // containing the provided manifest fields. No skill_body — it is not in the schema.
 func buildAgentSkillsRecord(t *testing.T, manifestMap map[string]any) *structpb.Struct {
@@ -208,13 +216,7 @@ func assertSkillModule(t *testing.T, record *structpb.Struct) {
 
 func TestSkillMarkdownToRecordVersionFallback(t *testing.T) {
 	// No version in frontmatter and no version in metadata → defaultVersion.
-	skillMD := `---
-name: simple-skill
-description: A simple skill.
----
-`
-
-	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": minimalSkillMarkdown})
 	if err != nil {
 		t.Fatalf("Failed to build input: %v", err)
 	}
@@ -227,6 +229,107 @@ description: A simple skill.
 	if record.GetFields()["version"].GetStringValue() != defaultVersion {
 		t.Errorf("Expected default version %q, got %q", defaultVersion, record.GetFields()["version"].GetStringValue())
 	}
+
+	_, moduleData := findModule(record, AgentSkillsModuleName)
+
+	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
+	if manifest.GetFields()["version"].GetStringValue() != defaultVersion {
+		t.Errorf("Expected manifest version %q, got %q", defaultVersion, manifest.GetFields()["version"].GetStringValue())
+	}
+}
+
+func TestSkillMarkdownToRecordAuthorsUnknownFallback(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": minimalSkillMarkdown})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input)
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	authorVals := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authorVals) != 1 || authorVals[0].GetStringValue() != defaultAuthor {
+		t.Errorf("Expected authors = [%q], got %v", defaultAuthor, authorVals)
+	}
+}
+
+func TestSkillMarkdownToRecordAuthorsWithOption(t *testing.T) {
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": minimalSkillMarkdown})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input, WithAuthors([]string{"ACME Corp", "Example Team"}))
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	authorVals := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authorVals) != 2 {
+		t.Fatalf("Expected 2 authors, got %d", len(authorVals))
+	}
+
+	if authorVals[0].GetStringValue() != "ACME Corp" || authorVals[1].GetStringValue() != "Example Team" {
+		t.Errorf("Expected authors = [\"ACME Corp\", \"Example Team\"], got %v", authorVals)
+	}
+}
+
+func TestSkillMarkdownToRecordAuthorsWithOptionTakesPrecedence(t *testing.T) {
+	skillMD := `---
+name: simple-skill
+description: A simple skill.
+metadata:
+  author: example-org
+---
+`
+
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input, WithAuthors([]string{"ACME Corp"}))
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	authorVals := record.GetFields()["authors"].GetListValue().GetValues()
+	if len(authorVals) != 1 || authorVals[0].GetStringValue() != "ACME Corp" {
+		t.Errorf("Expected WithAuthors to take precedence, got %v", authorVals)
+	}
+}
+
+func TestSkillMarkdownToRecordVersionWithOptionTakesPrecedence(t *testing.T) {
+	skillMD := `---
+name: simple-skill
+description: A simple skill.
+metadata:
+  version: "` + testSkillMetadataVersion + `"
+---
+`
+
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input, WithRecordVersion("9.9.9"))
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	if record.GetFields()["version"].GetStringValue() != "9.9.9" {
+		t.Errorf("Expected WithRecordVersion to take precedence, got %q", record.GetFields()["version"].GetStringValue())
+	}
+
+	_, moduleData := findModule(record, AgentSkillsModuleName)
+
+	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
+	if manifest.GetFields()["version"].GetStringValue() != "9.9.9" {
+		t.Errorf("Expected manifest version from WithRecordVersion, got %q", manifest.GetFields()["version"].GetStringValue())
+	}
 }
 
 func TestSkillMarkdownToRecordVersionFromMetadata(t *testing.T) {
@@ -235,7 +338,7 @@ func TestSkillMarkdownToRecordVersionFromMetadata(t *testing.T) {
 name: simple-skill
 description: A simple skill.
 metadata:
-  version: "2.0"
+  version: "` + testSkillMetadataVersion + `"
 ---
 `
 
@@ -249,8 +352,8 @@ metadata:
 		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
 	}
 
-	if record.GetFields()["version"].GetStringValue() != "2.0" {
-		t.Errorf("Expected version '2.0' from metadata, got %q", record.GetFields()["version"].GetStringValue())
+	if record.GetFields()["version"].GetStringValue() != testSkillMetadataVersion {
+		t.Errorf("Expected version %q from metadata, got %q", testSkillMetadataVersion, record.GetFields()["version"].GetStringValue())
 	}
 }
 
