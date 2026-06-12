@@ -16,7 +16,10 @@ description: A simple skill.
 ---
 `
 
-const testSkillMetadataVersion = "2.0"
+const (
+	testSkillVersion         = "1.0"
+	testSkillMetadataVersion = "2.0"
+)
 
 // buildAgentSkillsRecord constructs a minimal OASF record with an agentskills module
 // containing the provided manifest fields. No skill_body — it is not in the schema.
@@ -161,8 +164,8 @@ func assertSkillRecord(t *testing.T, record *structpb.Struct) {
 	}
 
 	// version comes from metadata["version"].
-	if fields["version"].GetStringValue() != "1.0" {
-		t.Errorf("Expected record version '1.0', got %q", fields["version"].GetStringValue())
+	if fields["version"].GetStringValue() != testSkillVersion {
+		t.Errorf("Expected record version %q, got %q", testSkillVersion, fields["version"].GetStringValue())
 	}
 
 	// authors derived from metadata.author.
@@ -198,8 +201,8 @@ func assertSkillModule(t *testing.T, record *structpb.Struct) {
 	}
 
 	// version is a top-level manifest field per the agentskills_manifest schema.
-	if mf["version"].GetStringValue() != "1.0" {
-		t.Errorf("Expected manifest version '1.0', got %q", mf["version"].GetStringValue())
+	if mf["version"].GetStringValue() != testSkillVersion {
+		t.Errorf("Expected manifest version %q, got %q", testSkillVersion, mf["version"].GetStringValue())
 	}
 
 	// compatibility must be stored as []string per the agentskills_manifest schema.
@@ -329,6 +332,49 @@ metadata:
 	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
 	if manifest.GetFields()["version"].GetStringValue() != "9.9.9" {
 		t.Errorf("Expected manifest version from WithRecordVersion, got %q", manifest.GetFields()["version"].GetStringValue())
+	}
+}
+
+func TestUnquoteYAMLScalar(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{input: "'" + testSkillVersion + "'", want: testSkillVersion},
+		{input: `"` + testSkillVersion + `"`, want: testSkillVersion},
+		{input: testSkillVersion, want: testSkillVersion},
+		{input: "'it''s fine'", want: "it's fine"},
+	}
+
+	for _, tt := range tests {
+		if got := unquoteYAMLScalar(tt.input); got != tt.want {
+			t.Errorf("unquoteYAMLScalar(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestSkillMarkdownToRecordVersionSingleQuotedMetadata(t *testing.T) {
+	skillMD := `---
+name: angular-new-app
+description: Creates a new Angular app.
+metadata:
+  author: Angular Team @ Google
+  version: '1.0'
+---
+`
+
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input)
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	if record.GetFields()["version"].GetStringValue() != testSkillVersion {
+		t.Errorf("Expected version %q, got %q", testSkillVersion, record.GetFields()["version"].GetStringValue())
 	}
 }
 
