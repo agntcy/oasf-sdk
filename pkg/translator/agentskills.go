@@ -369,16 +369,26 @@ func splitYAMLKeyValue(line string) (string, string) {
 	value := ""
 
 	if len(parts) > 1 {
-		value = strings.TrimSpace(parts[1])
-	}
-
-	if strings.HasPrefix(value, "\"") {
-		if unquoted, err := strconv.Unquote(value); err == nil {
-			value = unquoted
-		}
+		value = unquoteYAMLScalar(strings.TrimSpace(parts[1]))
 	}
 
 	return key, value
+}
+
+// unquoteYAMLScalar strips surrounding YAML single or double quotes from a scalar value.
+func unquoteYAMLScalar(value string) string {
+	if strings.HasPrefix(value, "\"") {
+		if unquoted, err := strconv.Unquote(value); err == nil {
+			return unquoted
+		}
+	}
+
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		// YAML single-quoted strings escape ' as ''.
+		return strings.ReplaceAll(value[1:len(value)-1], "''", "'")
+	}
+
+	return value
 }
 
 func getString(data map[string]any, key string) string {
