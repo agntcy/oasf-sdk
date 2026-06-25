@@ -45,6 +45,11 @@ func RecordToSkillMarkdown(record *structpb.Struct) (string, error) {
 		return "", errors.New("agentskills module not found in record")
 	}
 
+	mediaType := moduleStruct.GetFields()["artifact"].GetStructValue().GetFields()["media_type"].GetStringValue()
+	if mediaType == agentSkillsBundleMediaType {
+		return "", fmt.Errorf("record artifact is %q; SKILL.md cannot be extracted directly from a bundle archive", mediaType)
+	}
+
 	// Prefer returning the full original SKILL.md from the artifact when available.
 	if raw := artifactDataBytes(moduleStruct); raw != nil {
 		return string(raw), nil
@@ -136,16 +141,15 @@ func renderSkillMarkdownFrontmatter(name, description, license, compatibility st
 // The input must be wrapped as {"skillMarkdown": "<content>"}.
 // Generates records using the specified schema version (via WithVersion option) or the default schema version.
 func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption) (*structpb.Struct, error) {
-	mdVal, ok := skillData.GetFields()["skillMarkdown"]
-	if !ok {
-		return nil, errors.New("missing 'skillMarkdown' in input data")
+	content, err := extractSkillMarkdown(skillData)
+	if err != nil {
+		return nil, err
 	}
 
-	content := mdVal.GetStringValue()
-	if content == "" {
-		return nil, errors.New("'skillMarkdown' is empty")
-	}
+	return skillToRecord(content, []byte(content), agentSkillsMediaType, nil, opts...)
+}
 
+func skillToRecord(content string, artifactPayload []byte, artifactMediaType string, archiveEntries []archiveEntry, opts ...TranslatorOption) (*structpb.Struct, error) {
 	parsed, err := parseSkillMarkdownContent(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse SKILL.md content: %w", err)
@@ -167,7 +171,12 @@ func SkillMarkdownToRecord(skillData *structpb.Struct, opts ...TranslatorOption)
 	authors := authorsToValues(resolveRecordAuthors(sourceAuthors, options.authors))
 	manifestFields := buildManifestFields(parsed, recordVersion)
 	moduleDataFields := buildModuleDataFields(manifestFields)
-	artifactStruct := buildArtifactDescriptor([]byte(content), agentSkillsMediaType)
+
+	if len(archiveEntries) > 0 {
+		moduleDataFields["artifacts"] = buildArtifactsListValue(archiveEntries)
+	}
+
+	artifactStruct := buildArtifactDescriptor(artifactPayload, artifactMediaType)
 	agentSkillsModule := buildAgentSkillsModule(moduleDataFields, artifactStruct)
 
 	targetVersion := DefaultSchemaVersion
