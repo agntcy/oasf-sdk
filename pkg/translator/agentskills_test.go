@@ -180,10 +180,12 @@ func assertSkillRecord(t *testing.T, record *structpb.Struct) {
 func assertSkillModule(t *testing.T, record *structpb.Struct) {
 	t.Helper()
 
-	found, moduleData := findModule(record, AgentSkillsModuleName)
-	if !found || moduleData == nil {
+	found, module := findAgentSkillsModule(record)
+	if !found || module == nil {
 		t.Fatalf("Expected agentskills module %q in record", AgentSkillsModuleName)
 	}
+
+	moduleData := module.GetFields()["data"].GetStructValue()
 
 	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
 	if manifest == nil {
@@ -233,7 +235,8 @@ func TestSkillMarkdownToRecordVersionFallback(t *testing.T) {
 		t.Errorf("Expected default version %q, got %q", defaultVersion, record.GetFields()["version"].GetStringValue())
 	}
 
-	_, moduleData := findModule(record, AgentSkillsModuleName)
+	_, module := findAgentSkillsModule(record)
+	moduleData := module.GetFields()["data"].GetStructValue()
 
 	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
 	if manifest.GetFields()["version"].GetStringValue() != defaultVersion {
@@ -327,7 +330,8 @@ metadata:
 		t.Errorf("Expected WithRecordVersion to take precedence, got %q", record.GetFields()["version"].GetStringValue())
 	}
 
-	_, moduleData := findModule(record, AgentSkillsModuleName)
+	_, module := findAgentSkillsModule(record)
+	moduleData := module.GetFields()["data"].GetStructValue()
 
 	manifest := moduleData.GetFields()["skill_manifest"].GetStructValue()
 	if manifest.GetFields()["version"].GetStringValue() != "9.9.9" {
@@ -431,8 +435,8 @@ func TestSkillMarkdownToRecordMissingWrapper(t *testing.T) {
 	}
 }
 
-// findModule is a test helper to locate a named module in a record's modules list.
-func findModule(record *structpb.Struct, name string) (bool, *structpb.Struct) {
+// findAgentSkillsModule is a test helper to locate the agentskills module in a record.
+func findAgentSkillsModule(record *structpb.Struct) (bool, *structpb.Struct) {
 	modulesVal, ok := record.GetFields()["modules"]
 	if !ok {
 		return false, nil
@@ -444,8 +448,8 @@ func findModule(record *structpb.Struct, name string) (bool, *structpb.Struct) {
 			continue
 		}
 
-		if mod.GetFields()["name"].GetStringValue() == name {
-			return true, mod.GetFields()["data"].GetStructValue()
+		if mod.GetFields()["name"].GetStringValue() == AgentSkillsModuleName {
+			return true, mod
 		}
 	}
 
