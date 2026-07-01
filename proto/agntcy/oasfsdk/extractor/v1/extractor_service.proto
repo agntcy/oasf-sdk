@@ -1,0 +1,121 @@
+// Copyright AGNTCY Contributors (https://github.com/agntcy)
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package agntcy.oasfsdk.extractor.v1;
+
+// VersionScope selects which OASF schema versions a query considers.
+enum VersionScope {
+  // VERSION_SCOPE_UNSPECIFIED is treated as VERSION_SCOPE_ALL.
+  VERSION_SCOPE_UNSPECIFIED = 0;
+
+  // VERSION_SCOPE_ALL considers all available OASF schema versions.
+  VERSION_SCOPE_ALL = 1;
+
+  // VERSION_SCOPE_LATEST considers only the latest OASF schema version.
+  VERSION_SCOPE_LATEST = 2;
+}
+
+// ClassType identifies the kind of OASF taxonomy class (skill, domain, or module).
+enum ClassType {
+  // CLASS_TYPE_UNSPECIFIED is the default zero value; callers should not rely on it.
+  CLASS_TYPE_UNSPECIFIED = 0;
+
+  // CLASS_TYPE_SKILL identifies a skill taxonomy class.
+  CLASS_TYPE_SKILL = 1;
+
+  // CLASS_TYPE_DOMAIN identifies a domain taxonomy class.
+  CLASS_TYPE_DOMAIN = 2;
+
+  // CLASS_TYPE_MODULE identifies a module taxonomy class.
+  CLASS_TYPE_MODULE = 3;
+}
+
+// ExtractRequest carries the input text and filtering options for extraction.
+message ExtractRequest {
+  // The free-form text to extract skills, domains, modules, and keywords from.
+  string text = 1;
+
+  // Selects which OASF schema versions to consider during extraction.
+  // Ignored when versions is non-empty.
+  VersionScope scope = 2;
+
+  // Explicit schema version pins. When non-empty, overrides scope.
+  repeated string versions = 3;
+
+  // Maximum taxonomy depth (tier) to return. 0 defaults to 1.
+  uint32 tiers = 4;
+
+  // Minimum relevance score threshold. 0 uses the service default.
+  double min_score = 5;
+
+  // Minimum number of results to return. 0 defaults to 1.
+  uint32 min_results = 6;
+}
+
+// ScoredClass represents a single taxonomy class (skill, domain, or module)
+// matched by the extractor, together with its relevance scores.
+message ScoredClass {
+  // Numeric identifier of the taxonomy class.
+  uint64 id = 1;
+
+  // Machine-readable name (slug) of the taxonomy class.
+  string name = 2;
+
+  // Human-readable short label of the taxonomy class.
+  string caption = 3;
+
+  // Full description of the taxonomy class.
+  string description = 4;
+
+  // Category kind: the type of taxonomy class (skill, domain, or module).
+  ClassType kind = 5;
+
+  // OASF schema versions in which this class appears.
+  repeated string versions = 6;
+
+  // Combined relevance score (higher is better).
+  double score = 7;
+
+  // Semantic (embedding-based) component of the relevance score.
+  double semantic = 8;
+
+  // Lexical (keyword-based) component of the relevance score.
+  double lexical = 9;
+
+  // Taxonomy depth tier of this class (1 = top-level).
+  uint32 tier = 10;
+}
+
+// Keyword represents a significant term extracted from the input text.
+message Keyword {
+  // The extracted keyword text.
+  string text = 1;
+
+  // Relevance score of the keyword (higher is better).
+  double score = 2;
+}
+
+// ExtractResponse contains the skills, domains, modules, and keywords
+// identified in the submitted text.
+message ExtractResponse {
+  // Matched skill taxonomy classes, ordered by descending score.
+  repeated ScoredClass skills = 1;
+
+  // Matched domain taxonomy classes, ordered by descending score.
+  repeated ScoredClass domains = 2;
+
+  // Matched module taxonomy classes, ordered by descending score.
+  repeated ScoredClass modules = 3;
+
+  // Keywords extracted from the input text, ordered by descending score.
+  repeated Keyword keywords = 4;
+}
+
+// ExtractorService provides methods to extract OASF taxonomy classes and
+// keywords from free-form text.
+service ExtractorService {
+  // Extract identifies skills, domains, modules, and keywords in the given text.
+  rpc Extract(ExtractRequest) returns (ExtractResponse);
+}
