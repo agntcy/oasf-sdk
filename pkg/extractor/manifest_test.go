@@ -40,30 +40,109 @@ func TestManifestRoundTrip(t *testing.T) {
 func TestAssetPaths(t *testing.T) {
 	m, l, mf := assetPaths("/root")
 	if m != filepath.Join("/root", "models") ||
-		l != filepath.Join("/root", "label_vectors.bin") ||
+		l != filepath.Join("/root", "index.bin") ||
 		mf != filepath.Join("/root", "manifest.json") {
 		t.Fatalf("unexpected paths: %s %s %s", m, l, mf)
 	}
 }
 
-func TestLabelVectorsRoundTrip(t *testing.T) {
+func TestIndexRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	_, labels, _ := assetPaths(dir)
+	_, indexPath, _ := assetPaths(dir)
 
-	skills := [][]float32{{0.1, 0.2}, {0.3, 0.4}}
-	domains := [][]float32{{0.5, 0.6}}
-
-	if err := writeLabelVectors(labels, skills, domains); err != nil {
-		t.Fatalf("writeLabelVectors: %v", err)
+	skills := []persistedClass{
+		{Class: Class{ID: 101, Name: "a/b"}, Versions: []string{"1.0.0"}, Vec: []float32{0.1, 0.2}},
+	}
+	domains := []persistedClass{
+		{Class: Class{ID: 201, Name: "c/d"}, Versions: []string{"0.8.0", "1.0.0"}, Vec: []float32{0.5}},
 	}
 
-	gotSkills, gotDomains, err := readLabelVectors(labels)
+	if err := writeIndex(indexPath, skills, domains); err != nil {
+		t.Fatalf("writeIndex: %v", err)
+	}
+
+	gotSkills, gotDomains, err := readIndex(indexPath)
 	if err != nil {
-		t.Fatalf("readLabelVectors: %v", err)
+		t.Fatalf("readIndex: %v", err)
 	}
 
-	if len(gotSkills) != 2 || gotSkills[1][1] != 0.4 || len(gotDomains) != 1 || gotDomains[0][0] != 0.5 {
-		t.Fatalf("round trip mismatch: skills=%v domains=%v", gotSkills, gotDomains)
+	if len(gotSkills) != 1 || gotSkills[0].ID != 101 || gotSkills[0].Vec[1] != 0.2 ||
+		len(gotDomains) != 1 || gotDomains[0].Vec[0] != 0.5 || len(gotDomains[0].Versions) != 2 {
+		t.Fatalf("round trip mismatch: skills=%+v domains=%+v", gotSkills, gotDomains)
+	}
+}
+
+func TestManifestCurrent(t *testing.T) {
+	dir := t.TempDir()
+	_, indexPath, mf := assetPaths(dir)
+
+	o := options{modelName: "all-MiniLM-L6-v2", oasfURL: "http://oasf", assetDir: dir}
+	versions := []string{"1.0.0"}
+	sd, dd := "skill-digest", "domain-digest"
+
+	// Nothing on disk yet.
+	if manifestCurrent(mf, indexPath, o, versions, sd, dd, 2, 1) {
+		t.Fatal("expected not current when assets are absent")
+	}
+
+	if err := writeManifest(mf, manifest{
+		FormatVersion:    manifestFormatVersion,
+		ModelName:        o.modelName,
+		ModelID:          "cybertron:sentence-transformers/all-MiniLM-L6-v2",
+		OASFURL:          o.oasfURL,
+		TaxonomyVersions: versions,
+		SkillDigest:      sd,
+		DomainDigest:     dd,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := writeIndex(indexPath,
+		[]persistedClass{{Class: Class{ID: 1}}, {Class: Class{ID: 2}}},
+		[]persistedClass{{Class: Class{ID: 3}}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if !manifestCurrent(mf, indexPath, o, versions, sd, dd, 2, 1) {
+		t.Fatal("expected current for a matching configuration")
+	}
+
+	// Each mismatch must invalidate the cache.
+	if manifestCurrent(mf, indexPath, o, versions, "CHANGED", dd, 2, 1) {
+		t.Error("skill digest change should invalidate")
+	}
+
+	if manifestCurrent(mf, indexPath, o, []string{"1.0.0", "1.1.0"}, sd, dd, 2, 1) {
+		t.Error("taxonomy version change should invalidate")
+	}
+
+	if manifestCurrent(mf, indexPath, o, versions, sd, dd, 3, 1) {
+		t.Error("skill count change should invalidate")
+	}
+
+	other := o
+	other.modelName = "other-model"
+
+	if manifestCurrent(mf, indexPath, other, versions, sd, dd, 2, 1) {
+		t.Error("model change should invalidate")
+	}
+}
+
+func TestNewErrorsOnOASFURLMismatch(t *testing.T) {
+	dir := t.TempDir()
+	_, _, mf := assetPaths(dir)
+
+	if err := writeManifest(mf, manifest{
+		FormatVersion: manifestFormatVersion,
+		OASFURL:       "http://provisioned",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// New reads the manifest and rejects a different OASF URL before touching the
+	// index or the model, so this needs no assets or network.
+	if _, err := New(WithOASFURL("http://different"), WithAssetDir(dir)); err == nil {
+		t.Fatal("expected error when the requested OASF URL differs from the provisioned one")
 	}
 }
 

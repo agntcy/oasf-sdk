@@ -38,7 +38,7 @@ type manifest struct {
 // the asset directory.
 func assetPaths(dir string) (string, string, string) {
 	return filepath.Join(dir, "models"),
-		filepath.Join(dir, "label_vectors.bin"),
+		filepath.Join(dir, "index.bin"),
 		filepath.Join(dir, "manifest.json")
 }
 
@@ -126,42 +126,52 @@ func catalogDigest(texts []string) string {
 	return hex.EncodeToString(h.Sum(nil)[:16])
 }
 
-// labelVectorFile is the gob-encoded on-disk form of the cached label vectors.
-type labelVectorFile struct {
-	Skills  [][]float32
-	Domains [][]float32
+// persistedClass is one merged catalog class with its versions and embedding
+// vector, as written to disk by Provision so New can rebuild the index without
+// contacting the OASF endpoint.
+type persistedClass struct {
+	Class
+
+	Versions []string
+	Vec      []float32
 }
 
-// writeLabelVectors gob-encodes the skill and domain label vectors to path.
-func writeLabelVectors(path string, skills, domains [][]float32) error {
+// diskIndex is the gob-encoded on-disk index: the merged skill and domain
+// classes (with versions and vectors) for the provisioned taxonomy.
+type diskIndex struct {
+	Skills  []persistedClass
+	Domains []persistedClass
+}
+
+// writeIndex gob-encodes the skill and domain class indexes to path.
+func writeIndex(path string, skills, domains []persistedClass) error {
 	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(labelVectorFile{Skills: skills, Domains: domains}); err != nil {
-		return fmt.Errorf("encode label vectors: %w", err)
+	if err := gob.NewEncoder(&buf).Encode(diskIndex{Skills: skills, Domains: domains}); err != nil {
+		return fmt.Errorf("encode index: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), permAssetDir); err != nil {
-		return fmt.Errorf("create label vectors dir: %w", err)
+		return fmt.Errorf("create index dir: %w", err)
 	}
 
 	if err := os.WriteFile(path, buf.Bytes(), permAssetFile); err != nil {
-		return fmt.Errorf("write label vectors: %w", err)
+		return fmt.Errorf("write index: %w", err)
 	}
 
 	return nil
 }
 
-// readLabelVectors decodes the gob-encoded label vectors written by
-// writeLabelVectors.
-func readLabelVectors(path string) ([][]float32, [][]float32, error) {
+// readIndex decodes the gob-encoded class indexes written by writeIndex.
+func readIndex(path string) ([]persistedClass, []persistedClass, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read label vectors: %w", err)
+		return nil, nil, fmt.Errorf("failed to read index: %w", err)
 	}
 
-	var f labelVectorFile
-	if err := gob.NewDecoder(bytes.NewReader(b)).Decode(&f); err != nil {
-		return nil, nil, fmt.Errorf("decode label vectors: %w", err)
+	var idx diskIndex
+	if err := gob.NewDecoder(bytes.NewReader(b)).Decode(&idx); err != nil {
+		return nil, nil, fmt.Errorf("decode index: %w", err)
 	}
 
-	return f.Skills, f.Domains, nil
+	return idx.Skills, idx.Domains, nil
 }

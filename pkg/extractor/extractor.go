@@ -247,7 +247,7 @@ func New(opts ...Option) (*Extractor, error) {
 		return nil, errors.New("OASF URL is required (use WithOASFURL)")
 	}
 
-	modelDir, labelsFile, manifestFile := assetPaths(o.assetDir)
+	modelDir, indexPath, manifestFile := assetPaths(o.assetDir)
 
 	m, err := readManifest(manifestFile)
 	if err != nil {
@@ -258,9 +258,15 @@ func New(opts ...Option) (*Extractor, error) {
 		return nil, fmt.Errorf("asset format v%d != expected v%d; re-run Provision", m.FormatVersion, manifestFormatVersion)
 	}
 
-	skillVecs, domainVecs, err := readLabelVectors(labelsFile)
+	if m.OASFURL != o.oasfURL {
+		return nil, fmt.Errorf("assets were provisioned for OASF endpoint %q, not %q; re-run Provision (or pass the original URL)", m.OASFURL, o.oasfURL)
+	}
+
+	// Load the merged classes + vectors straight from disk — no network. All the
+	// taxonomy fetching and embedding happened once, in Provision.
+	skills, domains, err := readIndex(indexPath)
 	if err != nil {
-		return nil, fmt.Errorf("read label vectors: %w", err)
+		return nil, fmt.Errorf("read index: %w", err)
 	}
 
 	r := newExtractor(o)
@@ -280,19 +286,16 @@ func New(opts ...Option) (*Extractor, error) {
 		r.embedder = emb
 	}
 
-	sc, err := schema.New(o.oasfURL, schema.WithCache(true))
-	if err != nil {
-		return nil, fmt.Errorf("schema client: %w", err)
+	// Rebuild the index from disk and verify it is consistent with the manifest
+	// (guards against a truncated or mismatched index file).
+	r.skills = indexFromDisk(skills)
+	if err := checkLabelDigest(KindSkill, labelTexts(r.skills), m); err != nil {
+		return nil, err
 	}
 
-	ctx := context.Background()
-
-	if r.skills, err = indexFromCache(ctx, sc, m.TaxonomyVersions, KindSkill, skillVecs, m); err != nil {
-		return nil, fmt.Errorf("index skills: %w", err)
-	}
-
-	if r.domains, err = indexFromCache(ctx, sc, m.TaxonomyVersions, KindDomain, domainVecs, m); err != nil {
-		return nil, fmt.Errorf("index domains: %w", err)
+	r.domains = indexFromDisk(domains)
+	if err := checkLabelDigest(KindDomain, labelTexts(r.domains), m); err != nil {
+		return nil, err
 	}
 
 	return r, nil
@@ -311,17 +314,7 @@ func Provision(ctx context.Context, opts ...Option) error {
 		return errors.New("OASF URL is required (use WithOASFURL)")
 	}
 
-	modelDir, labelsFile, manifestFile := assetPaths(o.assetDir)
-
-	emb := o.embedder
-	if emb == nil {
-		te, err := newTransformerEmbedder(modelDir, o.modelName)
-		if err != nil {
-			return fmt.Errorf("provision model: %w", err)
-		}
-
-		emb = te
-	}
+	modelDir, indexPath, manifestFile := assetPaths(o.assetDir)
 
 	sc, err := schema.New(o.oasfURL, schema.WithCache(true))
 	if err != nil {
@@ -333,17 +326,53 @@ func Provision(ctx context.Context, opts ...Option) error {
 		return fmt.Errorf("list versions: %w", err)
 	}
 
-	skillVecs, skillDigest, err := embedKind(ctx, sc, emb, versions, KindSkill)
+	// Cheap step (no model load): fetch+merge the taxonomy and derive the label
+	// texts and their digests.
+	skills, err := mergeFetchedClasses(ctx, sc, versions, KindSkill)
 	if err != nil {
 		return err
 	}
 
-	domainVecs, domainDigest, err := embedKind(ctx, sc, emb, versions, KindDomain)
+	domains, err := mergeFetchedClasses(ctx, sc, versions, KindDomain)
 	if err != nil {
 		return err
 	}
 
-	if err := writeLabelVectors(labelsFile, skillVecs, domainVecs); err != nil {
+	skillTexts, domainTexts := labelTexts(skills), labelTexts(domains)
+	skillDigest, domainDigest := catalogDigest(skillTexts), catalogDigest(domainTexts)
+
+	// Fast-path: if the on-disk assets already match this exact configuration and
+	// taxonomy content, there is nothing to do — skip loading the model and
+	// re-embedding the catalog. Only applies to the default on-disk model; a
+	// custom WithEmbedder always re-embeds (its vectors are not cached against a
+	// known model identity).
+	if o.embedder == nil &&
+		manifestCurrent(manifestFile, indexPath, o, versions, skillDigest, domainDigest, len(skills), len(domains)) {
+		return nil
+	}
+
+	// Miss: load the model (expensive) and embed the catalog once.
+	emb := o.embedder
+	if emb == nil {
+		te, err := newTransformerEmbedder(modelDir, o.modelName)
+		if err != nil {
+			return fmt.Errorf("provision model: %w", err)
+		}
+
+		emb = te
+	}
+
+	skillVecs, err := emb.Embed(ctx, skillTexts, RoleDocument)
+	if err != nil {
+		return fmt.Errorf("embed skills: %w", err)
+	}
+
+	domainVecs, err := emb.Embed(ctx, domainTexts, RoleDocument)
+	if err != nil {
+		return fmt.Errorf("embed domains: %w", err)
+	}
+
+	if err := writeIndex(indexPath, persist(skills, skillVecs), persist(domains, domainVecs)); err != nil {
 		return err
 	}
 
@@ -356,6 +385,39 @@ func Provision(ctx context.Context, opts ...Option) error {
 		SkillDigest:      skillDigest,
 		DomainDigest:     domainDigest,
 	})
+}
+
+// manifestCurrent reports whether the assets at manifestFile/indexPath already
+// match the requested configuration and freshly-computed taxonomy digests, so
+// Provision can skip the model load and the catalog embed. Any read error or
+// mismatch means "not current".
+func manifestCurrent(
+	manifestFile, indexPath string,
+	o options,
+	versions []string,
+	skillDigest, domainDigest string,
+	nSkills, nDomains int,
+) bool {
+	m, err := readManifest(manifestFile)
+	if err != nil {
+		return false
+	}
+
+	if m.FormatVersion != manifestFormatVersion ||
+		m.ModelName != o.modelName ||
+		m.OASFURL != o.oasfURL ||
+		m.SkillDigest != skillDigest ||
+		m.DomainDigest != domainDigest ||
+		!slices.Equal(m.TaxonomyVersions, versions) {
+		return false
+	}
+
+	skills, domains, err := readIndex(indexPath)
+	if err != nil || len(skills) != nSkills || len(domains) != nDomains {
+		return false
+	}
+
+	return true
 }
 
 // mergeFetchedClasses fetches the given kind for each version and merges classes
@@ -409,59 +471,38 @@ func attachLexical(list []indexedClass) {
 	}
 }
 
-// embedKind fetches+merges the given kind across versions, embeds the merged
-// label texts once, and returns the vectors plus the catalog digest. Used by
-// Provision.
-func embedKind(ctx context.Context, sc *schema.Schema, emb Embedder, versions []string, kind Kind) ([][]float32, string, error) {
-	list, err := mergeFetchedClasses(ctx, sc, versions, kind)
-	if err != nil {
-		return nil, "", err
-	}
-
+// labelTexts builds the ordered label texts for a set of indexed classes.
+func labelTexts(list []indexedClass) []string {
 	texts := make([]string, len(list))
 	for i := range list {
 		texts[i] = labelText(list[i].Class)
 	}
 
-	vecs, err := emb.Embed(ctx, texts, RoleDocument)
-	if err != nil {
-		return nil, "", fmt.Errorf("embed catalog: %w", err)
-	}
-
-	return vecs, catalogDigest(texts), nil
+	return texts
 }
 
-// indexFromCache fetches+merges the given kind across versions and attaches the
-// cached vectors (in the same deterministic order Provision embedded them),
-// building the lexical fields. It validates the count and content digest of the
-// fetched classes against the stored manifest so that a changed taxonomy is
-// detected immediately rather than silently corrupting ranking. Used by New.
-func indexFromCache(ctx context.Context, sc *schema.Schema, versions []string, kind Kind, vecs [][]float32, m manifest) ([]indexedClass, error) {
-	list, err := mergeFetchedClasses(ctx, sc, versions, kind)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(vecs) != len(list) {
-		return nil, fmt.Errorf("cached %d vectors for %d %s classes; re-run Provision", len(vecs), len(list), kind)
-	}
-
-	texts := make([]string, len(list))
+// persist pairs each merged class with its embedding vector for on-disk storage.
+// list and vecs are parallel and in the same order.
+func persist(list []indexedClass, vecs [][]float32) []persistedClass {
+	out := make([]persistedClass, len(list))
 	for i := range list {
-		texts[i] = labelText(list[i].Class)
+		out[i] = persistedClass{Class: list[i].Class, Versions: list[i].versions, Vec: vecs[i]}
 	}
 
-	if err := checkLabelDigest(kind, texts, m); err != nil {
-		return nil, err
-	}
+	return out
+}
 
-	for i := range list {
-		list[i].vec = vecs[i]
+// indexFromDisk rebuilds the in-memory indexed classes from the persisted form
+// loaded by readIndex, attaching the lexical fields. No network access.
+func indexFromDisk(pcs []persistedClass) []indexedClass {
+	list := make([]indexedClass, len(pcs))
+	for i := range pcs {
+		list[i] = indexedClass{Class: pcs[i].Class, versions: pcs[i].Versions, vec: pcs[i].Vec}
 	}
 
 	attachLexical(list)
 
-	return list, nil
+	return list
 }
 
 // newFromClasses builds an Extractor directly from in-memory taxonomy fixtures,
