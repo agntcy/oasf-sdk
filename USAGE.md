@@ -961,3 +961,78 @@ validateRecord()
     process.exit(1);
   });
 ```
+
+# Extractor
+
+Maps free-form text (a search query or a whole `SKILL.md`) onto the OASF
+taxonomy — ranked **skills** and **domains**, literally-mentioned **modules**
+(`mcp`, `a2a`, `agentskills`), and a few free-text **keywords**. Semantic
+ranking uses `all-MiniLM-L6-v2` run in-process in pure Go (cybertron/spago) —
+no LLM, no external inference service. The taxonomy is fetched from a configured
+OASF endpoint (via `pkg/schema`); neither the taxonomy nor the model is embedded
+in the binary.
+
+Because the model is held in memory, `pkg/extractor` is meant to run inside a
+**long-lived process** that keeps the engine warm and answers many requests — a
+local daemon or a Kubernetes deployment — not re-initialized per call. The gRPC
+service for that process is defined in `proto/agntcy/oasfsdk/extractor/v1` and
+implemented in a follow-up; this page covers the library that powers it.
+
+## The three calls
+
+```go
+import "github.com/agntcy/oasf-sdk/pkg/extractor"
+
+// 1. Provision once — downloads+converts the model from HuggingFace and computes
+//    label vectors from the taxonomy fetched at oasfURL, writing both to the
+//    asset dir (default ~/.agntcy/oasf-sdk/extractor/). Idempotent; re-runs only
+//    when the model or taxonomy changed.
+err := extractor.Provision(ctx, extractor.WithOASFURL(oasfURL))
+
+// 2. New once, at process start — loads the warm engine from the asset dir.
+//    WithOASFURL is required; New errors if assets have not been provisioned.
+e, err := extractor.New(extractor.WithOASFURL(oasfURL))
+
+// 3. Extract per request — pure and fast; safe for concurrent use.
+res, err := e.Extract(ctx, "an agent that reviews code for bugs and speaks mcp")
+// res.Skills / res.Domains (ranked, tiered) · res.Modules · res.Keywords
+```
+
+Key options: `WithOASFURL` (**required**), `WithModelName` (default
+`all-MiniLM-L6-v2`; any cybertron-convertible BERT model), `WithAssetDir`
+(default `~/.agntcy/oasf-sdk/extractor/`). Query scope: `All()` (default — every
+version the endpoint serves; use for search) or `Latest()` / `Versions(...)`
+(use when enriching a record on import). `Tiers(n)` returns the closest `n`
+score groups.
+
+## Running as a local daemon
+
+1. **Provision once** on the machine (e.g. a `dirctl init` step, or on
+   first start): downloads the model (~90 MB) and builds the label vectors under
+   the asset dir. Later starts reuse them (~1 s), gated by a manifest that
+   re-provisions only when the model or taxonomy changed.
+2. **Start the daemon**: call `extractor.New(...)` once at boot to load the warm
+   engine, then serve `Extract`. Clients connect to the daemon (over the gRPC
+   service, wired in a follow-up) instead of importing this package, so they
+   never compile in the model.
+
+Load the engine once and reuse it — never construct a new `*Extractor` per query.
+
+## Kubernetes deployment
+
+Run the same engine as a stateless **Deployment** behind a `ClusterIP` Service;
+it holds no state and can scale to N replicas.
+
+- **Model**: bake it into the container image at build time (run the
+  download + convert during the image build so the asset dir ships inside the
+  image). This avoids a runtime HuggingFace dependency and gives fast,
+  reproducible pod starts.
+- **Taxonomy**: fetched at pod startup from the in-cluster / configured OASF
+  endpoint (`WithOASFURL`), so it stays current without rebuilding the image.
+- **Readiness**: gate the pod's readiness probe on the engine having loaded
+  (label vectors warm) so traffic arrives only after `New` completes.
+
+The library is written so one binary serves both the local daemon and the
+in-cluster Deployment; only the provisioning source (local download vs.
+image-baked) and the process supervisor (a spawner vs. Kubernetes) differ. The
+gRPC service and its Deployment/Helm manifests land in a follow-up.
