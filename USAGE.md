@@ -966,34 +966,41 @@ validateRecord()
 
 Maps free-form text (a search query or a whole `SKILL.md`) onto the OASF
 taxonomy — ranked **skills** and **domains**, literally-mentioned **modules**
-(`mcp`, `a2a`, `agentskills`), and a few free-text **keywords**. Semantic
-ranking uses `all-MiniLM-L6-v2` run in-process in pure Go (cybertron/spago) —
-no LLM, no external inference service. The taxonomy is fetched from a configured
-OASF endpoint (via `pkg/schema`); neither the taxonomy nor the model is embedded
-in the binary.
+(`mcp`, `a2a`, `agentskills`), and a few free-text **keywords**. Semantic ranking
+uses `all-MiniLM-L6-v2` run in-process in pure Go (cybertron/spago) — no LLM, no
+external inference service. The taxonomy is fetched from a configured OASF
+endpoint (via `pkg/schema`); neither the taxonomy nor the model is embedded in
+the binary.
 
-Because the model is held in memory, `pkg/extractor` is meant to run inside a
-**long-lived process** that keeps the engine warm and answers many requests — a
-local daemon or a Kubernetes deployment — not re-initialized per call. The gRPC
-service for that process is defined in `proto/agntcy/oasfsdk/extractor/v1` and
-implemented in a follow-up; this page covers the library that powers it.
+There are two ways to use it:
 
-## The three calls
+- **In-process (`pkg/extractor`)** — for local tools, `dirctl`, and the importer.
+  Provision assets once to a local directory, then load and query in the same
+  process. The model is not compiled into your binary (it lives on disk), and a
+  warm load from disk is fast (~150 ms), so a one-shot CLI or a batch import runs
+  fine without any separate service.
+- **Over gRPC (the oasf-sdk server)** — for the hosted case, e.g. a Directory
+  node's AI Catalog UI on Kubernetes. Run the server; it provisions its assets at
+  startup and serves `ExtractorService.Extract`. Clients call it remotely and
+  never compile in the model.
+
+## In-process (`pkg/extractor`)
 
 ```go
 import "github.com/agntcy/oasf-sdk/pkg/extractor"
 
 // 1. Provision once — downloads+converts the model from HuggingFace and computes
 //    label vectors from the taxonomy fetched at oasfURL, writing both to the
-//    asset dir (default ~/.agntcy/oasf-sdk/extractor/). Idempotent; re-runs only
-//    when the model or taxonomy changed.
+//    asset dir (default ~/.agntcy/oasf-sdk/extractor/). Idempotent; re-embeds
+//    only when the model or taxonomy changed.
 err := extractor.Provision(ctx, extractor.WithOASFURL(oasfURL))
 
-// 2. New once, at process start — loads the warm engine from the asset dir.
-//    WithOASFURL is required; New errors if assets have not been provisioned.
+// 2. New — loads the warm engine from the asset dir. No network I/O. Reuse it
+//    (safe for concurrent use). WithOASFURL is required; New errors if the
+//    assets have not been provisioned or the URL differs from the provisioned one.
 e, err := extractor.New(extractor.WithOASFURL(oasfURL))
 
-// 3. Extract per request — pure and fast; safe for concurrent use.
+// 3. Extract — pure and fast.
 res, err := e.Extract(ctx, "an agent that reviews code for bugs and speaks mcp")
 // res.Skills / res.Domains (ranked, tiered) · res.Modules · res.Keywords
 ```
@@ -1005,34 +1012,91 @@ version the endpoint serves; use for search) or `Latest()` / `Versions(...)`
 (use when enriching a record on import). `Tiers(n)` returns the closest `n`
 score groups.
 
-## Running as a local daemon
+`New` loads everything from the asset dir and makes no network calls, so it does
+not notice an OASF instance that changed in place. Re-run `Provision`
+(idempotent) to refresh after the endpoint's taxonomy changes.
 
-1. **Provision once** on the machine (e.g. a `dirctl init` step, or on
-   first start): downloads the model (~90 MB) and builds the label vectors under
-   the asset dir. Later starts reuse them (~1 s), gated by a manifest that
-   re-provisions only when the model or taxonomy changed.
-2. **Start the daemon**: call `extractor.New(...)` once at boot to load the warm
-   engine, then serve `Extract`. Clients connect to the daemon (over the gRPC
-   service, wired in a follow-up) instead of importing this package, so they
-   never compile in the model.
+## Hosted (oasf-sdk server)
 
-Load the engine once and reuse it — never construct a new `*Extractor` per query.
+The server registers the extractor controller whenever an OASF URL is
+configured, provisions its assets at startup, then serves the gRPC
+`ExtractorService`:
 
-## Kubernetes deployment
+```bash
+OASF_SDK_EXTRACTOR_OASF_URL=https://schema.oasf.outshift.com \
+go run ./server/cmd            # or the published container image
+```
 
-Run the same engine as a stateless **Deployment** behind a `ClusterIP` Service;
-it holds no state and can scale to N replicas.
+- `OASF_SDK_EXTRACTOR_OASF_URL` — OASF schema endpoint; setting it enables the
+  extractor controller (its on/off switch).
+- `OASF_SDK_EXTRACTOR_MODEL_NAME` — embedding model (optional; default
+  `all-MiniLM-L6-v2`, any cybertron-convertible BERT model).
+- `OASF_SDK_EXTRACTOR_ASSET_DIR` — asset directory (optional; defaults as above).
+- Optional scoring overrides (each falls back to the library default): 
+  `OASF_SDK_EXTRACTOR_SKILL_SEMANTIC_WEIGHT`, `..._SKILL_LEXICAL_WEIGHT`,
+  `..._DOMAIN_SEMANTIC_WEIGHT`, `..._DOMAIN_LEXICAL_WEIGHT`, `..._TIERS`,
+  `..._TIER_RATIO`, `..._MIN_SCORE`.
 
-- **Model**: bake it into the container image at build time (run the
-  download + convert during the image build so the asset dir ships inside the
-  image). This avoids a runtime HuggingFace dependency and gives fast,
-  reproducible pod starts.
-- **Taxonomy**: fetched at pod startup from the in-cluster / configured OASF
-  endpoint (`WithOASFURL`), so it stays current without rebuilding the image.
-- **Readiness**: gate the pod's readiness probe on the engine having loaded
-  (label vectors warm) so traffic arrives only after `New` completes.
+On startup it runs `Provision` (idempotent) and loads the engine, so it is
+self-sufficient — no separate provisioning step. For Kubernetes, bake the model
+into the image at build time to avoid a runtime HuggingFace download and get
+fast, reproducible pod starts, and gate the readiness probe on startup
+completing. The service is stateless and can run multiple replicas behind a
+`ClusterIP` Service.
 
-The library is written so one binary serves both the local daemon and the
-in-cluster Deployment; only the provisioning source (local download vs.
-image-baked) and the process supervisor (a spawner vs. Kubernetes) differ. The
-gRPC service and its Deployment/Helm manifests land in a follow-up.
+### Calling it with grpcurl
+
+The server registers gRPC reflection, so [`grpcurl`](https://github.com/fullstorydev/grpcurl)
+needs no proto files. Assuming it listens on `0.0.0.0:31234`:
+
+```bash
+# discover the service and its request shape
+grpcurl -plaintext 0.0.0.0:31234 list
+grpcurl -plaintext 0.0.0.0:31234 describe agntcy.oasfsdk.extractor.v1.ExtractorService
+
+# extract from a free-text query (scope + tiers optional)
+grpcurl -plaintext -d '{
+  "text": "an agent that reviews code for bugs and speaks mcp",
+  "scope": "VERSION_SCOPE_ALL",
+  "tiers": 1
+}' 0.0.0.0:31234 agntcy.oasfsdk.extractor.v1.ExtractorService/Extract
+
+# scope to the newest version (as when enriching a record on import)
+grpcurl -plaintext -d '{"text": "summarize legal documents", "scope": "VERSION_SCOPE_LATEST"}' \
+  0.0.0.0:31234 agntcy.oasfsdk.extractor.v1.ExtractorService/Extract
+```
+
+Request fields: `text`, `scope` (`VERSION_SCOPE_ALL` | `VERSION_SCOPE_LATEST`),
+`versions` (explicit pins, overrides `scope`), `tiers`, `minScore`,
+`minResults`. The response contains `skills`, `domains`, `modules` (each a
+`ScoredClass` with `kind`, `versions`, `score`, `tier`, …) and `keywords`.
+
+### Running the container against a local OASF (dev)
+
+Running the server image on a workstation — especially on a network that
+inspects or blocks outbound HTTPS — against a local (e.g. kind) OASF needs two
+knobs:
+
+- **Reuse host-provisioned assets** so the container does not fetch the model
+  from HuggingFace at runtime. Provision the asset dir on the host first (the
+  in-process `Provision` above populates `~/.agntcy/oasf-sdk/extractor`), then
+  mount it and set `OASF_SDK_EXTRACTOR_ASSET_DIR` to the mount. The container
+  then only fetches the taxonomy from the OASF endpoint (no HuggingFace call).
+- **Reach the host's OASF.** Containers reach host services via
+  `host.docker.internal`. If that OASF is behind an ingress that virtual-hosts
+  on `localhost`, use `localhost:8080` as the URL (so the `Host` header matches
+  the ingress) and map `localhost` to the host with `--add-host
+  localhost:host-gateway`.
+
+```bash
+docker run -p 31234:31234 \
+  --add-host localhost:host-gateway \
+  -e OASF_SDK_EXTRACTOR_OASF_URL=localhost:8080 \
+  -e OASF_SDK_EXTRACTOR_ASSET_DIR=/assets \
+  -v "$HOME/.agntcy/oasf-sdk/extractor:/assets" \
+  oasf-sdk:latest
+```
+
+Against the public endpoint none of this is needed (direct egress, public
+certificate, model downloaded at startup) — just set
+`OASF_SDK_EXTRACTOR_OASF_URL=https://schema.oasf.outshift.com`.
