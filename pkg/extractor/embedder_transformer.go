@@ -27,6 +27,8 @@ const (
 	documentPrefix = ""
 )
 
+// transformerDim is the default model's embedding width, used as the fallback
+// until newTransformerEmbedder probes the loaded model for its actual dimension.
 const transformerDim = 384
 
 // transformerMaxTokens is the chunking window in *word* tokens. The model's
@@ -61,7 +63,7 @@ func normalizeModelName(name string) string {
 // newTransformerEmbedder loads (downloading+converting if missing) the BERT
 // model from modelDir and returns a ready embedder. Pure Go; network access
 // happens only when the model is absent from modelDir.
-func newTransformerEmbedder(modelDir, name string) (*TransformerEmbedder, error) {
+func newTransformerEmbedder(ctx context.Context, modelDir, name string) (*TransformerEmbedder, error) {
 	full := normalizeModelName(name)
 
 	m, err := tasks.LoadModelForTextEncoding(&tasks.Config{
@@ -75,11 +77,20 @@ func newTransformerEmbedder(modelDir, name string) (*TransformerEmbedder, error)
 		return nil, fmt.Errorf("load model %q: %w", full, err)
 	}
 
-	return &TransformerEmbedder{
+	e := &TransformerEmbedder{
 		model:   m,
 		dim:     transformerDim,
 		modelID: "cybertron:" + full,
-	}, nil
+	}
+
+	// Derive the true embedding dimension from the model with a one-off probe, so
+	// Dim() is correct for non-default BERT models (e.g. 768-wide) as well. Falls
+	// back to transformerDim if the probe fails.
+	if vec, probeErr := e.encode(ctx, "dimension probe"); probeErr == nil && len(vec) > 0 {
+		e.dim = len(vec)
+	}
+
+	return e, nil
 }
 
 // Embed implements Embedder. Returns one L2-normalized vector per input text

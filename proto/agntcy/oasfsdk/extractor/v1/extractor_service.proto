@@ -44,7 +44,7 @@ message ExtractRequest {
   // Explicit schema version pins. When non-empty, overrides scope.
   repeated string versions = 3;
 
-  // Maximum taxonomy depth (tier) to return. 0 defaults to 1.
+  // Number of score tiers (score groups) to return per kind. 0 defaults to 1.
   uint32 tiers = 4;
 
   // Minimum relevance score threshold. 0 uses the service default.
@@ -84,7 +84,7 @@ message ScoredClass {
   // Lexical (keyword-based) component of the relevance score.
   double lexical = 9;
 
-  // Taxonomy depth tier of this class (1 = top-level).
+  // Score-tier group this class falls in (1 = closest score cluster).
   uint32 tier = 10;
 }
 

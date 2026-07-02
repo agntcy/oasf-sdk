@@ -13,7 +13,9 @@ const semanticPoolTopN = 3
 
 // poolScores reduces a label's per-chunk similarities to one score: the mean of
 // the semanticPoolTopN largest values (clamped to [1,len]). For a single chunk
-// it equals that chunk's similarity, so short queries are unaffected.
+// it equals that chunk's similarity, so short queries are unaffected. It sorts
+// sims in place; the caller passes throwaway per-label scratch, so no copy is
+// made.
 func poolScores(sims []float64) float64 {
 	if len(sims) == 0 {
 		return 0
@@ -21,13 +23,11 @@ func poolScores(sims []float64) float64 {
 
 	n := min(max(semanticPoolTopN, 1), len(sims))
 
-	cp := make([]float64, len(sims))
-	copy(cp, sims)
-	sort.Sort(sort.Reverse(sort.Float64Slice(cp)))
+	sort.Sort(sort.Reverse(sort.Float64Slice(sims)))
 
 	var sum float64
-	for i := range n {
-		sum += cp[i]
+	for _, v := range sims[:n] {
+		sum += v
 	}
 
 	return sum / float64(n)

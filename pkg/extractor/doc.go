@@ -35,10 +35,12 @@
 // Provision, which downloads and converts the embedding model from HuggingFace
 // and embeds taxonomy labels fetched from the configured OASF endpoint. Assets
 // are stored in a local directory (default ~/.agntcy/oasf-sdk/extractor/). The
-// OASF taxonomy is not embedded in the binary; it is always fetched from the
-// endpoint (available versions come from the server). New reads the provisioned
-// assets and fetches the taxonomy to attach cached vectors; it errors if
-// WithOASFURL is not provided or assets have not been provisioned.
+// OASF taxonomy is not embedded in the binary; Provision fetches it from the
+// configured endpoint (available versions come from the server). New then loads
+// the provisioned assets entirely from that local directory and performs no
+// network I/O; it errors if WithOASFURL is not provided, if the URL differs from
+// the one the assets were provisioned for, or if assets have not been
+// provisioned. Re-run Provision to pick up an OASF instance that changed.
 //
 // Typical usage:
 //

@@ -78,10 +78,16 @@ func TestManifestCurrent(t *testing.T) {
 
 	o := options{modelName: "all-MiniLM-L6-v2", oasfURL: "http://oasf", assetDir: dir}
 	versions := []string{"1.0.0"}
-	sd, dd := "skill-digest", "domain-digest"
+
+	skills := []persistedClass{
+		{Class: Class{ID: 1, Name: "a/b", Caption: "A"}},
+		{Class: Class{ID: 2, Name: "a/c", Caption: "C"}},
+	}
+	domains := []persistedClass{{Class: Class{ID: 3, Name: "d/e", Caption: "E"}}}
+	sd, dd := persistedDigest(skills), persistedDigest(domains)
 
 	// Nothing on disk yet.
-	if manifestCurrent(mf, indexPath, o, versions, sd, dd, 2, 1) {
+	if manifestCurrent(mf, indexPath, o, versions, sd, dd) {
 		t.Fatal("expected not current when assets are absent")
 	}
 
@@ -97,34 +103,40 @@ func TestManifestCurrent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := writeIndex(indexPath,
-		[]persistedClass{{Class: Class{ID: 1}}, {Class: Class{ID: 2}}},
-		[]persistedClass{{Class: Class{ID: 3}}}); err != nil {
+	if err := writeIndex(indexPath, skills, domains); err != nil {
 		t.Fatal(err)
 	}
 
-	if !manifestCurrent(mf, indexPath, o, versions, sd, dd, 2, 1) {
+	if !manifestCurrent(mf, indexPath, o, versions, sd, dd) {
 		t.Fatal("expected current for a matching configuration")
 	}
 
 	// Each mismatch must invalidate the cache.
-	if manifestCurrent(mf, indexPath, o, versions, "CHANGED", dd, 2, 1) {
-		t.Error("skill digest change should invalidate")
+	if manifestCurrent(mf, indexPath, o, versions, "CHANGED", dd) {
+		t.Error("skill digest change (fresh taxonomy) should invalidate")
 	}
 
-	if manifestCurrent(mf, indexPath, o, []string{"1.0.0", "1.1.0"}, sd, dd, 2, 1) {
+	if manifestCurrent(mf, indexPath, o, []string{"1.0.0", "1.1.0"}, sd, dd) {
 		t.Error("taxonomy version change should invalidate")
-	}
-
-	if manifestCurrent(mf, indexPath, o, versions, sd, dd, 3, 1) {
-		t.Error("skill count change should invalidate")
 	}
 
 	other := o
 	other.modelName = "other-model"
 
-	if manifestCurrent(mf, indexPath, other, versions, sd, dd, 2, 1) {
+	if manifestCurrent(mf, indexPath, other, versions, sd, dd) {
 		t.Error("model change should invalidate")
+	}
+
+	// A corrupt/mismatched index that still decodes (same shape, different
+	// content) must invalidate via the digest check.
+	if err := writeIndex(indexPath,
+		[]persistedClass{{Class: Class{ID: 9, Name: "x/y", Caption: "Z"}}, {Class: Class{ID: 8}}},
+		domains); err != nil {
+		t.Fatal(err)
+	}
+
+	if manifestCurrent(mf, indexPath, o, versions, sd, dd) {
+		t.Error("index whose content does not match the manifest digest should invalidate")
 	}
 }
 

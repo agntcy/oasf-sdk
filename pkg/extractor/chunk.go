@@ -11,8 +11,8 @@ import "strings"
 //
 // Chunks overlap by `overlap` tokens so concepts spanning a boundary are not
 // lost. Each chunk is embedded separately and a class's semantic score is the
-// maximum similarity over all chunks (max-pooling), so a single highly relevant
-// section is enough to surface a label.
+// mean of its top-N per-chunk similarities (top-N-mean pooling; see poolScores),
+// so a single highly relevant section is enough to surface a label.
 func chunkText(text string, maxTokens, overlap int) []string {
 	words := strings.Fields(text)
 

@@ -274,7 +274,7 @@ func New(opts ...Option) (*Extractor, error) {
 	r.versions = append([]string(nil), m.TaxonomyVersions...)
 
 	if r.embedder == nil {
-		emb, err := newTransformerEmbedder(modelDir, m.ModelName)
+		emb, err := newTransformerEmbedder(context.Background(), modelDir, m.ModelName)
 		if err != nil {
 			return nil, fmt.Errorf("load model: %w", err)
 		}
@@ -347,14 +347,14 @@ func Provision(ctx context.Context, opts ...Option) error {
 	// custom WithEmbedder always re-embeds (its vectors are not cached against a
 	// known model identity).
 	if o.embedder == nil &&
-		manifestCurrent(manifestFile, indexPath, o, versions, skillDigest, domainDigest, len(skills), len(domains)) {
+		manifestCurrent(manifestFile, indexPath, o, versions, skillDigest, domainDigest) {
 		return nil
 	}
 
 	// Miss: load the model (expensive) and embed the catalog once.
 	emb := o.embedder
 	if emb == nil {
-		te, err := newTransformerEmbedder(modelDir, o.modelName)
+		te, err := newTransformerEmbedder(ctx, modelDir, o.modelName)
 		if err != nil {
 			return fmt.Errorf("provision model: %w", err)
 		}
@@ -396,7 +396,6 @@ func manifestCurrent(
 	o options,
 	versions []string,
 	skillDigest, domainDigest string,
-	nSkills, nDomains int,
 ) bool {
 	m, err := readManifest(manifestFile)
 	if err != nil {
@@ -413,11 +412,25 @@ func manifestCurrent(
 	}
 
 	skills, domains, err := readIndex(indexPath)
-	if err != nil || len(skills) != nSkills || len(domains) != nDomains {
+	if err != nil {
 		return false
 	}
 
-	return true
+	// The on-disk index must itself match the manifest digests, not merely decode
+	// with the right shape — otherwise a corrupt or mismatched index would be
+	// trusted and Provision would never rebuild it.
+	return persistedDigest(skills) == m.SkillDigest && persistedDigest(domains) == m.DomainDigest
+}
+
+// persistedDigest computes the catalog digest of a persisted class set so it can
+// be compared against the manifest's stored digest.
+func persistedDigest(pcs []persistedClass) string {
+	texts := make([]string, len(pcs))
+	for i := range pcs {
+		texts[i] = labelText(pcs[i].Class)
+	}
+
+	return catalogDigest(texts)
 }
 
 // mergeFetchedClasses fetches the given kind for each version and merges classes
@@ -776,6 +789,11 @@ func (r *Extractor) score(
 
 	out := make([]ScoredClass, 0, len(classes))
 
+	// Per-class scratch for the per-chunk cosines, reused across classes: every
+	// element is overwritten each iteration (and poolScores only sorts it in
+	// place), so a single allocation suffices for the whole call.
+	sims := make([]float64, len(chunkVecs))
+
 	for i := range classes {
 		ic := &classes[i]
 
@@ -785,7 +803,6 @@ func (r *Extractor) score(
 
 		// Semantic score: mean of the top-N per-chunk cosines (top-N-mean
 		// pooling) so a single tangential chunk cannot dominate a long input.
-		sims := make([]float64, len(chunkVecs))
 		for j, cv := range chunkVecs {
 			sims[j] = dot(cv, ic.vec)
 		}

@@ -3,7 +3,7 @@
 
 package extractor
 
-// Kind distinguishes an OASF skill from an OASF domain.
+// Kind distinguishes an OASF skill, domain, or module.
 type Kind string
 
 const (
