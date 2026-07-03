@@ -104,11 +104,14 @@ func extractorOptions(cfg *config.Config) []extractor.Option {
 		opts = append(opts, extractor.WithAssetDir(ex.AssetDir))
 	}
 
-	if ex.SkillSemanticWeight > 0 || ex.SkillLexicalWeight > 0 {
+	// Weights are a normalized pair; require BOTH to be set so a partial config
+	// (only one weight) doesn't silently force the other to 0 — it keeps the
+	// library default pair instead.
+	if ex.SkillSemanticWeight > 0 && ex.SkillLexicalWeight > 0 {
 		opts = append(opts, extractor.WithWeights(ex.SkillSemanticWeight, ex.SkillLexicalWeight))
 	}
 
-	if ex.DomainSemanticWeight > 0 || ex.DomainLexicalWeight > 0 {
+	if ex.DomainSemanticWeight > 0 && ex.DomainLexicalWeight > 0 {
 		opts = append(opts, extractor.WithDomainWeights(ex.DomainSemanticWeight, ex.DomainLexicalWeight))
 	}
 

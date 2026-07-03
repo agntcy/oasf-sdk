@@ -36,7 +36,9 @@ type ExtractorConfig struct {
 	// ~/.agntcy/oasf-sdk/extractor/).
 	AssetDir string `json:"asset_dir,omitempty" mapstructure:"asset_dir"`
 
-	// Scoring overrides; a zero value keeps the library default.
+	// Scoring overrides; a zero value keeps the library default. The semantic and
+	// lexical weights are a normalized pair — set BOTH of a pair to override it;
+	// setting only one is ignored (keeps the default pair).
 	SkillSemanticWeight  float64 `json:"skill_semantic_weight,omitempty"  mapstructure:"skill_semantic_weight"`
 	SkillLexicalWeight   float64 `json:"skill_lexical_weight,omitempty"   mapstructure:"skill_lexical_weight"`
 	DomainSemanticWeight float64 `json:"domain_semantic_weight,omitempty" mapstructure:"domain_semantic_weight"`

@@ -39,7 +39,7 @@ func New(ctx context.Context, opts ...extractor.Option) (extractorv1grpc.Extract
 }
 
 func (c *extractorCtrl) Extract(ctx context.Context, req *extractorv1.ExtractRequest) (*extractorv1.ExtractResponse, error) {
-	slog.Info("Received Extract request", "text_len", len(req.GetText()), "scope", req.GetScope())
+	slog.Debug("Received Extract request", "text_len", len(req.GetText()), "scope", req.GetScope())
 
 	res, err := c.engine.Extract(ctx, req.GetText(), queryOptions(req)...)
 	if err != nil {

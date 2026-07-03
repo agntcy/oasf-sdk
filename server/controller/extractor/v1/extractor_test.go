@@ -57,3 +57,29 @@ func TestToKeywords(t *testing.T) {
 		t.Fatalf("unexpected mapping: %+v", out)
 	}
 }
+
+// TestQueryOptions asserts the request→option rules by option count: exactly one
+// version-scoping option is always produced (an explicit version list overrides
+// the scope rather than adding a second), and zero-valued numeric fields add no
+// option (they fall back to the extractor defaults). The options themselves are
+// opaque funcs, so this checks the selection/gating rather than their effect.
+func TestQueryOptions(t *testing.T) {
+	cases := []struct {
+		name string
+		req  *extractorv1.ExtractRequest
+		want int
+	}{
+		{"default scope only", &extractorv1.ExtractRequest{}, 1},
+		{"latest scope", &extractorv1.ExtractRequest{Scope: extractorv1.VersionScope_VERSION_SCOPE_LATEST}, 1},
+		{"explicit versions override scope", &extractorv1.ExtractRequest{Versions: []string{"1.0.0"}, Scope: extractorv1.VersionScope_VERSION_SCOPE_LATEST}, 1},
+		{"zero numeric fields ignored", &extractorv1.ExtractRequest{Tiers: 0, MinScore: 0, MinResults: 0}, 1},
+		{"tiers only", &extractorv1.ExtractRequest{Tiers: 2}, 2},
+		{"all knobs set", &extractorv1.ExtractRequest{Versions: []string{"1.0.0"}, Tiers: 1, MinScore: 0.1, MinResults: 3}, 4},
+	}
+
+	for _, tc := range cases {
+		if got := len(queryOptions(tc.req)); got != tc.want {
+			t.Errorf("%s: len(queryOptions) = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+}
