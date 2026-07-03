@@ -13,11 +13,18 @@ import (
 	"github.com/agntcy/oasf-sdk/pkg/extractor"
 )
 
+// extractorEngine is the subset of *extractor.Extractor the controller depends
+// on. Declaring it as an interface lets the Extract handler be tested with a
+// fake, without provisioning a real model.
+type extractorEngine interface {
+	Extract(ctx context.Context, text string, opts ...extractor.QueryOption) (extractor.Result, error)
+}
+
 // extractorCtrl serves the ExtractorService. Unlike the stateless controllers,
 // it holds a warm extractor engine (model + provisioned index) built once at
 // startup and reused for every request.
 type extractorCtrl struct {
-	engine *extractor.Extractor
+	engine extractorEngine
 }
 
 // New builds the extractor controller from the given options (which must include
