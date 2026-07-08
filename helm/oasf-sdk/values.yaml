@@ -42,6 +42,20 @@ ingress:
   # -- Ingress api domain name
   apiDomainName: dev.agntcy.org
 
+# Readiness probe against the server's standard gRPC health service
+# (grpc.health.v1.Health). Requires Kubernetes >= 1.24 for native gRPC probes.
+readinessProbe:
+  # -- Enable the gRPC readiness probe
+  enabled: true
+  # -- Number of consecutive probe failures before the pod is marked unready
+  failureThreshold: 3
+  # -- Seconds between probes
+  periodSeconds: 5
+  # -- Number of consecutive probe successes before the pod is marked ready
+  successThreshold: 1
+  # -- Per-probe timeout in seconds
+  timeoutSeconds: 2
+
 # -- Custom environment variables available to the deployment
 env: {}
 
