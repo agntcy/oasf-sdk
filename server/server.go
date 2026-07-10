@@ -25,12 +25,15 @@ import (
 	translationcontrollerv1 "github.com/agntcy/oasf-sdk/server/controller/translation/v1"
 	validationcontrollerv1 "github.com/agntcy/oasf-sdk/server/controller/validation/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
 type Server struct {
-	cfg        *config.Config
-	grpcServer *grpc.Server
+	cfg          *config.Config
+	grpcServer   *grpc.Server
+	healthServer *health.Server
 }
 
 func Run(ctx context.Context, cfg *config.Config) error {
@@ -59,9 +62,17 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	slog.Info("Creating new server", "config", cfg)
 
 	server := &Server{
-		cfg:        cfg,
-		grpcServer: grpc.NewServer(),
+		cfg:          cfg,
+		grpcServer:   grpc.NewServer(),
+		healthServer: health.NewServer(),
 	}
+
+	// Standard gRPC health service (grpc.health.v1.Health). The empty service
+	// name covers the whole server; it is flipped to SERVING once the listener
+	// is up (start) and back to NOT_SERVING on shutdown (close), so Kubernetes
+	// gRPC probes and grpc_health_probe report readiness accurately.
+	healthpb.RegisterHealthServer(server.grpcServer, server.healthServer)
+	server.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
 
 	validationController, err := validationcontrollerv1.New()
 	if err != nil {
@@ -131,6 +142,9 @@ func extractorOptions(cfg *config.Config) []extractor.Option {
 }
 
 func (s Server) close() {
+	// Flip health to NOT_SERVING before stopping so probes and load balancers
+	// stop routing new work during the graceful drain.
+	s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
 	s.grpcServer.GracefulStop()
 }
 
@@ -149,6 +163,8 @@ func (s Server) start(ctx context.Context) error {
 			slog.Error("Server stopped unexpectedly", "error", err)
 		}
 	}()
+
+	s.healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
 	return nil
 }

@@ -29,8 +29,13 @@ tasks:
       - "{{.KIND_BIN}} load docker-image oasf-sdk:latest --name {{.CLUSTER_NAME}}"
       - echo "Installing Helm chart with local image..."
       - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk --set image.repository=oasf-sdk --set image.tag=latest --set image.pullPolicy=Never"
+      # The chart defines a readiness probe against the server's gRPC health
+      # service (grpc.health.v1.Health), so this rollout gate waits until the
+      # server actually accepts RPCs — not just until the container starts. The
+      # timeout is raised accordingly: probes start after pod start and run
+      # every 5s.
       - echo "Waiting for deployment to be ready..."
-      - "{{.KUBECTL_BIN}} rollout status deployment/oasf-sdk --timeout=20s"
+      - "{{.KUBECTL_BIN}} rollout status deployment/oasf-sdk --timeout=60s"
 
   e2e:tear-down:
     desc: Tear down the e2e kind cluster
