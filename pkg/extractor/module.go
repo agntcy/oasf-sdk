@@ -38,7 +38,7 @@ var curatedModules = []curatedModule{
 			{
 				ID: 202, Name: "integration/mcp", Caption: "MCP", //nolint:mnd // OASF schema class ID
 				Description: "Describes MCP servers required to run and interact with the agent.",
-				Versions:    []string{"0.8.0", "1.0.0"},
+				Versions:    []string{"0.8.0", "1.0.0", "1.1.0"},
 			},
 			{
 				ID: 302, Name: "runtime/mcp", Caption: "MCP", //nolint:mnd // OASF schema class ID
@@ -53,7 +53,7 @@ var curatedModules = []curatedModule{
 			{
 				ID: 203, Name: "integration/a2a", Caption: "A2A", //nolint:mnd // OASF schema class ID
 				Description: "Describes A2A card details for communication and usage with A2A protocol.",
-				Versions:    []string{"0.8.0", "1.0.0"},
+				Versions:    []string{"0.8.0", "1.0.0", "1.1.0"},
 			},
 			{
 				ID: 305, Name: "runtime/a2a", Caption: "A2A", //nolint:mnd // OASF schema class ID
@@ -71,7 +71,7 @@ var curatedModules = []curatedModule{
 			{
 				ID: 10302, Name: "core/language_model/agentskills", Caption: "Language Model Agent Skills", //nolint:mnd // OASF schema class ID
 				Description: "Describes Agent Skills associated with the language model module.",
-				Versions:    []string{"1.0.0"},
+				Versions:    []string{"1.0.0", "1.1.0"},
 			},
 		},
 	},
