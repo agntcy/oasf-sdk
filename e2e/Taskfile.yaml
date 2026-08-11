@@ -28,7 +28,9 @@ tasks:
       - echo "Loading Docker image into Kind cluster..."
       - "{{.KIND_BIN}} load docker-image oasf-sdk:latest --name {{.CLUSTER_NAME}}"
       - echo "Installing Helm chart with local image..."
-      - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk --set image.repository=oasf-sdk --set image.tag=latest --set image.pullPolicy=Never"
+      # The chart defaults to ClusterIP; the tests dial the server through the
+      # kind hostPort mapping in kind-config.yaml, which needs a NodePort.
+      - "{{.HELM_BIN}} install oasf-sdk ../helm/oasf-sdk --set image.repository=oasf-sdk --set image.tag=latest --set image.pullPolicy=Never --set service.type=NodePort"
       # The chart defines a readiness probe against the server's gRPC health
       # service (grpc.health.v1.Health), so this rollout gate waits until the
       # server actually accepts RPCs — not just until the container starts. The

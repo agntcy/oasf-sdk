@@ -14,13 +14,15 @@ image:
 service:
   # -- Service name
   name: oasf-sdk
-  # -- Service type
-  type: NodePort
+  # -- Service type. The gRPC server has no TLS or authentication, so the
+  # default keeps it reachable only from inside the cluster. Set to `NodePort`
+  # or `LoadBalancer` to expose it externally.
+  type: ClusterIP
   # -- Service external port
   externalPort: 31234
   # -- Service internal port
   internalPort: 31234
-  # -- Service node port
+  # -- Service node port. Only rendered when `service.type` is `NodePort` or `LoadBalancer`.
   nodePort: 31234
   # -- Service annotations, e.g. if type is AWS LoadBalancer and you want to add security groups
   annotations: {}
