@@ -17,7 +17,9 @@ spec:
   ports:
     - port: {{ .Values.service.externalPort }}
       targetPort: {{ .Values.service.internalPort }}
+      {{- if and .Values.service.nodePort (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) }}
       nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
       protocol: TCP
       name: {{ .Values.service.name }}
   selector:
