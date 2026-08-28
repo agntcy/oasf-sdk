@@ -1038,11 +1038,28 @@ go run ./server/cmd            # or the published container image
   `..._TIER_RATIO`, `..._MIN_SCORE`.
 
 On startup it runs `Provision` (idempotent) and loads the engine, so it is
-self-sufficient — no separate provisioning step. For Kubernetes, bake the model
-into the image at build time to avoid a runtime HuggingFace download and get
-fast, reproducible pod starts, and gate the readiness probe on startup
-completing. The service is stateless and can run multiple replicas behind a
-`ClusterIP` Service.
+self-sufficient — no separate provisioning step. The service is stateless and
+can run multiple replicas behind a `ClusterIP` Service; gate the readiness probe
+on startup completing.
+
+The published image already carries the default model's HuggingFace files under
+`/home/nonroot/.agntcy/oasf-sdk/extractor/models/sentence-transformers/all-MiniLM-L6-v2/`,
+so a container start contacts only `OASF_SDK_EXTRACTOR_OASF_URL` — no
+HuggingFace download, and none on restart either. Three consequences worth
+knowing:
+
+- **The asset directory must stay writable.** Provisioning still converts the
+  model to spaGO format and refreshes the taxonomy there on every start.
+  `readOnlyRootFilesystem: true` breaks startup, and mounting an `emptyDir` over
+  the asset directory hides the baked files and sends the server back to
+  HuggingFace.
+- **Only the default model is baked.** Setting `OASF_SDK_EXTRACTOR_MODEL_NAME`
+  to anything else resolves to a different directory and downloads from
+  HuggingFace exactly as before, so that path still needs egress.
+- **The taxonomy is still fetched per start.** A new OASF release is picked up by
+  restarting the container. For an air-gapped cluster, point
+  `OASF_SDK_EXTRACTOR_OASF_URL` at an in-cluster OASF schema server; the model is
+  no longer a network dependency.
 
 ### Calling it with grpcurl
 
@@ -1073,30 +1090,34 @@ Request fields: `text`, `scope` (`VERSION_SCOPE_ALL` | `VERSION_SCOPE_LATEST`),
 
 ### Running the container against a local OASF (dev)
 
-Running the server image on a workstation — especially on a network that
-inspects or blocks outbound HTTPS — against a local (e.g. kind) OASF needs two
-knobs:
-
-- **Reuse host-provisioned assets** so the container does not fetch the model
-  from HuggingFace at runtime. Provision the asset dir on the host first (the
-  in-process `Provision` above populates `~/.agntcy/oasf-sdk/extractor`), then
-  mount it and set `OASF_SDK_EXTRACTOR_ASSET_DIR` to the mount. The container
-  then only fetches the taxonomy from the OASF endpoint (no HuggingFace call).
-- **Reach the host's OASF.** Containers reach host services via
-  `host.docker.internal`. If that OASF is behind an ingress that virtual-hosts
-  on `localhost`, use `localhost:8080` as the URL (so the `Host` header matches
-  the ingress) and map `localhost` to the host with `--add-host
-  localhost:host-gateway`.
+Running the server image on a workstation against a local (e.g. kind) OASF only
+needs to **reach the host's OASF**. Containers reach host services via
+`host.docker.internal`. If that OASF is behind an ingress that virtual-hosts on
+`localhost`, use `localhost:8080` as the URL (so the `Host` header matches the
+ingress) and map `localhost` to the host with `--add-host
+localhost:host-gateway`.
 
 ```bash
 docker run -p 31234:31234 \
   --add-host localhost:host-gateway \
   -e OASF_SDK_EXTRACTOR_OASF_URL=localhost:8080 \
+  oasf-sdk:latest
+```
+
+The model needs no knob: it is baked into the image, so this works unchanged on
+a network that inspects or blocks outbound HTTPS. If you do want the container
+to reuse host-provisioned assets anyway — to share a converted model with the
+host, or to try a non-default `OASF_SDK_EXTRACTOR_MODEL_NAME` without egress —
+provision the asset dir on the host first (the in-process `Provision` above
+populates `~/.agntcy/oasf-sdk/extractor`), then mount it over the baked one:
+
+```bash
+docker run -p 31234:31234 \
+  -e OASF_SDK_EXTRACTOR_OASF_URL=https://schema.oasf.outshift.com \
   -e OASF_SDK_EXTRACTOR_ASSET_DIR=/assets \
   -v "$HOME/.agntcy/oasf-sdk/extractor:/assets" \
   oasf-sdk:latest
 ```
 
-Against the public endpoint none of this is needed (direct egress, public
-certificate, model downloaded at startup) — just set
+Against the public endpoint none of this is needed — just set
 `OASF_SDK_EXTRACTOR_OASF_URL=https://schema.oasf.outshift.com`.
