@@ -1036,6 +1036,12 @@ go run ./server/cmd            # or the published container image
   `OASF_SDK_EXTRACTOR_SKILL_SEMANTIC_WEIGHT`, `..._SKILL_LEXICAL_WEIGHT`,
   `..._DOMAIN_SEMANTIC_WEIGHT`, `..._DOMAIN_LEXICAL_WEIGHT`, `..._TIERS`,
   `..._TIER_RATIO`, `..._MIN_SCORE`.
+- `OASF_SDK_LOG_LEVEL` — minimum log level, one of `debug`, `info`, `warn`,
+  `error` (case-insensitive; default `info`). Set it to `debug` to see
+  per-request lines such as `DEBUG Received Extract request text_len=26
+  scope=VERSION_SCOPE_LATEST`. An unset or unrecognized value keeps `info`, so a
+  typo never stops the server from starting. This governs the server's own logs;
+  the embedding library logs separately and is unaffected.
 
 On startup it runs `Provision` (idempotent) and loads the engine, so it is
 self-sufficient — no separate provisioning step. The service is stateless and
