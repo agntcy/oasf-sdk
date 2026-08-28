@@ -17,6 +17,10 @@ func TestLogLevel(t *testing.T) {
 	}{
 		{"unset keeps the default", "", slog.LevelInfo, false},
 		{"unparseable keeps the default", "verbose", slog.LevelInfo, false},
+		// slog.Level.UnmarshalText accepts these, but they are outside the
+		// documented contract, so they must follow the advertised fallback.
+		{"positive offset keeps the default", "INFO+1", slog.LevelInfo, false},
+		{"negative offset keeps the default", "DEBUG-2", slog.LevelInfo, false},
 		{"debug", "debug", slog.LevelDebug, true},
 		{"case insensitive", "DEBUG", slog.LevelDebug, true},
 		{"surrounding space", "  debug  ", slog.LevelDebug, true},

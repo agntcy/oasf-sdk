@@ -36,20 +36,26 @@ var rootCmd = &cobra.Command{
 }
 
 // logLevel parses s into a slog level, reporting whether it was usable. An
-// empty or malformed value reports false so the caller leaves the default in
+// empty or unrecognized value reports false so the caller leaves the default in
 // place rather than failing to start over a logging setting.
+//
+// The four names are matched explicitly rather than deferring to
+// slog.Level.UnmarshalText, which also accepts offset forms such as "INFO+1".
+// Those are outside the documented contract, so they take the same fallback as
+// any other unrecognized value.
 func logLevel(s string) (slog.Level, bool) {
-	s = strings.TrimSpace(s)
-	if s == "" {
+	switch strings.ToUpper(strings.TrimSpace(s)) {
+	case "DEBUG":
+		return slog.LevelDebug, true
+	case "INFO":
+		return slog.LevelInfo, true
+	case "WARN":
+		return slog.LevelWarn, true
+	case "ERROR":
+		return slog.LevelError, true
+	default:
 		return slog.LevelInfo, false
 	}
-
-	var l slog.Level
-	if err := l.UnmarshalText([]byte(s)); err != nil {
-		return slog.LevelInfo, false
-	}
-
-	return l, true
 }
 
 func main() {
