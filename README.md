@@ -16,6 +16,14 @@ SDKs.
 
 Check out the proto bindings available under [buf.build/agntcy/oasf-sdk](https://buf.build/agntcy/oasf-sdk).
 
+## Third-Party Model
+
+The published server image ships the extractor's default embedding model,
+[`sentence-transformers/all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2),
+so the server needs no HuggingFace access at startup. The model is
+redistributed unmodified under the Apache 2.0 License; see the model card for
+its authorship and citation.
+
 ## Copyright Notice
 
 [Copyright Notice and License](./LICENSE.md)
