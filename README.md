@@ -4,6 +4,7 @@
 [![CI](https://github.com/agntcy/oasf-sdk/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/agntcy/oasf-sdk/actions/workflows/lint.yaml)
 [![Coverage](https://codecov.io/gh/agntcy/oasf-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/agntcy/oasf-sdk)
 [![License](https://img.shields.io/github/license/agntcy/oasf-sdk)](./LICENSE.md)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/agntcy/oasf-sdk/badge)](https://scorecard.dev/viewer/?uri=github.com/agntcy/oasf-sdk)
 
 The OASF SDK contains SDKs related to the [OASF](https://github.com/agntcy/oasf) project.
 
