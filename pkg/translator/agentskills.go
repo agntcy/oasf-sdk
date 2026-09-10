@@ -13,6 +13,7 @@ import (
 	"time"
 
 	recordutil "github.com/agntcy/oasf-sdk/pkg/record"
+	yaml "go.yaml.in/yaml/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -25,8 +26,8 @@ const (
 
 const (
 	frontmatterParts    = 3
-	yamlKeyValueParts   = 2
 	frontmatterMinParts = 3
+	yamlMappingPairSize = 2
 )
 
 // RecordToSkillMarkdown returns the full SKILL.md content for a record containing
@@ -312,56 +313,87 @@ type skillMarkdownFields struct {
 	metadata      map[string]string
 }
 
+// skillFrontmatterYAML is the YAML shape of a SKILL.md frontmatter block.
+// Descriptions are decoded with a real YAML parser so folded/literal block
+// scalars (`>`, `>-`, `|`, `|-`) become the folded text rather than the
+// indicator itself.
+type skillFrontmatterYAML struct {
+	Name          string        `yaml:"name"`
+	Description   string        `yaml:"description"`
+	License       string        `yaml:"license"`
+	Compatibility string        `yaml:"compatibility"`
+	AllowedTools  string        `yaml:"allowed-tools"`
+	Metadata      yamlStringMap `yaml:"metadata"`
+}
+
+// yamlStringMap unmarshals a YAML mapping to map[string]string using each
+// scalar's original text, so values like `version: 1.0` stay "1.0".
+type yamlStringMap map[string]string
+
+func (m *yamlStringMap) UnmarshalYAML(value *yaml.Node) error {
+	if value == nil || value.Tag == "!!null" {
+		return nil
+	}
+
+	if value.Kind != yaml.MappingNode {
+		return fmt.Errorf("metadata must be a mapping, got %s", value.ShortTag())
+	}
+
+	out := make(map[string]string, len(value.Content)/yamlMappingPairSize)
+	for i := 0; i+1 < len(value.Content); i += yamlMappingPairSize {
+		out[value.Content[i].Value] = yamlNodeString(value.Content[i+1])
+	}
+
+	*m = out
+
+	return nil
+}
+
+func yamlNodeString(n *yaml.Node) string {
+	if n == nil {
+		return ""
+	}
+
+	if n.Kind == yaml.ScalarNode {
+		return n.Value
+	}
+
+	var decoded any
+	if err := n.Decode(&decoded); err != nil {
+		return n.Value
+	}
+
+	if s, ok := decoded.(string); ok {
+		return s
+	}
+
+	return fmt.Sprint(decoded)
+}
+
 // parseSkillMarkdownContent parses a SKILL.md and returns its spec-defined frontmatter fields.
 // Spec frontmatter fields: name, description, license, compatibility, allowed-tools, metadata.
 // There is no top-level version field in the spec; version lives inside metadata.
 func parseSkillMarkdownContent(content string) (skillMarkdownFields, error) {
-	sections := strings.SplitN(content, "---", frontmatterParts)
-	if len(sections) < frontmatterMinParts {
-		return skillMarkdownFields{}, errors.New("invalid SKILL.md: missing frontmatter delimiters")
+	frontmatter, err := extractSkillFrontmatter(content)
+	if err != nil {
+		return skillMarkdownFields{}, err
 	}
 
-	frontmatter := strings.TrimSpace(sections[1])
+	var parsed skillFrontmatterYAML
+	if err := yaml.Unmarshal([]byte(frontmatter), &parsed); err != nil {
+		return skillMarkdownFields{}, fmt.Errorf("parse SKILL.md frontmatter: %w", err)
+	}
 
 	result := skillMarkdownFields{
-		metadata: map[string]string{},
+		name:          strings.TrimSpace(parsed.Name),
+		description:   strings.TrimSpace(parsed.Description),
+		license:       strings.TrimSpace(parsed.License),
+		compatibility: strings.TrimSpace(parsed.Compatibility),
+		allowedTools:  strings.Fields(parsed.AllowedTools),
+		metadata:      map[string]string(parsed.Metadata),
 	}
-
-	lines := strings.Split(frontmatter, "\n")
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line == "" {
-			continue
-		}
-
-		if line == "metadata:" {
-			for i+1 < len(lines) {
-				next := lines[i+1]
-				if !strings.HasPrefix(next, "  ") {
-					break
-				}
-
-				i++
-				k, v := splitYAMLKeyValue(strings.TrimSpace(next))
-				result.metadata[k] = v
-			}
-
-			continue
-		}
-
-		k, v := splitYAMLKeyValue(line)
-		switch k {
-		case "name":
-			result.name = v
-		case "description":
-			result.description = v
-		case "license":
-			result.license = v
-		case "compatibility":
-			result.compatibility = v
-		case "allowed-tools":
-			result.allowedTools = strings.Fields(v)
-		}
+	if result.metadata == nil {
+		result.metadata = map[string]string{}
 	}
 
 	if result.name == "" || result.description == "" {
@@ -371,33 +403,15 @@ func parseSkillMarkdownContent(content string) (skillMarkdownFields, error) {
 	return result, nil
 }
 
-// splitYAMLKeyValue splits a YAML "key: value" line and unquotes quoted values.
-func splitYAMLKeyValue(line string) (string, string) {
-	parts := strings.SplitN(line, ":", yamlKeyValueParts)
-	key := strings.TrimSpace(parts[0])
-	value := ""
+func extractSkillFrontmatter(content string) (string, error) {
+	normalized := strings.ReplaceAll(content, "\r\n", "\n")
 
-	if len(parts) > 1 {
-		value = unquoteYAMLScalar(strings.TrimSpace(parts[1]))
+	sections := strings.SplitN(normalized, "---", frontmatterParts)
+	if len(sections) < frontmatterMinParts {
+		return "", errors.New("invalid SKILL.md: missing frontmatter delimiters")
 	}
 
-	return key, value
-}
-
-// unquoteYAMLScalar strips surrounding YAML single or double quotes from a scalar value.
-func unquoteYAMLScalar(value string) string {
-	if strings.HasPrefix(value, "\"") {
-		if unquoted, err := strconv.Unquote(value); err == nil {
-			return unquoted
-		}
-	}
-
-	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
-		// YAML single-quoted strings escape ' as ''.
-		return strings.ReplaceAll(value[1:len(value)-1], "''", "'")
-	}
-
-	return value
+	return strings.TrimSpace(sections[1]), nil
 }
 
 func getString(data map[string]any, key string) string {

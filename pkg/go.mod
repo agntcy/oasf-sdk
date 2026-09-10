@@ -10,11 +10,15 @@ require (
 
 require github.com/Masterminds/semver/v3 v3.4.0
 
-require github.com/nlpodyssey/cybertron v0.2.1
+require (
+	github.com/nlpodyssey/cybertron v0.2.1
+	go.yaml.in/yaml/v3 v3.0.4
+)
 
 require (
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/nlpodyssey/gopickle v0.2.0 // indirect

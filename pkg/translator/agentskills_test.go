@@ -339,21 +339,108 @@ metadata:
 	}
 }
 
-func TestUnquoteYAMLScalar(t *testing.T) {
+func TestSkillMarkdownToRecordFoldedDescription(t *testing.T) {
+	// Agent Skills commonly use YAML folded block scalars for long descriptions.
+	// The previous line-oriented parser stored the indicator (">" / ">-") as the
+	// description instead of the folded paragraph.
+	skillMD := `---
+name: oss-repository
+description: >-
+  Audits a local or startup repository against a well-organized open source
+  layout and lists ordered transformation steps (license, README, contributing,
+  security, CI, releases, governance). Optionally applies must-items after the
+  user confirms. Use when the user wants to open-source a repo, prepare a
+  project for GitHub, add community health files, turn a private experiment
+  into a public OSS repository, or transform a startup repo.
+---
+# Open source repository
+`
+
+	want := "Audits a local or startup repository against a well-organized open source layout and lists ordered transformation steps (license, README, contributing, security, CI, releases, governance). Optionally applies must-items after the user confirms. Use when the user wants to open-source a repo, prepare a project for GitHub, add community health files, turn a private experiment into a public OSS repository, or transform a startup repo."
+
+	input, err := structpb.NewStruct(map[string]any{"skillMarkdown": skillMD})
+	if err != nil {
+		t.Fatalf("Failed to build input: %v", err)
+	}
+
+	record, err := SkillMarkdownToRecord(input)
+	if err != nil {
+		t.Fatalf("SkillMarkdownToRecord() error: %v", err)
+	}
+
+	got := record.GetFields()["description"].GetStringValue()
+	if got == ">" || got == ">-" {
+		t.Fatalf("folded description stored as YAML indicator %q", got)
+	}
+
+	if got != want {
+		t.Errorf("description mismatch\ngot:  %q\nwant: %q", got, want)
+	}
+
+	_, module := findAgentSkillsModule(record)
+
+	manifest := module.GetFields()["data"].GetStructValue().GetFields()["skill_manifest"].GetStructValue()
+	if manifest.GetFields()["description"].GetStringValue() != want {
+		t.Errorf("manifest description mismatch, got %q", manifest.GetFields()["description"].GetStringValue())
+	}
+}
+
+func TestParseSkillMarkdownBlockScalars(t *testing.T) {
 	tests := []struct {
-		input string
-		want  string
+		name    string
+		content string
+		want    string
 	}{
-		{input: "'" + testSkillVersion + "'", want: testSkillVersion},
-		{input: `"` + testSkillVersion + `"`, want: testSkillVersion},
-		{input: testSkillVersion, want: testSkillVersion},
-		{input: "'it''s fine'", want: "it's fine"},
+		{
+			name: "folded strip",
+			content: `---
+name: folded-strip
+description: >-
+  first line
+  second line
+---
+`,
+			want: "first line second line",
+		},
+		{
+			name: "folded clip",
+			content: `---
+name: folded-clip
+description: >
+  first line
+  second line
+---
+`,
+			want: "first line second line",
+		},
+		{
+			name: "literal strip",
+			content: `---
+name: literal-strip
+description: |-
+  first line
+  second line
+---
+`,
+			want: "first line\nsecond line",
+		},
 	}
 
 	for _, tt := range tests {
-		if got := unquoteYAMLScalar(tt.input); got != tt.want {
-			t.Errorf("unquoteYAMLScalar(%q) = %q, want %q", tt.input, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseSkillMarkdownContent(tt.content)
+			if err != nil {
+				t.Fatalf("parseSkillMarkdownContent() error: %v", err)
+			}
+
+			if got.description == ">" || got.description == ">-" || got.description == "|" || got.description == "|-" {
+				t.Fatalf("block scalar stored as indicator %q", got.description)
+			}
+
+			if got.description != tt.want {
+				t.Errorf("description = %q, want %q", got.description, tt.want)
+			}
+		})
 	}
 }
 
