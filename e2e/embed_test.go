@@ -20,9 +20,6 @@ var invalidV100Record []byte
 //go:embed fixtures/valid_0.7.0_record.json
 var validV070Record []byte
 
-//go:embed fixtures/invalid_0.7.0_record.json
-var invalidV070Record []byte
-
 //go:embed fixtures/translation_0.7.0_record.json
 var translationV070Record []byte
 
