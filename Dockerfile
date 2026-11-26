@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS builder
+FROM golang:1.26.11-alpine@sha256:ecb67f987aa1a57794c91d19ade7ae0209f2f0f5496aaef9e6ae85ddf92d02ab AS builder
 
 WORKDIR /build/server
 
@@ -42,7 +42,7 @@ ADD --checksum=sha256:07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c99
 ADD --checksum=sha256:acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b \
   ${HF_URL}/tokenizer_config.json /models/${MODEL}/
 
-FROM gcr.io/distroless/static:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f
+FROM gcr.io/distroless/static:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5
 
 WORKDIR /
 
